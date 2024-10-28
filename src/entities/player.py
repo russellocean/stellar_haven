@@ -51,13 +51,47 @@ class Player(Entity):
         if not room_manager.collision_system.is_position_valid(self.rect):
             self.rect.x = previous_x
 
+        # After horizontal movement, check if we're still on a floor
+        if self.on_ground:
+            grid_x = self.rect.centerx // room_manager.collision_system.grid_size
+            still_on_floor = False
+            if grid_x in room_manager.collision_system.floor_map:
+                for floor_y in room_manager.collision_system.floor_map[grid_x]:
+                    floor_pixel_y = floor_y * room_manager.collision_system.grid_size
+                    if self.rect.bottom == floor_pixel_y:
+                        still_on_floor = True
+                        break
+            if not still_on_floor:
+                self.on_ground = False
+
         # Move vertically
         self.rect.y += self.velocity_y
+
+        # Check for floor collision when moving down
+        if self.velocity_y >= 0:  # Moving down or stationary
+            grid_x = self.rect.centerx // room_manager.collision_system.grid_size
+            if grid_x in room_manager.collision_system.floor_map:
+                for floor_y in room_manager.collision_system.floor_map[grid_x]:
+                    floor_pixel_y = floor_y * room_manager.collision_system.grid_size
+                    if (
+                        self.rect.bottom > floor_pixel_y
+                        and previous_y + self.rect.height <= floor_pixel_y
+                    ):
+                        # We crossed a floor boundary
+                        self.rect.bottom = floor_pixel_y
+                        self.velocity_y = 0
+                        self.on_ground = True
+                        break
+
+        # Check for ceiling/wall collision
         if not room_manager.collision_system.is_position_valid(self.rect):
             self.rect.y = previous_y
-            if self.velocity_y > 0:  # Was moving down
-                self.on_ground = True
-            self.velocity_y = 0
+            if self.velocity_y < 0:  # Hit ceiling
+                self.velocity_y = 0
+
+        # If we didn't hit a floor and we're moving down, we're not on ground
+        if self.velocity_y > 0:
+            self.on_ground = False
 
         # # Debug output
         # print(f"Player pos: {self.rect.x}, {self.rect.y}")

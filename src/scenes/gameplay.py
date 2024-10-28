@@ -82,3 +82,6 @@ class GameplayScene(Scene):
 
         # Draw building UI
         self.building_system.draw()
+
+        # Debug collision map
+        self.room_manager.collision_system.draw_debug(screen)

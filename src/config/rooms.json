@@ -1,0 +1,31 @@
+{
+  "bridge": {
+    "size": [200, 150],
+    "resource_consumption": {
+      "power": 0.1,
+      "oxygen": 0.1
+    },
+    "resource_generation": {},
+    "description": "Ship's command center"
+  },
+  "engine_room": {
+    "size": [200, 150],
+    "resource_consumption": {
+      "oxygen": 0.2
+    },
+    "resource_generation": {
+      "power": 0.5
+    },
+    "description": "Powers the ship's systems"
+  },
+  "life_support": {
+    "size": [200, 150],
+    "resource_consumption": {
+      "power": 0.1
+    },
+    "resource_generation": {
+      "oxygen": 0.3
+    },
+    "description": "Generates oxygen for the ship"
+  }
+}

@@ -1,36 +1,36 @@
+from typing import Dict
+
 from entities.entity import Entity
+from systems.asset_manager import AssetManager
 
 
 class Room(Entity):
     def __init__(self, name: str, image_path: str, x: int, y: int):
-        super().__init__(image_path, x, y)
         self.name = name
-        self.resources = {}
-        self.resource_generators = {}
-        self.resource_consumers = {}
-        self._initialize_room_properties()
+        self.asset_manager = AssetManager()
 
-    def _initialize_room_properties(self):
-        """Initialize room-specific resources and rates"""
-        if self.name == "engine_room":
-            self.resource_generators["power"] = 0.5
-            self.resource_consumers["oxygen"] = 0.2
-        elif self.name == "life_support":
-            self.resource_generators["oxygen"] = 0.3
-            self.resource_consumers["power"] = 0.1
-        elif self.name == "bridge":
-            self.resource_consumers["power"] = 0.1
-            self.resource_consumers["oxygen"] = 0.1
+        # Load room config
+        room_config = self.asset_manager.get_config("rooms").get(name, {})
 
-    def update(self, *args, **kwargs):
-        """Update room resources if resource_manager is provided"""
-        resource_manager = kwargs.get("resource_manager")
+        # Initialize with provided image path for now
+        super().__init__(image_path, x, y)
+
+        # Initialize room properties from config
+        self.resource_generators = room_config.get("resource_generation", {})
+        self.resource_consumers = room_config.get("resource_consumption", {})
+        self.description = room_config.get("description", "")
+
+        # Initialize resources
+        self.resources: Dict[str, float] = {}
+
+    def update(self, resource_manager=None):
+        """Update room state"""
         if resource_manager:
-            # Generate resources
+            # Handle resource generation
             for resource, rate in self.resource_generators.items():
                 resource_manager.add_resource(resource, rate)
 
-            # Consume resources
+            # Handle resource consumption
             for resource, rate in self.resource_consumers.items():
                 resource_manager.consume_resource(resource, rate)
 

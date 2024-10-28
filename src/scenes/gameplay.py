@@ -5,6 +5,7 @@ import pygame
 from entities.player import Player
 from input_manager import InputManager
 from scenes.scene import Scene
+from systems.asset_manager import AssetManager
 from systems.building_system import BuildingSystem
 from systems.camera import Camera
 from systems.game_state_manager import GameState, GameStateManager
@@ -52,6 +53,10 @@ class GameplayScene(Scene):
         screen_center_x = game.screen.get_width() // 2
         screen_center_y = game.screen.get_height() // 2
         self.room_manager = RoomManager(screen_center_x, screen_center_y)
+
+        # Initialize asset manager and preload room assets
+        self.asset_manager = AssetManager()
+        self.asset_manager.preload_images("images/rooms")
 
         # Setup core game elements
         self.starfield = Starfield(game.screen.get_size())

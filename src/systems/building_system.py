@@ -1,5 +1,6 @@
 import pygame
 
+from systems.debug_system import DebugSystem
 from systems.event_system import EventSystem, GameEvent
 from systems.game_state_manager import GameState
 from systems.room_manager import RoomManager
@@ -37,6 +38,17 @@ class BuildingSystem:
         self.event_system = EventSystem()
         self.event_system.subscribe(
             GameEvent.GAME_STATE_CHANGED, self._handle_state_change
+        )
+
+        self.debug = DebugSystem()
+        self.debug.add_watch("Building Mode", lambda: self.active)
+        self.debug.add_watch(
+            "Selected Room",
+            lambda: (
+                self.room_builder.selected_room_type
+                if hasattr(self.room_builder, "selected_room_type")
+                else None
+            ),
         )
 
     def set_state_manager(self, state_manager):

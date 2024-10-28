@@ -4,25 +4,26 @@ import pygame
 
 from entities.room import Room
 from systems.collision_system import CollisionSystem
+from systems.debug_system import DebugSystem
 
 
 class RoomManager:
-    def __init__(self, x: int, y: int):
+    def __init__(self, center_x: int, center_y: int):
         self.rooms: Dict[str, Room] = {}
         self.room_sprites = pygame.sprite.Group()
         GRID_SIZE = 32
 
         # Snap the position to grid
-        x = (x // GRID_SIZE) * GRID_SIZE
-        y = (y // GRID_SIZE) * GRID_SIZE
+        center_x = (center_x // GRID_SIZE) * GRID_SIZE
+        center_y = (center_y // GRID_SIZE) * GRID_SIZE
 
         # Calculate top-left position for ship room to be centered on screen
         ship_image = pygame.image.load("assets/images/ship_interior.png")
         ship_width = ship_image.get_width()
         ship_height = ship_image.get_height()
 
-        ship_x = x - (ship_width // 2)
-        ship_y = y - (ship_height // 2)
+        ship_x = center_x - (ship_width // 2)
+        ship_y = center_y - (ship_height // 2)
 
         # Snap to grid
         ship_x = (ship_x // GRID_SIZE) * GRID_SIZE
@@ -38,6 +39,16 @@ class RoomManager:
         self.room_sprites.add(self.ship_room)
 
         self.collision_system = CollisionSystem(self)
+
+        self.debug = DebugSystem()
+        self.debug.add_watch("Total Rooms", lambda: len(self.rooms))
+        self.debug.add_watch(
+            "Connected Rooms",
+            lambda: (
+                len(self.get_connected_rooms(self.ship_room)) if self.ship_room else 0
+            ),
+        )
+        self.debug.add_watch("Grid Size", lambda: self.collision_system.grid_size)
 
     def add_room(self, room_type: str, x: int, y: int) -> Room:
         """Add a new room at the specified position"""

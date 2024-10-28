@@ -8,6 +8,7 @@ from scenes.scene import Scene
 from systems.asset_manager import AssetManager
 from systems.building_system import BuildingSystem
 from systems.camera import Camera
+from systems.debug_system import DebugSystem
 from systems.game_state_manager import GameState, GameStateManager
 from systems.resource_manager import ResourceManager
 from systems.room_manager import RoomManager
@@ -71,6 +72,21 @@ class GameplayScene(Scene):
         # Initialize optional systems
         self._init_building_system()
 
+        # Initialize debug system
+        self.debug_system = DebugSystem()
+
+        # Add some useful debug watches
+        self.debug_system.add_watch("Room Count", lambda: len(self.room_manager.rooms))
+        self.debug_system.add_watch(
+            "Power", lambda: f"{self.resource_manager.resources['power']:.1f}"
+        )
+        self.debug_system.add_watch(
+            "Oxygen", lambda: f"{self.resource_manager.resources['oxygen']:.1f}"
+        )
+
+        # Add debug system to debug layer
+        self.debug_layer.append(self.debug_system)
+
     def _setup_core_layers(self):
         """Setup essential game layers"""
         # Create sprite groups in order of drawing
@@ -82,7 +98,12 @@ class GameplayScene(Scene):
         self.game_layer.append(self.room_sprites)
         self.game_layer.append(self.character_sprites)
         self.ui_layer.append(self.game_hud)
-        # self.debug_layer.append(self.room_manager.collision_system)
+
+        # Set camera reference for collision system
+        self.room_manager.collision_system.set_camera(self.camera)
+
+        # Add collision system to debug layer for visualization
+        self.debug_layer.append(self.room_manager.collision_system)
 
     def _init_building_system(self):
         """Initialize optional building system"""
@@ -129,6 +150,11 @@ class GameplayScene(Scene):
             if self.building_system.handle_event(event):
                 return True
 
+        # Add debug toggle (F3 key)
+        if event.type == pygame.KEYDOWN and event.key == pygame.K_F3:
+            self.debug_system.toggle()
+            return True
+
         return False
 
     def update(self):
@@ -149,10 +175,8 @@ class GameplayScene(Scene):
         self.game_hud.update()
 
         super().update()
+        self.debug_system.clock.tick()  # Update FPS counter
 
     def draw(self, screen):
-        # Clear screen
-        screen.fill((0, 0, 0))
-
-        # Use parent class draw method which handles all layers
+        # Use the parent Scene's draw method which will handle all layers
         super().draw(screen)

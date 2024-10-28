@@ -1,4 +1,5 @@
 from entities.entity import Entity
+from systems.debug_system import DebugSystem
 from systems.event_system import EventSystem, GameEvent
 
 
@@ -14,6 +15,12 @@ class Player(Entity):
         self.on_ground = False
         self.event_system = EventSystem()
         self.current_room = None
+        self.debug = DebugSystem()
+        self.debug.add_watch("Player Speed", lambda: self.speed)
+        self.debug.add_watch(
+            "Current Room",
+            lambda: self.current_room.name if self.current_room else "None",
+        )
 
     def update(self, room_manager=None, input_manager=None):
         if room_manager is None or input_manager is None:

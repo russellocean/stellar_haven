@@ -49,9 +49,12 @@ class Scene:
 
         # Draw UI elements (not affected by camera)
         self.ui_system.draw(screen)
-        for element in self.ui_layer:  # Add this line to draw UI layer elements
+        for element in self.ui_layer:
             element.draw(screen)
 
-        # Debug layer (might need camera offset depending on debug visuals)
+        # Debug layer (elements handle their own camera offset)
         for element in self.debug_layer:
-            element.draw(screen)
+            if hasattr(element, "draw_debug"):
+                element.draw_debug(screen)  # Use specific debug drawing method
+            else:
+                element.draw(screen)  # Fallback to regular draw

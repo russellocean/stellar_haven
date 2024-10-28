@@ -1,5 +1,7 @@
 import pygame
 
+from systems.debug_system import DebugSystem
+
 
 class CollisionSystem:
     def __init__(self, room_manager):
@@ -14,6 +16,9 @@ class CollisionSystem:
         self.WALKABLE_COLOR = (0, 255, 0, 100)  # Semi-transparent green
         self.UNWALKABLE_COLOR = (255, 0, 0, 100)  # Semi-transparent red
         self.GRID_COLOR = (255, 255, 255, 50)  # Semi-transparent white
+
+        self.camera = None
+        self.debug = DebugSystem()
 
     def update_collision_map(self):
         """Generate collision map from current room layout"""
@@ -66,39 +71,56 @@ class CollisionSystem:
             grid_y += 1
         return y  # No floor found, return original position
 
-    def draw(self, screen):
-        """Draw debug visualization of the current collision map"""
+    def draw_debug(self, screen):
+        """Draw debug visualization with direct camera offset"""
+        if not self.debug.enabled:  # Only draw if debug is enabled
+            return
+
         debug_surface = pygame.Surface(screen.get_size(), pygame.SRCALPHA)
 
-        # Draw grid for reference
-        for x in range(0, screen.get_width(), self.grid_size):
+        if not self.camera:
+            return
+
+        # Get camera offset directly
+        cam_x, cam_y = self.camera.offset_x, self.camera.offset_y
+        screen_w, screen_h = screen.get_size()
+
+        # Draw grid for reference (in world space)
+        for x in range(0, screen_w + self.grid_size, self.grid_size):
+            world_x = x - cam_x
             pygame.draw.line(
-                debug_surface, self.GRID_COLOR, (x, 0), (x, screen.get_height())
+                debug_surface, self.GRID_COLOR, (world_x, 0), (world_x, screen_h)
             )
-        for y in range(0, screen.get_height(), self.grid_size):
+        for y in range(0, screen_h + self.grid_size, self.grid_size):
+            world_y = y - cam_y
             pygame.draw.line(
-                debug_surface, self.GRID_COLOR, (0, y), (screen.get_width(), y)
+                debug_surface, self.GRID_COLOR, (0, world_y), (screen_w, world_y)
             )
 
-        # Draw walkable areas from collision map
-        for x, y in self.collision_map:
-            rect = pygame.Rect(
-                x * self.grid_size, y * self.grid_size, self.grid_size, self.grid_size
-            )
+        # Draw walkable areas
+        for grid_x, grid_y in self.collision_map:
+            world_x = (grid_x * self.grid_size) - cam_x
+            world_y = (grid_y * self.grid_size) - cam_y
+
+            rect = pygame.Rect(world_x, world_y, self.grid_size, self.grid_size)
             pygame.draw.rect(debug_surface, self.WALKABLE_COLOR, rect)
 
-        # Draw floors from floor_map
-        for x, floor_heights in self.floor_map.items():
-            for floor_y in floor_heights:
+        # Draw floors
+        for grid_x, floor_heights in self.floor_map.items():
+            world_x = (grid_x * self.grid_size) - cam_x
+
+            for grid_y in floor_heights:
+                world_y = (grid_y * self.grid_size) - cam_y
                 floor_rect = pygame.Rect(
-                    x * self.grid_size,
-                    floor_y * self.grid_size,
-                    self.grid_size,
-                    2,  # Line thickness
+                    world_x, world_y, self.grid_size, 2  # Line thickness
                 )
                 pygame.draw.rect(debug_surface, self.UNWALKABLE_COLOR, floor_rect)
 
         screen.blit(debug_surface, (0, 0))
+
+    def draw(self, screen):
+        """Regular draw method (for non-debug use)"""
+        pass  # Only draw in debug mode
 
     def ignore_floor(self, x, y):
         """Temporarily ignore a specific floor for collision"""
@@ -107,3 +129,7 @@ class CollisionSystem:
     def clear_ignored_floor(self):
         """Clear the ignored floor"""
         self.ignored_floor = None
+
+    def set_camera(self, camera):
+        """Set camera reference for debug visualization"""
+        self.camera = camera

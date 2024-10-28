@@ -1,5 +1,6 @@
 from typing import Dict
 
+from systems.debug_system import DebugSystem
 from systems.event_system import EventSystem, GameEvent
 
 
@@ -29,11 +30,19 @@ class ResourceManager:
             "oxygen": 0.05,  # Base oxygen consumption
         }
 
+        self.debug = DebugSystem()
+
     def update(self):
         """Update resource levels based on consumption and generation"""
-        # Apply base consumption
         for resource, rate in self.base_consumption_rates.items():
+            old_value = self.resources[resource]
             self.consume_resource(resource, rate)
+
+            # Debug log significant changes
+            if abs(old_value - self.resources[resource]) > 1.0:
+                self.debug.log(
+                    f"{resource} changed by {old_value - self.resources[resource]:.1f}"
+                )
 
     def consume_resource(self, resource: str, amount: float) -> bool:
         """Consume resource if available"""
@@ -47,6 +56,9 @@ class ResourceManager:
                     and resource not in self.critical_resources
                 ):
                     self.critical_resources.add(resource)
+                    self.debug.log(
+                        f"{resource} critically low: {self.resources[resource]:.1f}"
+                    )
                     self.event_system.emit(
                         GameEvent.RESOURCE_DEPLETED,
                         resource=resource,
@@ -69,6 +81,7 @@ class ResourceManager:
                 self.max_resources[resource] * 0.5
             ):
                 self.critical_resources.remove(resource)
+                self.debug.log(f"{resource} restored: {self.resources[resource]:.1f}")
                 self.event_system.emit(
                     GameEvent.RESOURCE_RESTORED,
                     resource=resource,

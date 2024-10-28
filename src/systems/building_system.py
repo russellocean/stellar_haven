@@ -1,5 +1,7 @@
 import pygame
 
+from systems.event_system import EventSystem, GameEvent
+from systems.game_state_manager import GameState
 from systems.room_manager import RoomManager
 from ui.components.toggle_button import ToggleButton
 from ui.layouts.build_menu import BuildMenu
@@ -30,6 +32,12 @@ class BuildingSystem:
 
         # Initialize UI layouts
         self.build_menu = BuildMenu(screen=screen, on_select=self.select_room_type)
+
+        # Subscribe to relevant events
+        self.event_system = EventSystem()
+        self.event_system.subscribe(
+            GameEvent.GAME_STATE_CHANGED, self._handle_state_change
+        )
 
     def set_state_manager(self, state_manager):
         """Set the state manager reference"""
@@ -117,3 +125,20 @@ class BuildingSystem:
     def set_camera(self, camera):
         """Set the camera reference"""
         self.camera = camera
+
+    def _handle_state_change(self, event_data):
+        """Handle game state changes"""
+        new_state = event_data.data["new_state"]
+        if new_state == GameState.BUILDING:
+            self.active = True
+        else:
+            self.active = False
+
+    def place_room(self, room_type: str, position: tuple):
+        """Place a room and emit event"""
+        room = self.room_builder.build_room(room_type, position)
+        if room:
+            self.room_manager.add_room(room)
+            self.event_system.emit(
+                GameEvent.ROOM_BUILT, room=room, room_type=room_type, position=position
+            )

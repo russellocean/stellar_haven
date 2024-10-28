@@ -10,8 +10,7 @@ from systems.camera import Camera
 from systems.game_state_manager import GameState, GameStateManager
 from systems.resource_manager import ResourceManager
 from systems.room_manager import RoomManager
-
-# from ui.layouts.game_hud import GameHUD
+from ui.layouts.game_hud import GameHUD
 
 
 class Starfield:
@@ -57,6 +56,11 @@ class GameplayScene(Scene):
         # Setup core game elements
         self.starfield = Starfield(game.screen.get_size())
         self._init_player()
+
+        # Initialize GameHUD before setting up layers
+        self.game_hud = GameHUD(game.screen)
+
+        # Setup layers (now game_hud exists)
         self._setup_core_layers()
 
         # Initialize optional systems
@@ -64,9 +68,15 @@ class GameplayScene(Scene):
 
     def _setup_core_layers(self):
         """Setup essential game layers"""
+        # Create sprite groups in order of drawing
+        self.room_sprites = self.room_manager.room_sprites
+        self.character_sprites = pygame.sprite.Group(self.player)
+
+        # Add elements to layers
         self.background_layer.append(self.starfield)
         self.game_layer.append(self.room_sprites)
         self.game_layer.append(self.character_sprites)
+        self.ui_layer.append(self.game_hud)
         # self.debug_layer.append(self.room_manager.collision_system)
 
     def _init_building_system(self):
@@ -131,6 +141,9 @@ class GameplayScene(Scene):
         self.room_sprites.update(resource_manager=self.resource_manager)
         self.room_manager.update(self.resource_manager)
         self.starfield.update()
+        self.game_hud.update()
+
+        super().update()
 
     def draw(self, screen):
         # Clear screen

@@ -1,4 +1,5 @@
 from entities.entity import Entity
+from systems.event_system import EventSystem, GameEvent
 
 
 class Player(Entity):
@@ -11,6 +12,8 @@ class Player(Entity):
         self.jump_power = -15
         self.is_jumping = False
         self.on_ground = False
+        self.event_system = EventSystem()
+        self.current_room = None
 
     def update(self, room_manager=None, input_manager=None):
         if room_manager is None or input_manager is None:
@@ -56,6 +59,18 @@ class Player(Entity):
 
         # Clear ignored floor after movement
         room_manager.collision_system.clear_ignored_floor()
+
+        # Check what room we're in
+        current_pos = (self.rect.centerx, self.rect.centery)
+        new_room = room_manager.get_room_at_position(*current_pos)
+
+        # If we've entered a new room, emit the event
+        if new_room != self.current_room:
+            if new_room:
+                self.event_system.emit(
+                    GameEvent.ROOM_ENTERED, room=new_room, player=self
+                )
+            self.current_room = new_room
 
     def _update_position(self, room_manager):
         previous_x = self.rect.x

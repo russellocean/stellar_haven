@@ -60,9 +60,9 @@ class RoomManager:
         return list(self.rooms.values())
 
     def get_room_at_position(self, x: int, y: int) -> Optional[Room]:
-        """Get the room at the given position"""
+        """Return the room at the given position, or None if no room exists there"""
         for room in self.rooms.values():
-            if room.contains_point(x, y):
+            if room.rect.collidepoint(x, y):
                 return room
         return None
 

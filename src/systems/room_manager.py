@@ -3,6 +3,7 @@ from typing import Dict, List, Optional
 import pygame
 
 from entities.room import Room
+from systems.collision_system import CollisionSystem
 
 
 class RoomManager:
@@ -36,6 +37,8 @@ class RoomManager:
         self.rooms["ship_interior"] = self.ship_room
         self.room_sprites.add(self.ship_room)
 
+        self.collision_system = CollisionSystem(self)
+
     def add_room(self, room_type: str, x: int, y: int) -> Room:
         """Add a new room at the specified position"""
         image_path = f"assets/images/rooms/{room_type}.png"
@@ -45,6 +48,10 @@ class RoomManager:
         room_id = f"{room_type}_{len(self.rooms)}"
         self.rooms[room_id] = room
         self.room_sprites.add(room)
+
+        # Update collision map after adding room
+        self.collision_system.update_collision_map()
+
         print(f"Added room {room_id} at {x}, {y} with size {room.rect.size}")
         return room
 

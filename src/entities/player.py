@@ -48,83 +48,12 @@ class Player(Entity):
 
         # Move horizontally
         self.rect.x += self.velocity_x
-
-        # Check if we're in any valid position (either in a room or crossing between connected rooms)
-        valid_position = False
-
-        # First check if we're fully in any room
-        for room in room_manager.get_rooms():
-            if (
-                self.rect.left >= room.rect.left
-                and self.rect.right <= room.rect.right
-                and self.rect.top >= room.rect.top
-                and self.rect.bottom <= room.rect.bottom
-            ):
-                valid_position = True
-                break
-
-        # If not fully in a room, check if we're in a valid transition between rooms
-        if not valid_position:
-            for room in room_manager.get_rooms():
-                # Check if we're at least partially in this room
-                if room.rect.colliderect(self.rect):
-                    connected_rooms = room_manager.get_connected_rooms(room)
-                    for connected_room in connected_rooms:
-                        # If we're also partially in a connected room, that's valid
-                        if connected_room.rect.colliderect(self.rect):
-                            valid_position = True
-                            break
-                    if valid_position:
-                        break
-
-        # If position is invalid, revert
-        if not valid_position:
+        if not room_manager.collision_system.is_position_valid(self.rect):
             self.rect.x = previous_x
 
         # Move vertically
         self.rect.y += self.velocity_y
-
-        # Similar check for vertical movement
-        valid_position = False
-        self.on_ground = False
-
-        # Check if fully in any room
-        for room in room_manager.get_rooms():
-            if (
-                self.rect.left >= room.rect.left
-                and self.rect.right <= room.rect.right
-                and self.rect.top >= room.rect.top
-                and self.rect.bottom <= room.rect.bottom
-            ):
-                valid_position = True
-                if self.velocity_y > 0:  # Moving down
-                    self.rect.bottom = min(self.rect.bottom, room.rect.bottom)
-                    if self.rect.bottom == room.rect.bottom:
-                        self.velocity_y = 0
-                        self.on_ground = True
-                break
-
-        # If not fully in a room, check transitions
-        if not valid_position:
-            for room in room_manager.get_rooms():
-                if room.rect.colliderect(self.rect):
-                    connected_rooms = room_manager.get_connected_rooms(room)
-                    for connected_room in connected_rooms:
-                        if connected_room.rect.colliderect(self.rect):
-                            valid_position = True
-                            if self.velocity_y > 0:  # Moving down
-                                self.rect.bottom = min(
-                                    self.rect.bottom, connected_room.rect.bottom
-                                )
-                                if self.rect.bottom == connected_room.rect.bottom:
-                                    self.velocity_y = 0
-                                    self.on_ground = True
-                            break
-                    if valid_position:
-                        break
-
-        # If position is invalid, revert
-        if not valid_position:
+        if not room_manager.collision_system.is_position_valid(self.rect):
             self.rect.y = previous_y
             if self.velocity_y > 0:  # Was moving down
                 self.on_ground = True

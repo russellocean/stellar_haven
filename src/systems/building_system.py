@@ -13,6 +13,7 @@ class BuildingSystem:
         self.active = False
         self.state_manager = None
         self.input_manager = None
+        self.camera = None
 
         # Initialize components
         self.room_builder = RoomBuilderLayout(screen)
@@ -91,9 +92,13 @@ class BuildingSystem:
             return
 
         if self.room_builder.selected_room_type:
-            self.room_builder.update(
-                pygame.mouse.get_pos(), self.room_manager.get_rooms()
+            # Add camera offset to mouse position
+            mouse_pos = pygame.mouse.get_pos()
+            world_pos = (
+                mouse_pos[0] + self.camera.offset_x,
+                mouse_pos[1] + self.camera.offset_y,
             )
+            self.room_builder.update(world_pos, self.room_manager.get_rooms())
 
     def draw(self, screen: pygame.Surface):
         """Draw building-specific elements"""
@@ -101,8 +106,14 @@ class BuildingSystem:
             return
 
         if self.room_builder.selected_room_type:
-            self.room_builder.draw(screen)
+            # Apply camera offset to ghost room
+            ghost_rect = self.camera.apply(self.room_builder.ghost_room.rect)
+            screen.blit(self.room_builder.ghost_room.image, ghost_rect)
 
     def set_input_manager(self, input_manager):
         """Set the input manager reference"""
         self.input_manager = input_manager
+
+    def set_camera(self, camera):
+        """Set the camera reference"""
+        self.camera = camera

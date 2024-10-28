@@ -6,6 +6,7 @@ from entities.player import Player
 from input_manager import InputManager
 from scenes.scene import Scene
 from systems.building_system import BuildingSystem
+from systems.camera import Camera
 from systems.game_state_manager import GameState, GameStateManager
 from systems.resource_manager import ResourceManager
 from systems.room_manager import RoomManager
@@ -45,6 +46,9 @@ class GameplayScene(Scene):
         self.resource_manager = ResourceManager()
         self.state_manager = GameStateManager()
 
+        # Add camera
+        self.camera = Camera(game.screen.get_width(), game.screen.get_height())
+
         # Initialize core systems
         screen_center_x = game.screen.get_width() // 2
         screen_center_y = game.screen.get_height() // 2
@@ -72,6 +76,7 @@ class GameplayScene(Scene):
         )
         self.building_system.set_state_manager(self.state_manager)
         self.building_system.set_input_manager(self.input_manager)
+        self.building_system.set_camera(self.camera)
 
         # Add to layers if initialized
         self.system_layer.append(self.building_system)
@@ -115,6 +120,9 @@ class GameplayScene(Scene):
         # Update input first
         self.input_manager.update()
 
+        # Update camera to follow player
+        self.camera.update(self.player.rect)
+
         # Let building system handle its own toggle
         self.building_system.update()
 
@@ -125,5 +133,8 @@ class GameplayScene(Scene):
         self.starfield.update()
 
     def draw(self, screen):
-        # Draw all layers in order
+        # Clear screen
+        screen.fill((0, 0, 0))
+
+        # Use parent class draw method which handles all layers
         super().draw(screen)

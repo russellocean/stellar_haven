@@ -3,25 +3,33 @@ import random
 import pygame
 
 from entities.player import Player
-from entities.player_ship import PlayerShip
 from input_manager import InputManager
 from scenes.scene import Scene
+from systems.building_system import BuildingSystem
+from systems.resource_manager import ResourceManager
+from systems.room_manager import RoomManager
 
 
 class GameplayScene(Scene):
     def __init__(self, game):
         super().__init__(game)
         self.input_manager = InputManager()
-        # Center the ship on the screen
-        self.player_ship = PlayerShip(
-            game.screen.get_width() // 2, game.screen.get_height() // 2
-        )
-        # Start the player in the middle of the ship
-        self.player = Player(
-            game.screen.get_width() // 2, game.screen.get_height() // 2
-        )
+        self.resource_manager = ResourceManager()
 
-        self.all_sprites = pygame.sprite.Group(self.player_ship, self.player)
+        # Initialize room manager with ship interior at center of screen
+        screen_center_x = game.screen.get_width() // 2
+        screen_center_y = game.screen.get_height() // 2
+        self.room_manager = RoomManager(screen_center_x, screen_center_y)
+        self.building_system = BuildingSystem(game.screen, self.room_manager)
+
+        # Start the player in the middle of the ship interior
+        ship_room = self.room_manager.ship_room
+        self.player = Player(ship_room.rect.centerx, ship_room.rect.centery)
+
+        # Create sprite groups in order of drawing
+        self.room_sprites = self.room_manager.room_sprites
+        self.character_sprites = pygame.sprite.Group(self.player)
+
         self.background = pygame.Surface(game.screen.get_size())
         self.background.fill((0, 0, 0))
         self.stars = self.create_starfield(100)
@@ -34,9 +42,19 @@ class GameplayScene(Scene):
             stars.append((x, y))
         return stars
 
+    def handle_event(self, event):
+        self.building_system.handle_event(event)
+
     def update(self):
         self.input_manager.update()
-        self.all_sprites.update(self.player_ship, self.input_manager)
+        self.building_system.update()
+
+        if not self.building_system.building_mode:
+            # Normal gameplay updates
+            self.player.update(self.room_manager, self.input_manager)
+            self.room_sprites.update(resource_manager=self.resource_manager)
+
+        self.room_manager.update(self.resource_manager)
         self.scroll_starfield()
 
     def scroll_starfield(self):
@@ -48,7 +66,14 @@ class GameplayScene(Scene):
             self.stars[i] = (x, y)
 
     def draw(self, screen):
+        # Draw background
         screen.blit(self.background, (0, 0))
         for star in self.stars:
             pygame.draw.circle(screen, (255, 255, 255), star, 1)
-        self.all_sprites.draw(screen)
+
+        # Draw all sprite layers
+        self.room_sprites.draw(screen)  # This includes the ship interior
+        self.character_sprites.draw(screen)
+
+        # Draw building UI
+        self.building_system.draw()

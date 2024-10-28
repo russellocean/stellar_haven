@@ -3,6 +3,9 @@ from typing import Optional
 import pygame
 
 from systems.event_system import EventSystem, GameEvent
+from systems.resource_manager import ResourceManager
+from ui.components.alert_system import AlertSystem
+from ui.components.resource_bar import ResourceBar
 from ui.layouts.base_layout import BaseLayout
 
 
@@ -65,13 +68,30 @@ class RoomNameDisplay:
 
 
 class GameHUD(BaseLayout):
-    def __init__(self, screen: pygame.Surface):
+    def __init__(self, screen: pygame.Surface, resource_manager: ResourceManager):
         super().__init__(screen)
         self.event_system = EventSystem()
         self.room_name_display = RoomNameDisplay()
+        self.resource_manager = resource_manager
 
-        # Subscribe to room entry events
+        # Add resource bars
+        self.resource_bars = {
+            "power": ResourceBar("power", (10, 10)),
+            "oxygen": ResourceBar("oxygen", (10, 40)),
+            "health": ResourceBar("health", (10, 70)),
+        }
+
+        # Add alert system
+        self.alert_system = AlertSystem(screen.get_width())
+
+        # Subscribe to events
         self.event_system.subscribe(GameEvent.ROOM_ENTERED, self._handle_room_entered)
+        self.event_system.subscribe(
+            GameEvent.RESOURCE_DEPLETED, self._handle_resource_depleted
+        )
+        self.event_system.subscribe(
+            GameEvent.RESOURCE_RESTORED, self._handle_resource_restored
+        )
 
     def _handle_room_entered(self, event_data):
         """Handle room entry events"""
@@ -79,10 +99,45 @@ class GameHUD(BaseLayout):
         if room and hasattr(room, "name"):
             self.room_name_display.show_room_name(room.name)
 
+    def _handle_resource_depleted(self, event_data):
+        """Handle resource depletion events"""
+        resource = event_data.data.get("resource")
+        if resource:
+            self.alert_system.add_alert(
+                f"Warning: {resource.title()} levels critical!",
+                duration=3000,
+                priority=1,
+                alert_type=f"resource_low_{resource}",  # Unique alert type for each resource
+            )
+
+    def _handle_resource_restored(self, event_data):
+        """Handle resource restored events"""
+        resource = event_data.data.get("resource")
+        if resource:
+            self.alert_system.add_alert(
+                f"{resource.title()} levels restored",
+                duration=2000,
+                priority=0,
+                alert_type=f"resource_restored_{resource}",
+            )
+            # Clear the low resource alert type
+            self.alert_system.remove_alert_type(f"resource_low_{resource}")
+
     def update(self):
         """Update HUD elements"""
         self.room_name_display.update()
+        self.alert_system.update()
 
     def draw(self, surface: pygame.Surface):
         """Draw HUD elements"""
+        # Draw resource bars
+        for resource_name, bar in self.resource_bars.items():
+            current = self.resource_manager.resources[resource_name]
+            maximum = self.resource_manager.max_resources[resource_name]
+            bar.draw(surface, current, maximum)
+
+        # Draw room name
         self.room_name_display.draw(surface)
+
+        # Draw alerts
+        self.alert_system.draw(surface)

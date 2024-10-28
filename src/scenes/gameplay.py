@@ -57,10 +57,10 @@ class GameplayScene(Scene):
         self.starfield = Starfield(game.screen.get_size())
         self._init_player()
 
-        # Initialize GameHUD before setting up layers
-        self.game_hud = GameHUD(game.screen)
+        # Initialize GameHUD with resource manager
+        self.game_hud = GameHUD(game.screen, self.resource_manager)
 
-        # Setup layers (now game_hud exists)
+        # Setup layers
         self._setup_core_layers()
 
         # Initialize optional systems

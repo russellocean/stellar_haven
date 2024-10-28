@@ -9,6 +9,8 @@ class GameEvent(Enum):
     ROOM_DESTROYED = auto()
     ROOM_ENTERED = auto()
     ROOM_EXITED = auto()
+    ROOM_DAMAGED = auto()
+    ROOM_REPAIRED = auto()
 
     # Resource Events
     RESOURCE_DEPLETED = auto()
@@ -22,6 +24,9 @@ class GameEvent(Enum):
     # Player Events
     PLAYER_MOVED = auto()
     PLAYER_INTERACTED = auto()
+
+    # Alert Events
+    ALERT_TRIGGERED = auto()
 
 
 @dataclass

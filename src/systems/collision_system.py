@@ -66,7 +66,7 @@ class CollisionSystem:
             grid_y += 1
         return y  # No floor found, return original position
 
-    def draw_debug(self, screen):
+    def draw(self, screen):
         """Draw debug visualization of the current collision map"""
         debug_surface = pygame.Surface(screen.get_size(), pygame.SRCALPHA)
 

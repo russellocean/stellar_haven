@@ -3,16 +3,17 @@ from typing import List, Optional, Tuple
 import pygame
 
 from entities.room import Room
+from ui.layouts.base_layout import BaseLayout
 
 
-class RoomBuilder:
-    def __init__(self, screen):
-        self.screen = screen
+class RoomBuilderLayout(BaseLayout):
+    def __init__(self, screen: pygame.Surface):
+        super().__init__(screen)
         self.selected_room_type: Optional[str] = None
         self.ghost_room: Optional[Room] = None
         self.valid_placement = False
-        self.grid_size = 32  # Size of snap grid
-        self.ship_rect = None  # Add this to store ship boundaries
+        self.grid_size = 32
+        self.ship_rect = None
 
         # Available room types and their costs
         self.room_types = {
@@ -31,16 +32,15 @@ class RoomBuilder:
                 room_type,
                 f"assets/images/rooms/{room_type}.png",
                 0,
-                0,  # Position will be updated with mouse
+                0,
             )
-            self.ghost_room.image.set_alpha(128)  # Make semi-transparent
+            self.ghost_room.image.set_alpha(128)
 
     def update(self, mouse_pos: Tuple[int, int], existing_rooms: List[Room]) -> bool:
         print(f"Updating ghost room at {mouse_pos}")
         """Update ghost room position and check placement validity"""
-        if not self.ghost_room:
+        if not self.ghost_room or not self.visible:
             return False
-
         # Get room dimensions
         room_width = self.ghost_room.rect.width
         room_height = self.ghost_room.rect.height
@@ -53,13 +53,15 @@ class RoomBuilder:
         x = round(x / self.grid_size) * self.grid_size
         y = round(y / self.grid_size) * self.grid_size
 
-        # Update ghost room position to follow cursor
+        print(f"Placing room at {x}, {y}")
+
+        # Update ghost room position
         self.ghost_room.rect.topleft = (x, y)
 
-        # Check if placement is valid
+        # Check placement validity
         self.valid_placement = self._check_valid_placement(existing_rooms)
 
-        # Update ghost room transparency based on validity
+        # Update ghost room transparency
         self.ghost_room.image.set_alpha(128 if self.valid_placement else 64)
 
         return self.valid_placement
@@ -72,22 +74,18 @@ class RoomBuilder:
         # Must be adjacent to at least one room but not overlapping
         adjacent = False
         for room in existing_rooms:
-            # Check for overlap
             if self.ghost_room.rect.colliderect(room.rect):
                 return False
-
-            # Check for adjacency (sharing an edge)
             if self._is_adjacent(self.ghost_room.rect, room.rect):
                 adjacent = True
 
         return adjacent
 
     def _is_adjacent(self, rect1: pygame.Rect, rect2: pygame.Rect) -> bool:
-        """Check if two rectangles are adjacent (sharing an edge)"""
-        # Add a small tolerance for edge detection
+        """Check if two rectangles are adjacent"""
         tolerance = self.grid_size // 2
 
-        # Check for horizontal adjacency (left or right edges touching)
+        # Horizontal adjacency
         horizontal_adjacent = (
             abs(rect1.right - rect2.left) <= tolerance
             or abs(rect1.left - rect2.right) <= tolerance
@@ -100,7 +98,7 @@ class RoomBuilder:
         if horizontal_adjacent and vertical_overlap:
             return True
 
-        # Check for vertical adjacency (top or bottom edges touching)
+        # Vertical adjacency
         vertical_adjacent = (
             abs(rect1.bottom - rect2.top) <= tolerance
             or abs(rect1.top - rect2.bottom) <= tolerance
@@ -110,20 +108,41 @@ class RoomBuilder:
             and rect1.right > rect2.left + tolerance
         )
 
-        if vertical_adjacent and horizontal_overlap:
-            return True
+        return vertical_adjacent and horizontal_overlap
 
-        return False
+    def draw(self, surface: pygame.Surface):
+        """Override BaseLayout's draw method"""
+        if not self.visible or not self.ghost_room:
+            return
 
-    def _is_adjacent_to_ship(self) -> bool:
-        """Check if the room is adjacent to the ship's starting room"""
-        if not self.ship_rect:
-            return False
+        # Draw ghost room
+        surface.blit(self.ghost_room.image, self.ghost_room.rect)
 
-        # Use the same adjacency check for the ship rect
-        return self._is_adjacent(self.ghost_room.rect, self.ship_rect)
+        # Draw grid or other UI elements if needed
+        self._draw_placement_grid(surface)
 
-    def draw(self):
-        """Draw ghost room and any UI elements"""
+    def _draw_placement_grid(self, surface: pygame.Surface):
+        """Draw placement grid when active"""
         if self.ghost_room:
-            self.screen.blit(self.ghost_room.image, self.ghost_room.rect)
+            # Draw grid around placement area
+            grid_rect = self.ghost_room.rect.inflate(
+                self.grid_size * 2, self.grid_size * 2
+            )
+
+            # Draw vertical lines
+            for x in range(grid_rect.left, grid_rect.right, self.grid_size):
+                pygame.draw.line(
+                    surface,
+                    (255, 255, 255, 30),
+                    (x, grid_rect.top),
+                    (x, grid_rect.bottom),
+                )
+
+            # Draw horizontal lines
+            for y in range(grid_rect.top, grid_rect.bottom, self.grid_size):
+                pygame.draw.line(
+                    surface,
+                    (255, 255, 255, 30),
+                    (grid_rect.left, y),
+                    (grid_rect.right, y),
+                )

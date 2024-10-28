@@ -1,109 +1,108 @@
-from typing import Optional
-
 import pygame
 
 from systems.room_manager import RoomManager
-from ui.build_menu import BuildMenu
-from ui.room_builder import RoomBuilder
-from ui.toggle_button import ToggleButton
+from ui.components.toggle_button import ToggleButton
+from ui.layouts.build_menu import BuildMenu
+from ui.layouts.room_builder_layout import RoomBuilderLayout
 
 
 class BuildingSystem:
     def __init__(self, screen: pygame.Surface, room_manager: RoomManager):
         self.screen = screen
         self.room_manager = room_manager
-        self.building_mode = False
+        self.active = False
+        self.state_manager = None
+        self.input_manager = None
 
-        # Initialize UI components
-        self.build_menu = BuildMenu(screen, self.on_room_selected)
-        self.room_builder = RoomBuilder(screen)
-        # Pass ship room rect to room builder instead of ship_rect
+        # Initialize components
+        self.room_builder = RoomBuilderLayout(screen)
         self.room_builder.ship_rect = room_manager.ship_room.rect
 
-        # Create build mode toggle button with action callback
-        button_size = 40
+        # Create build mode toggle button
+        toggle_rect = pygame.Rect(20, 20, 60, 60)
         self.toggle_button = ToggleButton(
-            10,  # x position
-            10,  # y position
-            button_size,  # size
-            "Build",  # text shown below button
-            self.toggle_building_mode,  # action callback
-            "assets/images/ui/build_icon.png",  # icon
+            rect=toggle_rect,
+            text="Build",
+            action=self.toggle_building_mode,
+            image_path="assets/images/ui/build_icon.png",
         )
 
-    def on_room_selected(self, room_type: str):
-        """Handle room selection from the build menu"""
+        # Initialize UI layouts
+        self.build_menu = BuildMenu(screen=screen, on_select=self.select_room_type)
+
+    def set_state_manager(self, state_manager):
+        """Set the state manager reference"""
+        self.state_manager = state_manager
+
+    def toggle_building_mode(self):
+        """Toggle building mode on/off"""
+        if self.active:
+            self.disable()
+        else:
+            self.enable()
+
+        # Update game state after toggling
+        if self.state_manager:
+            from systems.game_state_manager import GameState
+
+            new_state = GameState.BUILDING if self.active else GameState.NORMAL
+            self.state_manager.set_state(new_state)
+
+    def enable(self):
+        """Enable building mode"""
+        self.active = True
+        self.build_menu.visible = True
+        self.toggle_button.set_toggled(True)
+        self.room_builder.visible = True
+
+    def disable(self):
+        """Disable building mode"""
+        self.active = False
+        self.build_menu.visible = False
+        self.room_builder.selected_room_type = None
+        self.toggle_button.set_toggled(False)
+        self.room_builder.visible = False
+
+    def select_room_type(self, room_type: str):
+        """Handle room selection from build menu"""
         self.room_builder.select_room_type(room_type)
 
-    def toggle_building_mode(self, force_state: Optional[bool] = None):
-        print("toggle_building_mode", force_state)
-        """Toggle or set building mode"""
-        if force_state is not None:
-            self.building_mode = force_state
-        else:
-            self.building_mode = not self.building_mode
-
-        self.build_menu.visible = self.building_mode
-        self.toggle_button.toggled = self.building_mode
-
-        if not self.building_mode:
-            self.room_builder.selected_room_type = None
-
-    def handle_event(self, event: pygame.event.Event):
+    def handle_event(self, event: pygame.event.Event) -> bool:
         """Handle building-related events"""
-        if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_b:  # Keyboard shortcut
-                self.toggle_building_mode()
+        if not self.active:
+            return False
 
-        elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-            mouse_pos = pygame.mouse.get_pos()
-
-            # Check for room placement if in building mode and have selected room
-            if self.building_mode and self.room_builder.selected_room_type:
-                if self.room_builder.valid_placement:
-                    print(
-                        "Placing room at:", self.room_builder.ghost_room.rect.topleft
-                    )  # Debug
-                    new_room = self.room_manager.add_room(
-                        self.room_builder.selected_room_type,
-                        *self.room_builder.ghost_room.rect.topleft
-                    )
-                    if new_room:
-                        print("Room placed successfully")  # Debug
-                    else:
-                        print("Failed to place room")  # Debug
-            else:
-                # Handle toggle button click
-                self.toggle_button.update(mouse_pos, True)
-
-                # Handle build menu clicks if visible
-                if self.building_mode:
-                    self.build_menu.update(mouse_pos, True)
-
-        elif event.type == pygame.MOUSEBUTTONUP and event.button == 1:
-            mouse_pos = pygame.mouse.get_pos()
-            self.toggle_button.update(mouse_pos, False)
+        # Handle room placement
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            if (
+                self.room_builder.selected_room_type
+                and self.room_builder.valid_placement
+            ):
+                self.room_manager.add_room(
+                    self.room_builder.selected_room_type,
+                    *self.room_builder.ghost_room.rect.topleft
+                )
+                return True
+        return False
 
     def update(self):
         """Update building system state"""
-        mouse_pos = pygame.mouse.get_pos()
+        if not self.active:
+            return
 
-        # Update toggle button hover state
-        self.toggle_button.update(mouse_pos, False)
+        if self.room_builder.selected_room_type:
+            self.room_builder.update(
+                pygame.mouse.get_pos(), self.room_manager.get_rooms()
+            )
 
-        # Update room builder with current mouse position
-        if self.building_mode and self.room_builder.selected_room_type:
-            self.room_builder.update(mouse_pos, self.room_manager.get_rooms())
+    def draw(self, screen: pygame.Surface):
+        """Draw building-specific elements"""
+        if not self.active:
+            return
 
-    def draw(self):
-        """Draw all building-related UI"""
-        # Draw the build menu and room builder first
-        if self.building_mode:
-            self.build_menu.draw()
-            self.room_builder.draw()  # This will draw the ghost room
+        if self.room_builder.selected_room_type:
+            self.room_builder.draw(screen)
 
-        # Draw the toggle button on top
-        self.toggle_button.draw(self.screen)
-
-        # Draw the cursor circle
-        pygame.draw.circle(self.screen, (255, 255, 255), pygame.mouse.get_pos(), 5)
+    def set_input_manager(self, input_manager):
+        """Set the input manager reference"""
+        self.input_manager = input_manager

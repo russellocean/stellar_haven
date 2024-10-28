@@ -63,7 +63,7 @@ class GameplayScene(Scene):
         self.background_layer.append(self.starfield)
         self.game_layer.append(self.room_sprites)
         self.game_layer.append(self.character_sprites)
-        self.debug_layer.append(self.room_manager.collision_system)
+        # self.debug_layer.append(self.room_manager.collision_system)
 
     def _init_building_system(self):
         """Initialize optional building system"""

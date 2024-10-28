@@ -43,53 +43,95 @@ class Player(Entity):
         #     print(f"Player in {current_room.name}")
 
     def _update_position(self, room_manager):
-        # Store previous position for collision resolution
         previous_x = self.rect.x
         previous_y = self.rect.y
 
         # Move horizontally
         self.rect.x += self.velocity_x
 
-        # Check if we're still inside any room after horizontal movement
-        inside_any_room = False
+        # Check if we're in any valid position (either in a room or crossing between connected rooms)
+        valid_position = False
+
+        # First check if we're fully in any room
         for room in room_manager.get_rooms():
-            if room.rect.colliderect(self.rect):
-                inside_any_room = True
-                # Keep player within room bounds horizontally
-                if self.velocity_x > 0:  # Moving right
-                    self.rect.right = min(self.rect.right, room.rect.right)
-                elif self.velocity_x < 0:  # Moving left
-                    self.rect.left = max(self.rect.left, room.rect.left)
+            if (
+                self.rect.left >= room.rect.left
+                and self.rect.right <= room.rect.right
+                and self.rect.top >= room.rect.top
+                and self.rect.bottom <= room.rect.bottom
+            ):
+                valid_position = True
                 break
 
-        # If we've left all rooms, revert to previous position
-        if not inside_any_room:
+        # If not fully in a room, check if we're in a valid transition between rooms
+        if not valid_position:
+            for room in room_manager.get_rooms():
+                # Check if we're at least partially in this room
+                if room.rect.colliderect(self.rect):
+                    connected_rooms = room_manager.get_connected_rooms(room)
+                    for connected_room in connected_rooms:
+                        # If we're also partially in a connected room, that's valid
+                        if connected_room.rect.colliderect(self.rect):
+                            valid_position = True
+                            break
+                    if valid_position:
+                        break
+
+        # If position is invalid, revert
+        if not valid_position:
             self.rect.x = previous_x
 
         # Move vertically
         self.rect.y += self.velocity_y
 
-        # Check if we're still inside any room after vertical movement
-        inside_any_room = False
+        # Similar check for vertical movement
+        valid_position = False
         self.on_ground = False
+
+        # Check if fully in any room
         for room in room_manager.get_rooms():
-            if room.rect.colliderect(self.rect):
-                inside_any_room = True
-                # Keep player within room bounds vertically
+            if (
+                self.rect.left >= room.rect.left
+                and self.rect.right <= room.rect.right
+                and self.rect.top >= room.rect.top
+                and self.rect.bottom <= room.rect.bottom
+            ):
+                valid_position = True
                 if self.velocity_y > 0:  # Moving down
                     self.rect.bottom = min(self.rect.bottom, room.rect.bottom)
                     if self.rect.bottom == room.rect.bottom:
                         self.velocity_y = 0
                         self.on_ground = True
-                elif self.velocity_y < 0:  # Moving up
-                    self.rect.top = max(self.rect.top, room.rect.top)
-                    if self.rect.top == room.rect.top:
-                        self.velocity_y = 0
                 break
 
-        # If we've left all rooms, revert to previous position
-        if not inside_any_room:
+        # If not fully in a room, check transitions
+        if not valid_position:
+            for room in room_manager.get_rooms():
+                if room.rect.colliderect(self.rect):
+                    connected_rooms = room_manager.get_connected_rooms(room)
+                    for connected_room in connected_rooms:
+                        if connected_room.rect.colliderect(self.rect):
+                            valid_position = True
+                            if self.velocity_y > 0:  # Moving down
+                                self.rect.bottom = min(
+                                    self.rect.bottom, connected_room.rect.bottom
+                                )
+                                if self.rect.bottom == connected_room.rect.bottom:
+                                    self.velocity_y = 0
+                                    self.on_ground = True
+                            break
+                    if valid_position:
+                        break
+
+        # If position is invalid, revert
+        if not valid_position:
             self.rect.y = previous_y
             if self.velocity_y > 0:  # Was moving down
                 self.on_ground = True
             self.velocity_y = 0
+
+        # # Debug output
+        # print(f"Player pos: {self.rect.x}, {self.rect.y}")
+        # print(f"Inside room: {inside_any_room}")
+        # print(f"On ground: {self.on_ground}")
+        # print(f"Velocity: {self.velocity_x}, {self.velocity_y}")

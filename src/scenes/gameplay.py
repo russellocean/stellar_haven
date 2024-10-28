@@ -24,7 +24,12 @@ class GameplayScene(Scene):
 
         # Start the player in the middle of the ship interior
         ship_room = self.room_manager.ship_room
-        self.player = Player(ship_room.rect.centerx, ship_room.rect.centery)
+        player_x = ship_room.rect.left + (ship_room.rect.width // 2)
+        player_y = ship_room.rect.top + (ship_room.rect.height // 2)
+        print(
+            f"Spawning player at {player_x}, {player_y} in ship room {ship_room.rect}"
+        )
+        self.player = Player(player_x, player_y)
 
         # Create sprite groups in order of drawing
         self.room_sprites = self.room_manager.room_sprites

@@ -40,14 +40,9 @@ def create_room_layout():
     """Calculate room sizes and positions relative to ship size"""
     GRID_SIZE = 32  # Match the grid size from RoomBuilder
 
-    # Make ship size multiple of grid size
-    SHIP_WIDTH = 32 * 20  # 640px
-    SHIP_HEIGHT = 32 * 15  # 480px
-    BORDER = GRID_SIZE
-
-    # Calculate available space
-    usable_width = SHIP_WIDTH - (2 * BORDER)
-    usable_height = SHIP_HEIGHT - (2 * BORDER)
+    # Make ship size multiple of grid size (no border needed)
+    SHIP_WIDTH = GRID_SIZE * 20  # 640px
+    SHIP_HEIGHT = GRID_SIZE * 15  # 480px
 
     # Define room sizes as multiples of grid size
     ROOM_WIDTH = GRID_SIZE * 6  # 192px
@@ -79,13 +74,11 @@ def create_room_layout():
     # Convert relative positions to absolute positions
     for room_data in room_layouts.values():
         rel_x, rel_y = room_data["position"]
+        # Ensure positions snap to grid
         room_data["position"] = (
-            BORDER + (rel_x * usable_width),
-            BORDER + (rel_y * usable_height),
+            int((rel_x * (SHIP_WIDTH - ROOM_WIDTH)) // GRID_SIZE) * GRID_SIZE,
+            int((rel_y * (SHIP_HEIGHT - ROOM_HEIGHT)) // GRID_SIZE) * GRID_SIZE,
         )
-        # Convert size to integers
-        room_data["size"] = tuple(map(int, room_data["size"]))
-        room_data["position"] = tuple(map(int, room_data["position"]))
 
     return room_layouts
 
@@ -133,24 +126,43 @@ def main():
     ensure_directory_exists("assets/images/ui")
 
     GRID_SIZE = 32  # Base grid size
+    ROOM_WIDTH = GRID_SIZE * 6  # 192px - base room width
+    ROOM_HEIGHT = GRID_SIZE * 4  # 128px - base room height
 
-    # Generate ship interior as a room - make size multiple of grid size
+    # Make ship interior 3x3 rooms in size
     ship_size = (
-        GRID_SIZE * 20,  # 640px width (20 grid cells)
-        GRID_SIZE * 15,  # 480px height (15 grid cells)
+        ROOM_WIDTH * 3,  # 576px width (3 rooms wide)
+        ROOM_HEIGHT * 3,  # 384px height (3 rooms tall)
     )
     ship_image = create_room("ship_interior", ship_size, (50, 50, 50))
     ship_image.save("assets/images/ship_interior.png")
-    print(f"Ship interior: size={ship_size}")  # Debug print
+    print(f"Ship interior: size={ship_size}")
 
-    # Get room layouts based on ship size
-    room_layouts = create_room_layout()
+    # Define standard room size
+    room_layouts = {
+        "bridge": {
+            "size": (ROOM_WIDTH, ROOM_HEIGHT),
+            "color": (70, 70, 90),
+        },
+        "engine_room": {
+            "size": (ROOM_WIDTH, ROOM_HEIGHT),
+            "color": (90, 70, 70),
+        },
+        "life_support": {
+            "size": (ROOM_WIDTH, ROOM_HEIGHT),
+            "color": (70, 90, 70),
+        },
+        "medical_bay": {
+            "size": (ROOM_WIDTH, ROOM_HEIGHT),
+            "color": (70, 90, 90),
+        },
+    }
 
     # Generate room images
     for room_name, layout in room_layouts.items():
         image = create_room(room_name, layout["size"], layout["color"])
         image.save(f"assets/images/rooms/{room_name}.png")
-        print(f"{room_name}: size={layout['size']}, pos={layout['position']}")
+        print(f"{room_name}: size={layout['size']}")
 
     # Generate player sprite
     player = create_player_sprite()

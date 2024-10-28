@@ -3,6 +3,7 @@ from typing import List, Optional, Tuple
 import pygame
 
 from entities.room import Room
+from systems.debug_system import DebugSystem
 from ui.layouts.base_layout import BaseLayout
 
 
@@ -14,6 +15,7 @@ class RoomBuilderLayout(BaseLayout):
         self.valid_placement = False
         self.grid_size = 32
         self.ship_rect = None
+        self.debug_system = DebugSystem()
 
         # Available room types and their costs
         self.room_types = {
@@ -37,7 +39,6 @@ class RoomBuilderLayout(BaseLayout):
             self.ghost_room.image.set_alpha(128)
 
     def update(self, mouse_pos: Tuple[int, int], existing_rooms: List[Room]) -> bool:
-        print(f"Updating ghost room at {mouse_pos}")
         """Update ghost room position and check placement validity"""
         if not self.ghost_room or not self.visible:
             return False
@@ -53,7 +54,7 @@ class RoomBuilderLayout(BaseLayout):
         x = round(x / self.grid_size) * self.grid_size
         y = round(y / self.grid_size) * self.grid_size
 
-        print(f"Placing room at {x}, {y}")
+        self.debug_system.add_watch("Ghost Room Position", lambda: f"({x}, {y})")
 
         # Update ghost room position
         self.ghost_room.rect.topleft = (x, y)

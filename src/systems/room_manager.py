@@ -63,7 +63,7 @@ class RoomManager:
         # Update collision map after adding room
         self.collision_system.update_collision_map()
 
-        print(f"Added room {room_id} at {x}, {y} with size {room.rect.size}")
+        self.debug.log(f"Added room {room_id} at {x}, {y} with size {room.rect.size}")
         return room
 
     def get_rooms(self) -> List[Room]:

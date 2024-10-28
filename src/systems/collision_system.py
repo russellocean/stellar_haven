@@ -44,7 +44,9 @@ class CollisionSystem:
         grid_left = rect.left // self.grid_size
         grid_right = rect.right // self.grid_size
         grid_top = rect.top // self.grid_size
-        grid_bottom = rect.bottom // self.grid_size
+        grid_bottom = (
+            rect.bottom - 1
+        ) // self.grid_size  # Check one pixel above bottom
 
         # Check if all points are in walkable area
         for x in range(grid_left, grid_right + 1):

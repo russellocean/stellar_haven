@@ -82,30 +82,33 @@ class RoomBuilderLayout(BaseLayout):
         return adjacent
 
     def _is_adjacent(self, rect1: pygame.Rect, rect2: pygame.Rect) -> bool:
-        """Check if two rectangles are adjacent"""
+        """Check if two rectangles are adjacent with enough space for player passage"""
         tolerance = self.grid_size // 2
+        min_passage = self.grid_size * 2  # Minimum 2 grid spaces for player
 
-        # Horizontal adjacency
+        # Check for horizontal adjacency (left or right edges touching)
         horizontal_adjacent = (
             abs(rect1.right - rect2.left) <= tolerance
             or abs(rect1.left - rect2.right) <= tolerance
         )
+        # Ensure vertical overlap is enough for player height
         vertical_overlap = (
-            rect1.top < rect2.bottom - tolerance
-            and rect1.bottom > rect2.top + tolerance
+            rect1.top < rect2.bottom - tolerance - min_passage
+            and rect1.bottom > rect2.top + tolerance + min_passage
         )
 
         if horizontal_adjacent and vertical_overlap:
             return True
 
-        # Vertical adjacency
+        # Check for vertical adjacency (top or bottom edges touching)
         vertical_adjacent = (
             abs(rect1.bottom - rect2.top) <= tolerance
             or abs(rect1.top - rect2.bottom) <= tolerance
         )
+        # Ensure horizontal overlap is enough for player width
         horizontal_overlap = (
-            rect1.left < rect2.right - tolerance
-            and rect1.right > rect2.left + tolerance
+            rect1.left < rect2.right - tolerance - min_passage
+            and rect1.right > rect2.left + tolerance + min_passage
         )
 
         return vertical_adjacent and horizontal_overlap

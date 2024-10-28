@@ -130,12 +130,18 @@ def main():
     # Ensure assets directories exist
     ensure_directory_exists("assets/images")
     ensure_directory_exists("assets/images/rooms")
-    ensure_directory_exists("assets/images/ui")  # Add this line for UI assets
+    ensure_directory_exists("assets/images/ui")
 
-    # Generate ship interior as a room
-    ship_size = (1000, 600)
+    GRID_SIZE = 32  # Base grid size
+
+    # Generate ship interior as a room - make size multiple of grid size
+    ship_size = (
+        GRID_SIZE * 20,  # 640px width (20 grid cells)
+        GRID_SIZE * 15,  # 480px height (15 grid cells)
+    )
     ship_image = create_room("ship_interior", ship_size, (50, 50, 50))
     ship_image.save("assets/images/ship_interior.png")
+    print(f"Ship interior: size={ship_size}")  # Debug print
 
     # Get room layouts based on ship size
     room_layouts = create_room_layout()
@@ -144,7 +150,6 @@ def main():
     for room_name, layout in room_layouts.items():
         image = create_room(room_name, layout["size"], layout["color"])
         image.save(f"assets/images/rooms/{room_name}.png")
-        # Save room layout information for the game
         print(f"{room_name}: size={layout['size']}, pos={layout['position']}")
 
     # Generate player sprite

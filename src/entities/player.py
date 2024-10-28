@@ -23,6 +23,25 @@ class Player(Entity):
         if input_manager.is_action_pressed("move_right"):
             self.velocity_x = self.speed
 
+        # Handle dropping through platforms
+        if input_manager.is_action_pressed("move_down") and self.on_ground:
+            grid_x = self.rect.centerx // room_manager.collision_system.grid_size
+            current_floor_y = (
+                self.rect.bottom // room_manager.collision_system.grid_size
+            )
+
+            # Check if there's a room below us
+            if grid_x in room_manager.collision_system.floor_map:
+                for floor_y in sorted(room_manager.collision_system.floor_map[grid_x]):
+                    if floor_y > current_floor_y:
+                        # Found a floor below us, ignore current floor
+                        room_manager.collision_system.ignore_floor(
+                            grid_x, current_floor_y
+                        )
+                        self.on_ground = False
+                        self.velocity_y = 1  # Small downward velocity to start falling
+                        break
+
         # Apply gravity
         if not self.on_ground:
             self.velocity_y += self.gravity
@@ -35,12 +54,8 @@ class Player(Entity):
         # Update position and handle collisions
         self._update_position(room_manager)
 
-        # Get current room
-        # current_room = room_manager.get_room_at_position(
-        #     self.rect.centerx, self.rect.centery
-        # )
-        # if current_room:
-        #     print(f"Player in {current_room.name}")
+        # Clear ignored floor after movement
+        room_manager.collision_system.clear_ignored_floor()
 
     def _update_position(self, room_manager):
         previous_x = self.rect.x
@@ -51,37 +66,33 @@ class Player(Entity):
         if not room_manager.collision_system.is_position_valid(self.rect):
             self.rect.x = previous_x
 
-        # After horizontal movement, check if we're still on a floor
-        if self.on_ground:
-            grid_x = self.rect.centerx // room_manager.collision_system.grid_size
-            still_on_floor = False
-            if grid_x in room_manager.collision_system.floor_map:
-                for floor_y in room_manager.collision_system.floor_map[grid_x]:
-                    floor_pixel_y = floor_y * room_manager.collision_system.grid_size
-                    if self.rect.bottom == floor_pixel_y:
-                        still_on_floor = True
-                        break
-            if not still_on_floor:
-                self.on_ground = False
-
         # Move vertically
         self.rect.y += self.velocity_y
 
-        # Check for floor collision when moving down
+        # Check for all floor collisions in one pass
         if self.velocity_y >= 0:  # Moving down or stationary
             grid_x = self.rect.centerx // room_manager.collision_system.grid_size
             if grid_x in room_manager.collision_system.floor_map:
-                for floor_y in room_manager.collision_system.floor_map[grid_x]:
+                for floor_y in sorted(room_manager.collision_system.floor_map[grid_x]):
                     floor_pixel_y = floor_y * room_manager.collision_system.grid_size
-                    if (
+
+                    # Skip if this is the ignored floor
+                    if room_manager.collision_system.ignored_floor == (grid_x, floor_y):
+                        continue
+
+                    # Check if we're on or crossing this floor
+                    if abs(self.rect.bottom - floor_pixel_y) <= 1 or (
                         self.rect.bottom > floor_pixel_y
-                        and previous_y + self.rect.height <= floor_pixel_y
+                        and previous_y + self.rect.height <= floor_pixel_y + 1
                     ):
-                        # We crossed a floor boundary
                         self.rect.bottom = floor_pixel_y
                         self.velocity_y = 0
                         self.on_ground = True
                         break
+                else:  # No floor found
+                    self.on_ground = False
+            else:
+                self.on_ground = False
 
         # Check for ceiling/wall collision
         if not room_manager.collision_system.is_position_valid(self.rect):
@@ -89,9 +100,9 @@ class Player(Entity):
             if self.velocity_y < 0:  # Hit ceiling
                 self.velocity_y = 0
 
-        # If we didn't hit a floor and we're moving down, we're not on ground
-        if self.velocity_y > 0:
-            self.on_ground = False
+        # Remove the automatic ground state change
+        # if self.velocity_y > 0:
+        #     self.on_ground = False
 
         # # Debug output
         # print(f"Player pos: {self.rect.x}, {self.rect.y}")

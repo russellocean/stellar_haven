@@ -7,6 +7,7 @@ class CollisionSystem:
         self.grid_size = 32
         self.collision_map = {}  # (x, y) -> bool
         self.floor_map = {}  # (x) -> List[y] storing floor heights
+        self.ignored_floor = None  # (x, y) tuple of floor to ignore
         self.update_collision_map()
 
         # Debug colors
@@ -21,21 +22,21 @@ class CollisionSystem:
 
         # Add all room boundaries
         for room in self.room_manager.get_rooms():
-            # Convert room rect to grid coordinates
             grid_left = room.rect.left // self.grid_size
             grid_right = room.rect.right // self.grid_size
             grid_top = room.rect.top // self.grid_size
             grid_bottom = room.rect.bottom // self.grid_size
 
-            # Mark walkable areas
+            # Mark walkable areas and floors in one pass
             for x in range(grid_left, grid_right):
-                for y in range(grid_top, grid_bottom):
-                    self.collision_map[(x, y)] = True
-
-                # Store floor position for this x coordinate
+                # Store floor position
                 if x not in self.floor_map:
                     self.floor_map[x] = []
                 self.floor_map[x].append(grid_bottom)
+
+                # Mark walkable areas
+                for y in range(grid_top, grid_bottom):
+                    self.collision_map[(x, y)] = True
 
     def is_position_valid(self, rect: pygame.Rect) -> bool:
         """Check if a position is valid (inside any room)"""
@@ -96,3 +97,11 @@ class CollisionSystem:
                 pygame.draw.rect(debug_surface, self.UNWALKABLE_COLOR, floor_rect)
 
         screen.blit(debug_surface, (0, 0))
+
+    def ignore_floor(self, x, y):
+        """Temporarily ignore a specific floor for collision"""
+        self.ignored_floor = (x, y)
+
+    def clear_ignored_floor(self):
+        """Clear the ignored floor"""
+        self.ignored_floor = None

@@ -14,6 +14,7 @@ class InputManager:
         self.actions["jump"] = (
             keys[pygame.K_UP] or keys[pygame.K_w] or keys[pygame.K_SPACE]
         )
+        self.actions["move_down"] = keys[pygame.K_DOWN] or keys[pygame.K_s]
 
     def is_action_pressed(self, action):
         return self.actions.get(action, False)

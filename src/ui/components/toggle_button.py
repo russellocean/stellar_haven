@@ -37,7 +37,6 @@ class ToggleButton(UIComponent):
 
     def set_toggled(self, is_toggled: bool):
         """Set the toggle state externally"""
-        self.is_toggled = is_toggled
         self.is_active = is_toggled
 
     def _get_current_color(self) -> tuple:

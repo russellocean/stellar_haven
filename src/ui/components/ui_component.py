@@ -1,4 +1,4 @@
-from typing import Dict, Optional
+from typing import Optional
 
 import pygame
 
@@ -13,31 +13,26 @@ class UIComponent:
     ):
         self.rect = rect
         self.text = text
-
-        # Common state
+        self.font_size = font_size
+        self.font = pygame.font.Font(None, font_size)
         self.is_hovered = False
         self.is_pressed = False
-        self.is_active = False
 
-        # Common styles (like Tailwind classes)
-        self.colors: Dict[str, tuple] = {
+        # Initialize base colors
+        self.colors = {
             "normal": (100, 100, 100),
-            "hovered": (150, 150, 150),
-            "active": (200, 200, 200),
+            "hover": (150, 150, 150),
             "text": (255, 255, 255),
-            "border": (50, 50, 50),
+            "text_hover": (255, 255, 255),
+            "border": (200, 200, 200),
         }
 
         # Load image if provided
         self.image = None
         if image_path:
             self.image = pygame.image.load(image_path).convert_alpha()
-            self.image = pygame.transform.scale(
-                self.image, (self.rect.width - 10, self.rect.height - 10)
-            )
 
         # Text setup
-        self.font = pygame.font.Font(None, font_size)
         self._render_text()
 
     def _render_text(self):
@@ -45,11 +40,15 @@ class UIComponent:
         self.text_surface = self.font.render(self.text, True, self.colors["text"])
         self.text_rect = self.text_surface.get_rect(center=self.rect.center)
 
+    def update(self):
+        """Update component state"""
+        mouse_pos = pygame.mouse.get_pos()
+        self.is_hovered = self.rect.collidepoint(mouse_pos)
+
     def handle_event(self, event: pygame.event.Event) -> bool:
-        """Base event handling (like React's event handlers)"""
+        """Handle UI events"""
         if event.type == pygame.MOUSEMOTION:
             self.is_hovered = self.rect.collidepoint(event.pos)
-            return self.is_hovered
         return False
 
     def draw(self, surface: pygame.Surface):
@@ -70,9 +69,13 @@ class UIComponent:
         surface.blit(self.text_surface, self.text_rect)
 
     def _get_current_color(self) -> tuple:
-        """Get color based on current state (like Tailwind's conditional classes)"""
-        if self.is_active:
-            return self.colors["active"]
-        elif self.is_hovered:
-            return self.colors["hovered"]
+        """Get the current color based on state"""
+        if self.is_hovered:
+            return self.colors["hover"]
         return self.colors["normal"]
+
+    def _get_text_color(self) -> tuple:
+        """Get the current text color"""
+        if self.is_hovered:
+            return self.colors["text_hover"]
+        return self.colors["text"]

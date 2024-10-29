@@ -1,0 +1,114 @@
+{
+  "room_types": {
+    "bridge": {
+      "name": "Bridge",
+      "size": [200, 150],
+      "min_size": [6, 4],
+      "max_size": [8, 6],
+      "resource_consumption": {
+        "power": 0.1,
+        "oxygen": 0.1
+      },
+      "resource_generation": {},
+      "description": "Ship's command center",
+      "color_theme": {
+        "floor": [200, 220, 255],
+        "wall": [180, 200, 235]
+      },
+      "decorations": {
+        "console": {
+          "required": true,
+          "min_count": 2,
+          "max_count": 4,
+          "size": [2, 1],
+          "valid_positions": ["wall"]
+        },
+        "captain_chair": {
+          "required": true,
+          "min_count": 1,
+          "max_count": 1,
+          "size": [1, 1],
+          "valid_positions": ["center"]
+        }
+      }
+    },
+    "engine_room": {
+      "name": "Engine Room",
+      "size": [200, 150],
+      "min_size": [5, 4],
+      "max_size": [7, 6],
+      "resource_consumption": {
+        "oxygen": 0.2
+      },
+      "resource_generation": {
+        "power": 0.5
+      },
+      "description": "Powers the ship's systems",
+      "color_theme": {
+        "floor": [255, 220, 200],
+        "wall": [235, 200, 180]
+      },
+      "decorations": {
+        "engine": {
+          "required": true,
+          "min_count": 1,
+          "max_count": 1,
+          "size": [2, 2],
+          "valid_positions": ["center"]
+        },
+        "console": {
+          "required": true,
+          "min_count": 1,
+          "max_count": 2,
+          "size": [2, 1],
+          "valid_positions": ["wall"]
+        },
+        "pipes": {
+          "required": false,
+          "min_count": 0,
+          "max_count": 4,
+          "size": [1, 2],
+          "valid_positions": ["wall", "corner"]
+        }
+      }
+    },
+    "life_support": {
+      "name": "Life Support",
+      "size": [200, 150],
+      "min_size": [4, 4],
+      "max_size": [6, 6],
+      "resource_consumption": {
+        "power": 0.1
+      },
+      "resource_generation": {
+        "oxygen": 0.3
+      },
+      "description": "Generates oxygen for the ship",
+      "color_theme": {
+        "floor": [220, 255, 220],
+        "wall": [200, 235, 200]
+      },
+      "decorations": {
+        "oxygen_generator": {
+          "required": true,
+          "min_count": 1,
+          "max_count": 2,
+          "size": [2, 1],
+          "valid_positions": ["wall"]
+        },
+        "filter": {
+          "required": true,
+          "min_count": 1,
+          "max_count": 3,
+          "size": [1, 2],
+          "valid_positions": ["wall"]
+        }
+      }
+    }
+  },
+  "door_rules": {
+    "min_distance_from_corner": 1,
+    "max_doors_per_wall": 1,
+    "door_size": [2, 1]
+  }
+}

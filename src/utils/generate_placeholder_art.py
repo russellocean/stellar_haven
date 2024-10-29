@@ -39,6 +39,7 @@ def main():
     ensure_directory_exists("assets/rooms/decorations/engine_room")
     ensure_directory_exists("assets/rooms/decorations/life_support")
     ensure_directory_exists("assets/characters")
+    ensure_directory_exists("assets/images/ui/room_icons")
 
     # Generate framework pieces - all single tile size for consistency
     framework_pieces = {
@@ -124,6 +125,18 @@ def main():
         image = create_tile(size, color, text)
         image.save(f"assets/characters/{filename}")
         print(f"Generated: characters/{filename}")
+
+    # Generate room icons (64x64 for better visibility in UI)
+    room_icons = {
+        "bridge.png": ((64, 64), (70, 70, 100), "BRG"),
+        "engine_room.png": ((64, 64), (100, 70, 70), "ENG"),
+        "life_support.png": ((64, 64), (70, 100, 70), "O2"),
+    }
+
+    for filename, (size, color, text) in room_icons.items():
+        image = create_tile(size, color, text)
+        image.save(f"assets/images/ui/room_icons/{filename}")
+        print(f"Generated: ui/room_icons/{filename}")
 
     print("\nPlaceholder art generated successfully!")
     print("Note: Framework pieces use ASCII box-drawing characters for clarity")

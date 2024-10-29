@@ -249,22 +249,35 @@ class RoomRenderer:
 
         # Add doors where rooms are connected
         if connected_sides[0]:  # Top
+            door_x = width // 2 - self.TILE_SIZE
+            surface.blit(self.framework["door_horizontal_left"], (door_x, 0))
             surface.blit(
-                self.framework["door_horizontal"], (width // 2 - self.TILE_SIZE, 0)
+                self.framework["door_horizontal_right"], (door_x + self.TILE_SIZE, 0)
             )
         if connected_sides[1]:  # Right
+            door_y = height // 2 - self.TILE_SIZE
             surface.blit(
-                self.framework["door_vertical"],
-                (width - self.TILE_SIZE, height // 2 - self.TILE_SIZE),
+                self.framework["door_vertical_top"], (width - self.TILE_SIZE, door_y)
+            )
+            surface.blit(
+                self.framework["door_vertical_bottom"],
+                (width - self.TILE_SIZE, door_y + self.TILE_SIZE),
             )
         if connected_sides[2]:  # Bottom
+            door_x = width // 2 - self.TILE_SIZE
             surface.blit(
-                self.framework["door_horizontal"],
-                (width // 2 - self.TILE_SIZE, height - self.TILE_SIZE),
+                self.framework["door_horizontal_left"],
+                (door_x, height - self.TILE_SIZE),
+            )
+            surface.blit(
+                self.framework["door_horizontal_right"],
+                (door_x + self.TILE_SIZE, height - self.TILE_SIZE),
             )
         if connected_sides[3]:  # Left
+            door_y = height // 2 - self.TILE_SIZE
+            surface.blit(self.framework["door_vertical_top"], (0, door_y))
             surface.blit(
-                self.framework["door_vertical"], (0, height // 2 - self.TILE_SIZE)
+                self.framework["door_vertical_bottom"], (0, door_y + self.TILE_SIZE)
             )
 
     def _render_decorations(

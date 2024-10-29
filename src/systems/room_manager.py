@@ -5,41 +5,48 @@ import pygame
 from entities.room import Room
 from systems.collision_system import CollisionSystem
 from systems.debug_system import DebugSystem
+from systems.room_renderer import RoomRenderer
 
 
 class RoomManager:
     def __init__(self, center_x: int, center_y: int):
         self.rooms: Dict[str, Room] = {}
         self.room_sprites = pygame.sprite.Group()
+        self.room_renderer = RoomRenderer()
         GRID_SIZE = 32
 
         # Snap the position to grid
         center_x = (center_x // GRID_SIZE) * GRID_SIZE
         center_y = (center_y // GRID_SIZE) * GRID_SIZE
 
-        # Calculate top-left position for ship room to be centered on screen
-        ship_image = pygame.image.load("assets/images/ship_interior.png")
-        ship_width = ship_image.get_width()
-        ship_height = ship_image.get_height()
-
-        ship_x = center_x - (ship_width // 2)
-        ship_y = center_y - (ship_height // 2)
+        # Create initial ship room with modular rendering
+        ship_size = (8 * GRID_SIZE, 6 * GRID_SIZE)  # Example size
+        ship_x = center_x - (ship_size[0] // 2)
+        ship_y = center_y - (ship_size[1] // 2)
 
         # Snap to grid
         ship_x = (ship_x // GRID_SIZE) * GRID_SIZE
         ship_y = (ship_y // GRID_SIZE) * GRID_SIZE
 
-        # Add ship interior using topleft positioning like other rooms
-        self.ship_room = Room(
-            "ship_interior", "assets/images/ship_interior.png", ship_x, ship_y
+        # Create ship room surface
+        ship_surface = pygame.Surface(ship_size, pygame.SRCALPHA)
+        self.room_renderer.render_room(
+            surface=ship_surface,
+            room_type="bridge",  # Use bridge as the initial room type
+            rect=pygame.Rect(0, 0, *ship_size),
+            connected_sides=[False, False, False, False],
         )
-        self.ship_room.rect = self.ship_room.image.get_rect(topleft=(ship_x, ship_y))
+
+        # Add ship interior as a Room
+        self.ship_room = Room("bridge", None, ship_x, ship_y)  # Pass None as image_path
+        self.ship_room.image = ship_surface  # Set the rendered surface as the image
+        self.ship_room.rect = ship_surface.get_rect(topleft=(ship_x, ship_y))
 
         self.rooms["ship_interior"] = self.ship_room
         self.room_sprites.add(self.ship_room)
 
+        # Initialize systems
         self.collision_system = CollisionSystem(self)
-
         self.debug = DebugSystem()
         self.debug.add_watch("Total Rooms", lambda: len(self.rooms))
         self.debug.add_watch(
@@ -52,18 +59,35 @@ class RoomManager:
 
     def add_room(self, room_type: str, x: int, y: int) -> Room:
         """Add a new room at the specified position"""
-        image_path = f"assets/images/rooms/{room_type}.png"
-        room = Room(room_type, image_path, x, y)
-        room.rect = room.image.get_rect(topleft=(x, y))
+        # Get room size from config
+        room_config = self.room_renderer.room_config["room_types"][room_type]
+        room_size = (
+            room_config["min_size"][0] * 32,  # Use min_size as default
+            room_config["min_size"][1] * 32,
+        )
+
+        # Create room surface
+        room_surface = pygame.Surface(room_size, pygame.SRCALPHA)
+        self.room_renderer.render_room(
+            surface=room_surface,
+            room_type=room_type,
+            rect=pygame.Rect(0, 0, *room_size),
+            connected_sides=[False, False, False, False],
+        )
+
+        # Create room instance
+        room = Room(room_type, None, x, y)  # Pass None as image_path
+        room.image = room_surface
+        room.rect = room_surface.get_rect(topleft=(x, y))
 
         room_id = f"{room_type}_{len(self.rooms)}"
         self.rooms[room_id] = room
         self.room_sprites.add(room)
 
-        # Update collision map after adding room
+        # Update collision map
         self.collision_system.update_collision_map()
-
         self.debug.log(f"Added room {room_id} at {x}, {y} with size {room.rect.size}")
+
         return room
 
     def get_rooms(self) -> List[Room]:
@@ -85,8 +109,45 @@ class RoomManager:
     def draw(self, screen):
         """Draw all rooms"""
         for room in self.rooms.values():
+            # Update connected sides before drawing
+            connected_sides = [
+                any(
+                    r.rect.bottom == room.rect.top
+                    for r in self.rooms.values()
+                    if r != room
+                ),
+                any(
+                    r.rect.left == room.rect.right
+                    for r in self.rooms.values()
+                    if r != room
+                ),
+                any(
+                    r.rect.top == room.rect.bottom
+                    for r in self.rooms.values()
+                    if r != room
+                ),
+                any(
+                    r.rect.right == room.rect.left
+                    for r in self.rooms.values()
+                    if r != room
+                ),
+            ]
+
+            # Re-render room with updated connections
+            room_surface = pygame.Surface(room.rect.size, pygame.SRCALPHA)
+            self.room_renderer.render_room(
+                surface=room_surface,
+                room_type=room.room_type,
+                rect=room_surface.get_rect(),
+                connected_sides=connected_sides,
+            )
+            room.image = room_surface
+
+            # Draw the room
             screen.blit(room.image, room.rect)
-            pygame.draw.rect(screen, (100, 100, 100), room.rect, 2)  # Border
+
+            # Draw debug border if needed
+            pygame.draw.rect(screen, (100, 100, 100), room.rect, 2)
 
     def get_connected_rooms(self, room: Room) -> List[Room]:
         """Get all rooms that are connected to the given room"""

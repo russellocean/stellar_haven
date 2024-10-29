@@ -20,10 +20,14 @@ class AssetManager:
         self.fonts: Dict[str, Dict[int, pygame.font.Font]] = {}
         self.configs: Dict[str, dict] = {}
 
-        # Define base paths
-        self.base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        # Define base paths - now pointing to root directory
+        self.base_path = os.path.dirname(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        )
         self.asset_path = os.path.join(self.base_path, "assets")
-        self.config_path = os.path.join(self.base_path, "config")
+        self.config_path = os.path.join(
+            self.asset_path, "config"
+        )  # Move configs into assets
 
         # Ensure directories exist
         os.makedirs(self.asset_path, exist_ok=True)

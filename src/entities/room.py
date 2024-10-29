@@ -1,7 +1,10 @@
 from typing import Dict
 
+import pygame
+
 from entities.entity import Entity
 from systems.asset_manager import AssetManager
+from systems.room_renderer import RoomRenderer
 
 
 class Room(Entity):
@@ -10,10 +13,18 @@ class Room(Entity):
         self.asset_manager = AssetManager()
 
         # Load room config
-        room_config = self.asset_manager.get_config("rooms").get(name, {})
+        room_config = (
+            self.asset_manager.get_config("rooms").get("room_types", {}).get(name, {})
+        )
 
-        # Initialize with provided image path for now
-        super().__init__(image_path, x, y)
+        # Create initial surface based on room size from config
+        min_size = room_config.get("min_size", [6, 4])  # Default size if not specified
+        initial_size = (min_size[0] * 32, min_size[1] * 32)
+
+        # Initialize parent with empty surface
+        super().__init__(None, x, y)
+        self.image = pygame.Surface(initial_size, pygame.SRCALPHA)
+        self.rect = self.image.get_rect(topleft=(x, y))  # Use topleft instead of center
 
         # Initialize room properties from config
         self.resource_generators = room_config.get("resource_generation", {})
@@ -22,6 +33,10 @@ class Room(Entity):
 
         # Initialize resources
         self.resources: Dict[str, float] = {}
+
+        self.room_type = name
+        self.connected_rooms = []
+        self.renderer = RoomRenderer()
 
     def update(self, resource_manager=None):
         """Update room state"""
@@ -37,3 +52,16 @@ class Room(Entity):
     def contains_point(self, x: int, y: int) -> bool:
         """Check if a point is inside the room"""
         return self.rect.collidepoint(x, y)
+
+    def draw(self, surface: pygame.Surface):
+        """Draw the room with all its components"""
+        # Determine which sides are connected
+        connected_sides = [
+            any(r.rect.bottom == self.rect.top for r in self.connected_rooms),  # Top
+            any(r.rect.left == self.rect.right for r in self.connected_rooms),  # Right
+            any(r.rect.top == self.rect.bottom for r in self.connected_rooms),  # Bottom
+            any(r.rect.right == self.rect.left for r in self.connected_rooms),  # Left
+        ]
+
+        # Render the room using the renderer
+        self.renderer.render_room(surface, self.room_type, self.rect, connected_sides)

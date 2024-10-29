@@ -4,6 +4,7 @@ import pygame
 
 from entities.room import Room
 from systems.debug_system import DebugSystem
+from systems.room_renderer import RoomRenderer
 from ui.layouts.base_layout import BaseLayout
 
 
@@ -16,27 +17,34 @@ class RoomBuilderLayout(BaseLayout):
         self.grid_size = 32
         self.ship_rect = None
         self.debug_system = DebugSystem()
-
-        # Available room types and their costs
-        self.room_types = {
-            "bridge": {"size": (200, 150), "cost": 100},
-            "engine_room": {"size": (200, 150), "cost": 150},
-            "life_support": {"size": (200, 150), "cost": 120},
-            "medical_bay": {"size": (200, 150), "cost": 130},
-        }
+        self.room_renderer = RoomRenderer()
 
     def select_room_type(self, room_type: str):
         """Select a room type to place"""
-        if room_type in self.room_types:
+        if room_type in self.room_renderer.room_config["room_types"]:
             self.selected_room_type = room_type
-            # Create ghost room
-            self.ghost_room = Room(
-                room_type,
-                f"assets/images/rooms/{room_type}.png",
-                0,
-                0,
+
+            # Create ghost room using RoomRenderer
+            room_config = self.room_renderer.room_config["room_types"][room_type]
+            min_size = room_config.get("min_size", [6, 4])
+            room_size = (min_size[0] * self.grid_size, min_size[1] * self.grid_size)
+
+            # Create ghost room with empty surface
+            self.ghost_room = Room(room_type, None, 0, 0)
+            self.ghost_room.image = pygame.Surface(room_size, pygame.SRCALPHA)
+
+            # Render the room
+            self.room_renderer.render_room(
+                surface=self.ghost_room.image,
+                room_type=room_type,
+                rect=pygame.Rect(0, 0, *room_size),
+                connected_sides=[False, False, False, False],
             )
-            self.ghost_room.image.set_alpha(128)
+
+            # Set transparency for ghost effect
+            self.ghost_room.image.fill(
+                (255, 255, 255, 128), special_flags=pygame.BLEND_RGBA_MULT
+            )
 
     def update(self, mouse_pos: Tuple[int, int], existing_rooms: List[Room]) -> bool:
         """Update ghost room position and check placement validity"""

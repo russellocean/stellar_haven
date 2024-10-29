@@ -40,16 +40,18 @@ def main():
     ensure_directory_exists("assets/rooms/decorations/life_support")
     ensure_directory_exists("assets/characters")
 
-    # Generate framework pieces
+    # Generate framework pieces - all single tile size for consistency
     framework_pieces = {
-        "wall_horizontal.png": ((TILE_SIZE * 2, TILE_SIZE), (80, 80, 80), "═"),
-        "wall_vertical.png": ((TILE_SIZE, TILE_SIZE * 2), (80, 80, 80), "║"),
+        "wall_horizontal.png": ((TILE_SIZE, TILE_SIZE), (80, 80, 80), "═"),
+        "wall_vertical.png": ((TILE_SIZE, TILE_SIZE), (80, 80, 80), "║"),
         "corner_top_left.png": ((TILE_SIZE, TILE_SIZE), (90, 90, 90), "╔"),
         "corner_top_right.png": ((TILE_SIZE, TILE_SIZE), (90, 90, 90), "╗"),
         "corner_bottom_left.png": ((TILE_SIZE, TILE_SIZE), (90, 90, 90), "╚"),
         "corner_bottom_right.png": ((TILE_SIZE, TILE_SIZE), (90, 90, 90), "╝"),
-        "door_horizontal.png": ((TILE_SIZE * 2, TILE_SIZE), (100, 70, 70), "═D═"),
-        "door_vertical.png": ((TILE_SIZE, TILE_SIZE * 2), (100, 70, 70), "D"),
+        "door_horizontal_left.png": ((TILE_SIZE, TILE_SIZE), (100, 70, 70), "D═"),
+        "door_horizontal_right.png": ((TILE_SIZE, TILE_SIZE), (100, 70, 70), "═D"),
+        "door_vertical_top.png": ((TILE_SIZE, TILE_SIZE), (100, 70, 70), "D"),
+        "door_vertical_bottom.png": ((TILE_SIZE, TILE_SIZE), (100, 70, 70), "D"),
     }
 
     for filename, (size, color, text) in framework_pieces.items():
@@ -70,8 +72,9 @@ def main():
 
     # Generate bridge decorations
     bridge_pieces = {
-        "console.png": ((TILE_SIZE * 2, TILE_SIZE), (70, 70, 100), "CONS"),
-        "captain_chair.png": ((TILE_SIZE, TILE_SIZE), (100, 100, 70), "CAPT"),
+        "console_left.png": ((TILE_SIZE, TILE_SIZE), (70, 70, 100), "CO"),
+        "console_right.png": ((TILE_SIZE, TILE_SIZE), (70, 70, 100), "NS"),
+        "captain_chair.png": ((TILE_SIZE, TILE_SIZE), (100, 100, 70), "CAP"),
     }
 
     for filename, (size, color, text) in bridge_pieces.items():
@@ -81,9 +84,14 @@ def main():
 
     # Generate engine room decorations
     engine_pieces = {
-        "engine.png": ((TILE_SIZE * 2, TILE_SIZE * 2), (100, 70, 70), "ENG"),
-        "console.png": ((TILE_SIZE * 2, TILE_SIZE), (70, 70, 100), "CONS"),
-        "pipes.png": ((TILE_SIZE, TILE_SIZE * 2), (100, 70, 100), "PIPE"),
+        "engine_top_left.png": ((TILE_SIZE, TILE_SIZE), (100, 70, 70), "E1"),
+        "engine_top_right.png": ((TILE_SIZE, TILE_SIZE), (100, 70, 70), "E2"),
+        "engine_bottom_left.png": ((TILE_SIZE, TILE_SIZE), (100, 70, 70), "E3"),
+        "engine_bottom_right.png": ((TILE_SIZE, TILE_SIZE), (100, 70, 70), "E4"),
+        "console_left.png": ((TILE_SIZE, TILE_SIZE), (70, 70, 100), "CO"),
+        "console_right.png": ((TILE_SIZE, TILE_SIZE), (70, 70, 100), "NS"),
+        "pipes_top.png": ((TILE_SIZE, TILE_SIZE), (100, 70, 100), "P1"),
+        "pipes_bottom.png": ((TILE_SIZE, TILE_SIZE), (100, 70, 100), "P2"),
     }
 
     for filename, (size, color, text) in engine_pieces.items():
@@ -93,8 +101,10 @@ def main():
 
     # Generate life support decorations
     life_support_pieces = {
-        "oxygen_generator.png": ((TILE_SIZE * 2, TILE_SIZE), (70, 100, 70), "O2"),
-        "filter.png": ((TILE_SIZE, TILE_SIZE * 2), (70, 100, 100), "FILT"),
+        "oxygen_generator_left.png": ((TILE_SIZE, TILE_SIZE), (70, 100, 70), "O2"),
+        "oxygen_generator_right.png": ((TILE_SIZE, TILE_SIZE), (70, 100, 70), "GN"),
+        "filter_top.png": ((TILE_SIZE, TILE_SIZE), (70, 100, 100), "F1"),
+        "filter_bottom.png": ((TILE_SIZE, TILE_SIZE), (70, 100, 100), "F2"),
     }
 
     for filename, (size, color, text) in life_support_pieces.items():

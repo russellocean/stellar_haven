@@ -317,7 +317,20 @@ class Grid:
             else:  # New room is right of other room
                 door_x = nx
 
-            # Check to see if the door which is going to be placed has an adjacent tile that is within the bounds of the new room
+            # Check if door position is within bounds of both rooms
+            door_positions = [
+                (door_x, floor_y - i) for i in range(3)
+            ]  # Floor and 2 door tiles
+
+            # Check bounds for new room
+            for x, y in door_positions:
+                if not (nx <= x < nx + nw and ny <= y < ny + nh):
+                    return  # Door would be outside new room bounds
+
+            # Check bounds for other room
+            for x, y in door_positions:
+                if not (ox <= x < ox + ow and oy <= y < oy + oh):
+                    return  # Door would be outside other room bounds
 
             # Place floor and door
             self.set_tile(door_x, floor_y, TileType.FLOOR)  # Floor level

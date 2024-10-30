@@ -1,7 +1,5 @@
 from typing import Dict, List, Optional, Tuple
 
-import pygame
-
 from grid.tile_type import TileType
 from systems.asset_manager import AssetManager
 
@@ -9,167 +7,114 @@ from systems.asset_manager import AssetManager
 class Grid:
     def __init__(self, cell_size: int = 32):
         self.cell_size = cell_size
-        self.cells: Dict[Tuple[int, int], TileType] = {}  # Single source of truth
-        self.rooms: Dict[str, dict] = {}  # Stores room data including rect and type
+        self.cells: Dict[Tuple[int, int], TileType] = {}
+        self.rooms: Dict[str, dict] = {}  # Keep room data for door connections
         self.asset_manager = AssetManager()
         self.room_config = self.asset_manager.get_config("rooms")
 
-    def add_room(
-        self, room_id: str, room_type: str, world_x: int, world_y: int
-    ) -> pygame.Rect:
-        """Add a room to the grid and return its rect"""
-        # Get room size from config
-        grid_size = self.room_config["room_types"][room_type]["grid_size"]
-        pixel_size = (grid_size[0] * self.cell_size, grid_size[1] * self.cell_size)
+    def add_room(self, room_id: str, room_type: str, grid_x: int, grid_y: int) -> bool:
+        """Add a room at grid coordinates"""
+        # Generate unique room ID if not provided
+        if room_id is None:
+            room_id = f"room_{len(self.rooms)}"
 
-        # Create room rect
-        room_rect = pygame.Rect(world_x, world_y, *pixel_size)
+        # Get room size from config
+        room_data = self.room_config["room_types"][room_type]
+        width, height = room_data["grid_size"]
 
         # Store room data
         self.rooms[room_id] = {
             "type": room_type,
-            "rect": room_rect,
-            "grid_size": grid_size,
+            "grid_pos": (grid_x, grid_y),
+            "grid_size": (width, height),
         }
 
-        # Add room tiles to collision map
+        # Add room tiles
         self._add_room_tiles(room_id)
-
-        # Process connections and add doors
         self._process_connections(room_id)
 
-        return room_rect
+        return True
 
     def _add_room_tiles(self, room_id: str) -> None:
-        """Add floor and wall tiles for a room - side view perspective"""
+        """Add wall tiles for a room with explicit corners and background"""
         room = self.rooms[room_id]
-        rect = room["rect"]
+        x, y = room["grid_pos"]
+        width, height = room["grid_size"]
 
-        # Convert to grid coordinates
-        left, top = self.world_to_grid(rect.left, rect.top)
-        right = left + room["grid_size"][0]
-        bottom = top + room["grid_size"][1]
+        # Add background tiles first (for interior)
+        for dx in range(1, width - 1):
+            for dy in range(1, height - 1):
+                self.set_tile(x + dx, y + dy, TileType.BACKGROUND)
 
-        # Add walls on left and right sides
-        for y in range(top, bottom):
-            self.set_tile(left, y, TileType.WALL)
-            self.set_tile(right - 1, y, TileType.WALL)
+        # Add horizontal walls (excluding corners)
+        for dx in range(1, width - 1):
+            self.set_tile(x + dx, y, TileType.WALL)  # Top wall
+            self.set_tile(x + dx, y + height - 1, TileType.WALL)  # Bottom wall
 
-        # Add ceiling
-        for x in range(left + 1, right - 1):
-            self.set_tile(x, top, TileType.WALL)
+        # Add vertical walls (excluding corners)
+        for dy in range(1, height - 1):
+            self.set_tile(x, y + dy, TileType.WALL)  # Left wall
+            self.set_tile(x + width - 1, y + dy, TileType.WALL)  # Right wall
 
-        # Add floor at the bottom
-        for x in range(left, right):
-            self.set_tile(x, bottom - 1, TileType.FLOOR)
+        # Add floor tiles one tile above bottom wall
+        for dx in range(1, width - 1):
+            self.set_tile(
+                x + dx, y + height - 2, TileType.FLOOR
+            )  # One tile above bottom
 
-        # Add empty space in the middle
-        for x in range(left + 1, right - 1):
-            for y in range(top + 1, bottom - 1):
-                self.set_tile(x, y, TileType.EMPTY)
+        # Add corners explicitly
+        self.set_tile(x, y, TileType.CORNER)  # Top-left
+        self.set_tile(x + width - 1, y, TileType.CORNER)  # Top-right
+        self.set_tile(x, y + height - 1, TileType.CORNER)  # Bottom-left
+        self.set_tile(x + width - 1, y + height - 1, TileType.CORNER)  # Bottom-right
 
     def _process_connections(self, room_id: str) -> None:
-        """Process connections for a room"""
+        """Process connections and add doors between rooms"""
         new_room = self.rooms[room_id]
+        nx, ny = new_room["grid_pos"]
+        nw, nh = new_room["grid_size"]
 
-        for other_id, other_room in self.rooms.items():
-            if other_id != room_id:
-                self._add_doors_if_adjacent(new_room, other_room)
+        for other_id, other in self.rooms.items():
+            if other_id == room_id:
+                continue
 
-    def _add_doors_if_adjacent(self, room1: dict, room2: dict) -> None:
-        """Add doors between adjacent rooms"""
-        rect1, rect2 = room1["rect"], room2["rect"]
+            ox, oy = other["grid_pos"]
+            ow, oh = other["grid_size"]
 
-        # Convert to grid coordinates for precise checking
-        r1_left, r1_top = self.world_to_grid(rect1.left, rect1.top)
-        r1_right = r1_left + room1["grid_size"][0] - 1
-        r1_bottom = r1_top + room1["grid_size"][1] - 1
+            # Check for adjacent walls and add doors
+            if self._are_rooms_adjacent(nx, ny, nw, nh, ox, oy, ow, oh):
+                self._add_door_between_rooms(nx, ny, nw, nh, ox, oy, ow, oh)
 
-        r2_left, r2_top = self.world_to_grid(rect2.left, rect2.top)
-        r2_right = r2_left + room2["grid_size"][0] - 1
-        r2_bottom = r2_top + room2["grid_size"][1] - 1
+    def _are_rooms_adjacent(self, nx, ny, nw, nh, ox, oy, ow, oh) -> bool:
+        """Check if two rooms are adjacent"""
+        # Check if rooms share a vertical wall
+        vertical_adjacent = (nx + nw == ox or nx == ox + ow) and not (
+            ny + nh <= oy or ny >= oy + oh
+        )
 
-        # Check for shared vertical wall
-        if r1_right == r2_left or r1_left == r2_right:
-            wall_x = r1_right if r1_right == r2_left else r1_left
+        # Check if rooms share a horizontal wall
+        horizontal_adjacent = (ny + nh == oy or ny == oy + oh) and not (
+            nx + nw <= ox or nx >= ox + ow
+        )
 
-            # Find the highest floor between the two rooms
-            floor_y = None
-            for y in range(min(r1_bottom, r2_bottom), max(r1_top, r2_top), -1):
-                if (wall_x, y) in self.cells and self.cells[
-                    (wall_x, y)
-                ] == TileType.FLOOR:
-                    floor_y = y
-                    break
+        return vertical_adjacent or horizontal_adjacent
 
-            if floor_y is not None:
-                # Place door tiles above the floor
-                self.set_tile(wall_x, floor_y - 2, TileType.DOOR)
-                self.set_tile(wall_x, floor_y - 1, TileType.DOOR)
+    def is_valid_room_placement(self, grid_x: int, grid_y: int, room_type: str) -> bool:
+        """Check if a room can be placed at grid coordinates"""
+        width, height = self.room_config["room_types"][room_type]["grid_size"]
 
-        # Check for shared horizontal wall
-        elif r1_bottom == r2_top or r1_top == r2_bottom:
-            wall_y = r1_bottom if r1_bottom == r2_top else r1_top
+        # Check for overlaps
+        for dx in range(width):
+            for dy in range(height):
+                if (grid_x + dx, grid_y + dy) in self.cells:
+                    return False
 
-            # Find center point between rooms for door placement
-            overlap_start = max(r1_left, r2_left)
-            overlap_end = min(r1_right, r2_right)
-            door_x = overlap_start + ((overlap_end - overlap_start) // 2) - 1
-
-            # Place horizontal door at floor level
-            self.set_tile(door_x, wall_y, TileType.DOOR)
-            self.set_tile(door_x + 1, wall_y, TileType.DOOR)
-
-    def is_valid_room_placement(self, rect: pygame.Rect) -> bool:
-        """Check if a room can be placed at the given position"""
-        # Convert to grid coordinates
-        left, top = self.world_to_grid(rect.left, rect.top)
-        right, bottom = self.world_to_grid(rect.right, rect.bottom)
-
-        # If this is the first room, allow placement
+        # If this is the first room, it's valid
         if not self.rooms:
             return True
 
-        has_valid_connection = False
-        min_door_space = 2  # Always require 2 tiles for a door
-
-        # Check each existing room for valid connections
-        for room in self.rooms.values():
-            other_rect = room["rect"]
-            other_left, other_top = self.world_to_grid(other_rect.left, other_rect.top)
-            other_right = other_left + room["grid_size"][0]
-            other_bottom = other_top + room["grid_size"][1]
-
-            # Check for wall merging
-
-            # Vertical walls merging
-            if left == other_right - 1 or right - 1 == other_left:
-                overlap_start = max(top + 1, other_top + 1)  # Exclude corners
-                overlap_end = min(bottom - 1, other_bottom - 1)
-                if overlap_end - overlap_start >= min_door_space:
-                    has_valid_connection = True
-                    break
-
-            # Horizontal walls merging
-            if top == other_bottom - 1 or bottom - 1 == other_top:
-                overlap_start = max(left + 1, other_left + 1)  # Exclude corners
-                overlap_end = min(right - 1, other_right - 1)
-                if overlap_end - overlap_start >= min_door_space:
-                    has_valid_connection = True
-                    break
-
-        # Check if the new room overlaps too much with any existing room
-        for room in self.rooms.values():
-            other_rect = room["rect"]
-            if (
-                left < other_rect.right - 2
-                and right - 2 > other_rect.left
-                and top < other_rect.bottom - 2
-                and bottom - 2 > other_rect.top
-            ):
-                return False
-
-        return has_valid_connection
+        # Check for valid connections to existing rooms
+        return self._has_valid_connection(grid_x, grid_y, width, height)
 
     def get_doors_for_room(self, room_id: str) -> List[dict]:
         """Get all doors for a specific room"""
@@ -194,10 +139,10 @@ class Grid:
 
         return doors
 
-    def get_room_by_position(self, x: int, y: int) -> Optional[str]:
-        """Get the room ID at a specific position"""
+    def get_room_by_grid_position(self, grid_x: int, grid_y: int) -> Optional[str]:
+        """Get the room ID at a specific grid position"""
         for room_id, room in self.rooms.items():
-            if room["rect"].collidepoint(x, y):
+            if room["grid_pos"] == (grid_x, grid_y):
                 return room_id
         return None
 
@@ -225,3 +170,59 @@ class Grid:
                     f"WARNING: Changing tile at ({x}, {y}) from {current_type} to {tile_type}"
                 )
         self.cells[(x, y)] = tile_type
+
+    def _has_valid_connection(
+        self, grid_x: int, grid_y: int, width: int, height: int
+    ) -> bool:
+        """Check if a room at the given position can connect to existing rooms"""
+        # Check each existing room
+        for other in self.rooms.values():
+            ox, oy = other["grid_pos"]
+            ow, oh = other["grid_size"]
+
+            # Check if rooms are adjacent
+            if self._are_rooms_adjacent(grid_x, grid_y, width, height, ox, oy, ow, oh):
+                # If rooms are adjacent, it's a valid connection
+                return True
+
+        return False
+
+    def _add_door_between_rooms(self, nx, ny, nw, nh, ox, oy, ow, oh) -> None:
+        """Add doors between adjacent rooms (side-scroller style)"""
+        # For side-scrollers, we primarily want horizontal connections
+        # Vertical wall connection (side-by-side rooms)
+        if nx + nw == ox or nx == ox + ow:
+            # Place door near the bottom, but not on corners
+            door_y = min(ny + nh - 2, oy + oh - 2)  # One tile up from bottom
+
+            # Ensure we're not placing on corners
+            if (
+                door_y == ny
+                or door_y == ny + nh - 1
+                or door_y == oy
+                or door_y == oy + oh - 1
+            ):
+                door_y -= 1  # Move up one more if we'd hit a corner
+
+            # Place door at valid position
+            if nx + nw == ox:  # New room is left of other room
+                self.set_tile(nx + nw - 1, door_y, TileType.DOOR)
+                self.set_tile(ox, door_y, TileType.DOOR)
+            else:  # New room is right of other room
+                self.set_tile(nx, door_y, TileType.DOOR)
+                self.set_tile(ox + ow - 1, door_y, TileType.DOOR)
+
+        # Horizontal wall connection (stacked rooms - less common in side-scrollers)
+        elif ny + nh == oy or ny == oy + oh:
+            # Find middle of overlapping x range, avoiding corners
+            start_x = max(nx + 1, ox + 1)  # Avoid left corners
+            end_x = min(nx + nw - 2, ox + ow - 2)  # Avoid right corners
+            door_x = start_x + (end_x - start_x) // 2
+
+            # Place door at valid position
+            if ny + nh == oy:  # New room is above other room
+                self.set_tile(door_x, ny + nh - 1, TileType.DOOR)
+                self.set_tile(door_x, oy, TileType.DOOR)
+            else:  # New room is below other room
+                self.set_tile(door_x, ny, TileType.DOOR)
+                self.set_tile(door_x, oy + oh - 1, TileType.DOOR)

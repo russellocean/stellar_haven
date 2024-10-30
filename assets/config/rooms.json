@@ -1,5 +1,36 @@
 {
   "room_types": {
+    "starting_quarters": {
+      "name": "Starting Quarters",
+      "grid_size": [8, 6],
+      "resource_consumption": {
+        "power": 0.05,
+        "oxygen": 0.05
+      },
+      "resource_generation": {},
+      "description": "The core of your ship where you begin",
+      "color_theme": {
+        "floor": [220, 220, 220],
+        "wall": [200, 200, 200]
+      },
+      "decorations": {
+        "bed": {
+          "required": true,
+          "min_count": 1,
+          "max_count": 1,
+          "size": [2, 1],
+          "valid_positions": ["wall"]
+        },
+        "locker": {
+          "required": true,
+          "min_count": 1,
+          "max_count": 2,
+          "size": [1, 1],
+          "valid_positions": ["wall"]
+        }
+      },
+      "is_starting_room": true
+    },
     "bridge": {
       "name": "Bridge",
       "grid_size": [8, 6],

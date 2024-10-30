@@ -20,16 +20,18 @@ class GridRenderer:
                 "vertical": self.asset_manager.get_image(
                     "rooms/framework/wall_vertical.png"
                 ),
-                "corner_top_left": self.asset_manager.get_image(
+            },
+            TileType.CORNER: {
+                "top_left": self.asset_manager.get_image(
                     "rooms/framework/corner_top_left.png"
                 ),
-                "corner_top_right": self.asset_manager.get_image(
+                "top_right": self.asset_manager.get_image(
                     "rooms/framework/corner_top_right.png"
                 ),
-                "corner_bottom_left": self.asset_manager.get_image(
+                "bottom_left": self.asset_manager.get_image(
                     "rooms/framework/corner_bottom_left.png"
                 ),
-                "corner_bottom_right": self.asset_manager.get_image(
+                "bottom_right": self.asset_manager.get_image(
                     "rooms/framework/corner_bottom_right.png"
                 ),
             },
@@ -50,11 +52,31 @@ class GridRenderer:
                     "rooms/framework/door_vertical_bottom.png"
                 ),
             },
+            TileType.BACKGROUND: self.asset_manager.get_image(
+                "rooms/interiors/wall_base.png"
+            ),
             TileType.EMPTY: None,  # Empty tiles are transparent
         }
 
     def _get_wall_type(self, x: int, y: int) -> str:
         """Determine wall type based on surrounding tiles"""
+        # Check surrounding tiles
+        left = (x - 1, y) in self.grid.cells and self.grid.cells[(x - 1, y)] in [
+            TileType.WALL,
+            TileType.CORNER,
+        ]
+        right = (x + 1, y) in self.grid.cells and self.grid.cells[(x + 1, y)] in [
+            TileType.WALL,
+            TileType.CORNER,
+        ]
+
+        # For walls, we only need to check if it's horizontal or vertical
+        if left or right:
+            return "horizontal"
+        return "vertical"
+
+    def _get_corner_type(self, x: int, y: int) -> str:
+        """Determine corner type based on position relative to walls"""
         # Check surrounding tiles
         left = (x - 1, y) in self.grid.cells and self.grid.cells[
             (x - 1, y)
@@ -69,47 +91,49 @@ class GridRenderer:
             (x, y + 1)
         ] == TileType.WALL
 
-        # Corner cases
-        if up and left and not right and not down:
-            return "corner_bottom_right"
-        if up and right and not left and not down:
-            return "corner_bottom_left"
-        if down and left and not right and not up:
-            return "corner_top_right"
-        if down and right and not left and not up:
-            return "corner_top_left"
+        if up and right:
+            return "top_left"
+        if up and left:
+            return "top_right"
+        if down and right:
+            return "bottom_left"
+        if down and left:
+            return "bottom_right"
 
-        # Horizontal or vertical walls
-        if left or right:
-            return "horizontal"
-        return "vertical"
+        # Default to top_left if we can't determine
+        return "top_left"
 
     def _get_door_type(self, x: int, y: int) -> str:
-        """Determine door type based on surrounding tiles"""
-        # Check if there's another door tile adjacent
-        left_door = (x - 1, y) in self.grid.cells and self.grid.cells[
-            (x - 1, y)
-        ] == TileType.DOOR
-        right_door = (x + 1, y) in self.grid.cells and self.grid.cells[
-            (x + 1, y)
-        ] == TileType.DOOR
-        up_door = (x, y - 1) in self.grid.cells and self.grid.cells[
-            (x, y - 1)
-        ] == TileType.DOOR
-        down_door = (x, y + 1) in self.grid.cells and self.grid.cells[
-            (x, y + 1)
-        ] == TileType.DOOR
+        """Determine door type based on surrounding walls"""
+        # Check surrounding tiles
+        left = (x - 1, y) in self.grid.cells and self.grid.cells[(x - 1, y)] in [
+            TileType.WALL,
+            TileType.DOOR,
+        ]
+        right = (x + 1, y) in self.grid.cells and self.grid.cells[(x + 1, y)] in [
+            TileType.WALL,
+            TileType.DOOR,
+        ]
+        up = (x, y - 1) in self.grid.cells and self.grid.cells[(x, y - 1)] in [
+            TileType.WALL,
+            TileType.DOOR,
+        ]
+        down = (x, y + 1) in self.grid.cells and self.grid.cells[(x, y + 1)] in [
+            TileType.WALL,
+            TileType.DOOR,
+        ]
 
-        if left_door:
-            return "horizontal_right"
-        if right_door:
+        # For side-scroller, we primarily want horizontal doors
+        if left and right:  # Horizontal door
+            if self.grid.cells.get((x - 1, y)) == TileType.DOOR:
+                return "horizontal_right"
             return "horizontal_left"
-        if up_door:
-            return "vertical_bottom"
-        if down_door:
+        elif up and down:  # Vertical door
+            if self.grid.cells.get((x, y - 1)) == TileType.DOOR:
+                return "vertical_bottom"
             return "vertical_top"
 
-        # Default to horizontal_left if no adjacent doors
+        # Default to horizontal_left if we can't determine
         return "horizontal_left"
 
     def render(self, surface: pygame.Surface, camera):
@@ -118,9 +142,15 @@ class GridRenderer:
             x, y = pos
             screen_pos = camera.world_to_screen(x * self.tile_size, y * self.tile_size)
 
-            if tile_type == TileType.WALL:
+            # Render background first if it exists
+            if tile_type == TileType.BACKGROUND:
+                surface.blit(self.textures[TileType.BACKGROUND], screen_pos)
+            elif tile_type == TileType.WALL:
                 wall_type = self._get_wall_type(x, y)
                 surface.blit(self.textures[TileType.WALL][wall_type], screen_pos)
+            elif tile_type == TileType.CORNER:
+                corner_type = self._get_corner_type(x, y)
+                surface.blit(self.textures[TileType.CORNER][corner_type], screen_pos)
             elif tile_type == TileType.DOOR:
                 door_type = self._get_door_type(x, y)
                 surface.blit(self.textures[TileType.DOOR][door_type], screen_pos)

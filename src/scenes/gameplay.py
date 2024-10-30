@@ -97,7 +97,6 @@ class GameplayScene(Scene):
     def _setup_core_layers(self):
         """Setup essential game layers"""
         # Create sprite groups
-        self.room_sprites = self.room_manager.room_sprites
         self.character_sprites = pygame.sprite.Group(self.player)
 
         # Set camera for grid renderer
@@ -114,32 +113,26 @@ class GameplayScene(Scene):
         self.debug_layer.append(self.room_manager.collision_system)
 
     def _init_building_system(self):
-        """Initialize optional building system"""
-        self.building_system = BuildingSystem(
-            screen=self.game.screen, room_manager=self.room_manager
-        )
+        """Initialize building system"""
+        self.building_system = BuildingSystem(room_manager=self.room_manager)
         self.building_system.set_state_manager(self.state_manager)
         self.building_system.set_input_manager(self.input_manager)
         self.building_system.set_camera(self.camera)
 
-        # Add to layers if initialized
+        # Initialize UI elements with screen reference
+        self.building_system.init_ui(self.game.screen)
+
+        # Add to layers
         self.system_layer.append(self.building_system)
 
-        # Add UI elements
+        # Add UI elements to UI system
         self.ui_system.add_element(self.building_system.toggle_button)
         self.ui_system.add_element(self.building_system.build_menu)
 
     def _init_player(self):
-        ship_room = self.room_manager.ship_room
-        player_x = ship_room.rect.left + (ship_room.rect.width // 2)
-        player_y = ship_room.rect.top + (ship_room.rect.height // 2)
-        print(
-            f"Spawning player at {player_x}, {player_y} in ship room {ship_room.rect}"
-        )
+        # Get starting position from room manager
+        player_x, player_y = self.room_manager.get_starting_position()
         self.player = Player(player_x, player_y)
-
-        # Create sprite groups in order of drawing
-        self.room_sprites = self.room_manager.room_sprites
         self.character_sprites = pygame.sprite.Group(self.player)
 
     def handle_event(self, event):
@@ -174,7 +167,7 @@ class GameplayScene(Scene):
 
         # Core game updates
         self.player.update(self.room_manager, self.input_manager)
-        self.room_sprites.update(resource_manager=self.resource_manager)
+        # self.room_sprites.update(resource_manager=self.resource_manager)
         # self.room_manager.update(self.resource_manager)
         self.starfield.update()
         self.game_hud.update()

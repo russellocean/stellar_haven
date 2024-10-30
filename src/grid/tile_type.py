@@ -6,6 +6,8 @@ class TileType(Enum):
     WALL = auto()
     FLOOR = auto()
     DOOR = auto()
+    CORNER = auto()
+    BACKGROUND = auto()
 
     @property
     def is_walkable(self) -> bool:

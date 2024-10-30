@@ -23,7 +23,14 @@ class Player(Entity):
             lambda: self.current_room.name if self.current_room else "None",
         )
 
-    def update(self, room_manager=None, input_manager=None):
+    def update(self, room_manager, input_manager):
+        # Convert player position to grid coordinates
+        grid_x = self.rect.centerx // room_manager.grid.cell_size
+        grid_y = self.rect.centery // room_manager.grid.cell_size
+
+        # Get current room using grid coordinates
+        current_room_id = room_manager.grid.get_room_by_grid_position(grid_x, grid_y)
+
         if room_manager is None or input_manager is None:
             return
 
@@ -62,9 +69,7 @@ class Player(Entity):
         self._update_position(room_manager)
 
         # Check what room we're in
-        current_room_id = room_manager.grid.get_room_by_position(
-            self.rect.centerx, self.rect.centery
-        )
+        current_room_id = room_manager.grid.get_room_by_grid_position(grid_x, grid_y)
         new_room = room_manager.rooms.get(current_room_id) if current_room_id else None
 
         # If we've entered a new room, emit the event

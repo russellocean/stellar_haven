@@ -19,7 +19,7 @@ class BuildingSystem:
         self.camera = None
 
         # Initialize components
-        self.room_builder = RoomBuilderLayout(screen)
+        self.room_builder = RoomBuilderLayout(screen, room_manager)
         self.room_builder.ship_rect = room_manager.ship_room.rect
 
         # Create build mode toggle button
@@ -32,7 +32,9 @@ class BuildingSystem:
         )
 
         # Initialize UI layouts
-        self.build_menu = BuildMenu(screen=screen, on_select=self.select_room_type)
+        self.build_menu = BuildMenu(
+            screen=screen, room_manager=room_manager, on_select=self.select_room_type
+        )
 
         # Subscribe to relevant events
         self.event_system = EventSystem()

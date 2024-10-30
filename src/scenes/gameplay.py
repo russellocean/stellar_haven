@@ -162,8 +162,8 @@ class GameplayScene(Scene):
         # Update camera to follow player
         self.camera.update(self.player.rect)
 
-        # Let building system handle its own toggle
-        self.building_system.update()
+        # Update collision map before player movement
+        self.room_manager.collision_system.update_collision_map()
 
         # Core game updates
         self.player.update(self.room_manager, self.input_manager)
@@ -171,6 +171,9 @@ class GameplayScene(Scene):
         self.room_manager.update(self.resource_manager)
         self.starfield.update()
         self.game_hud.update()
+
+        # Let building system handle its own toggle
+        self.building_system.update()
 
         super().update()
         self.debug_system.clock.tick()  # Update FPS counter

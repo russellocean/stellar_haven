@@ -103,35 +103,20 @@ class RoomManager:
 
     def update(self, resource_manager):
         """Update all rooms"""
+        # Update room states
         for room in self.rooms.values():
             room.update(resource_manager=resource_manager)
 
-    def draw(self, screen):
-        """Draw all rooms"""
-        for room in self.rooms.values():
-            # Update connected sides before drawing
-            connected_sides = [
-                any(
-                    r.rect.bottom == room.rect.top
-                    for r in self.rooms.values()
-                    if r != room
-                ),
-                any(
-                    r.rect.left == room.rect.right
-                    for r in self.rooms.values()
-                    if r != room
-                ),
-                any(
-                    r.rect.top == room.rect.bottom
-                    for r in self.rooms.values()
-                    if r != room
-                ),
-                any(
-                    r.rect.right == room.rect.left
-                    for r in self.rooms.values()
-                    if r != room
-                ),
-            ]
+            # Calculate connections for this room
+            connected_sides = [False, False, False, False]
+            connection_points = [None, None, None, None]
+
+            # Check connections with other rooms
+            for other_room in self.rooms.values():
+                if other_room != room:
+                    self._update_room_connections(
+                        room, other_room, connected_sides, connection_points
+                    )
 
             # Re-render room with updated connections
             room_surface = pygame.Surface(room.rect.size, pygame.SRCALPHA)
@@ -140,14 +125,55 @@ class RoomManager:
                 room_type=room.room_type,
                 rect=room_surface.get_rect(),
                 connected_sides=connected_sides,
+                connection_points=connection_points,
             )
             room.image = room_surface
 
-            # Draw the room
-            screen.blit(room.image, room.rect)
+    def _update_room_connections(
+        self, room, other_room, connected_sides, connection_points
+    ):
+        """Update connection information between two rooms"""
+        grid_size = self.collision_system.grid_size
 
-            # Draw debug border if needed
-            pygame.draw.rect(screen, (100, 100, 100), room.rect, 2)
+        # Right connection
+        if abs(
+            other_room.rect.left - room.rect.right
+        ) <= grid_size // 2 and self._check_vertical_overlap(
+            room.rect, other_room.rect
+        ):
+            connected_sides[1] = True
+            overlap_start = max(room.rect.top, other_room.rect.top)
+            connection_points[1] = (overlap_start - room.rect.top) // grid_size + 1
+
+        # Left connection
+        if abs(
+            other_room.rect.right - room.rect.left
+        ) <= grid_size // 2 and self._check_vertical_overlap(
+            room.rect, other_room.rect
+        ):
+            connected_sides[3] = True
+            overlap_start = max(room.rect.top, other_room.rect.top)
+            connection_points[3] = (overlap_start - room.rect.top) // grid_size + 1
+
+        # Bottom connection
+        if abs(
+            other_room.rect.top - room.rect.bottom
+        ) <= grid_size // 2 and self._check_horizontal_overlap(
+            room.rect, other_room.rect
+        ):
+            connected_sides[2] = True
+            overlap_start = max(room.rect.left, other_room.rect.left)
+            connection_points[2] = (overlap_start - room.rect.left) // grid_size + 1
+
+        # Top connection
+        if abs(
+            other_room.rect.bottom - room.rect.top
+        ) <= grid_size // 2 and self._check_horizontal_overlap(
+            room.rect, other_room.rect
+        ):
+            connected_sides[0] = True
+            overlap_start = max(room.rect.left, other_room.rect.left)
+            connection_points[0] = (overlap_start - room.rect.left) // grid_size + 1
 
     def get_connected_rooms(self, room: Room) -> List[Room]:
         """Get all rooms that are connected to the given room"""
@@ -194,3 +220,17 @@ class RoomManager:
             print(f"V-adj: {vertical_adjacent}, H-overlap: {horizontal_overlap}")
             return True
         return False
+
+    def _check_horizontal_overlap(self, rect1: pygame.Rect, rect2: pygame.Rect) -> bool:
+        """Check if two rectangles overlap horizontally"""
+        return (
+            rect1.left < rect2.right - self.collision_system.grid_size
+            and rect1.right > rect2.left + self.collision_system.grid_size
+        )
+
+    def _check_vertical_overlap(self, rect1: pygame.Rect, rect2: pygame.Rect) -> bool:
+        """Check if two rectangles overlap vertically"""
+        return (
+            rect1.top < rect2.bottom - self.collision_system.grid_size
+            and rect1.bottom > rect2.top + self.collision_system.grid_size
+        )

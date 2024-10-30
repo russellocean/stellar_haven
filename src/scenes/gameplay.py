@@ -66,11 +66,11 @@ class GameplayScene(Scene):
         # Initialize GameHUD with resource manager
         self.game_hud = GameHUD(game.screen, self.resource_manager)
 
-        # Setup layers
-        self._setup_core_layers()
-
-        # Initialize optional systems
+        # Initialize building system before setting up layers
         self._init_building_system()
+
+        # Setup layers after all systems are initialized
+        self._setup_core_layers()
 
         # Initialize debug system
         self.debug_system = DebugSystem()
@@ -89,20 +89,18 @@ class GameplayScene(Scene):
 
     def _setup_core_layers(self):
         """Setup essential game layers"""
-        # Create sprite groups in order of drawing
+        # Create sprite groups
         self.room_sprites = self.room_manager.room_sprites
         self.character_sprites = pygame.sprite.Group(self.player)
 
-        # Add elements to layers
+        # Add elements to layers in drawing order
         self.background_layer.append(self.starfield)
-        self.game_layer.append(self.room_sprites)
-        self.game_layer.append(self.character_sprites)
+        self.game_layer.extend([self.room_sprites, self.character_sprites])
+        self.system_layer.extend([self.building_system])
         self.ui_layer.append(self.game_hud)
 
-        # Set camera reference for collision system
+        # Setup debug visualization
         self.room_manager.collision_system.set_camera(self.camera)
-
-        # Add collision system to debug layer for visualization
         self.debug_layer.append(self.room_manager.collision_system)
 
     def _init_building_system(self):

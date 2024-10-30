@@ -3,6 +3,7 @@ from typing import Dict, List, Optional, Tuple
 import pygame
 
 from systems.asset_manager import AssetManager
+from systems.debug_system import DebugSystem
 
 
 class RoomRenderer:
@@ -33,8 +34,10 @@ class RoomRenderer:
             "corner_top_right",
             "corner_bottom_left",
             "corner_bottom_right",
-            "door_horizontal",
-            "door_vertical",
+            "door_horizontal_left",
+            "door_horizontal_right",
+            "door_vertical_top",
+            "door_vertical_bottom",
         ]
 
         for piece in framework_pieces:
@@ -169,33 +172,30 @@ class RoomRenderer:
         surface: pygame.Surface,
         room_type: str,
         rect: pygame.Rect,
-        connected_sides: Optional[List[bool]] = None,
+        connected_sides: List[bool],
+        connection_points: List[Optional[int]] = None,
     ):
-        """Render a complete room using configuration"""
-        if connected_sides is None:
-            connected_sides = [False, False, False, False]
+        """Render a complete room with framework, interior, and decorations"""
+        size = (rect.width, rect.height)
+        debug = DebugSystem()
 
-        # Validate room size
-        room_size = self.get_valid_room_size(
-            room_type, (rect.width // 32, rect.height // 32)
+        # Clear surface
+        surface.fill((0, 0, 0, 0))
+
+        # Render interior first (floor and basic walls)
+        self._render_interior(surface, size)
+
+        # Render framework (walls, corners, doors)
+        self._render_framework(
+            surface=surface,
+            size=size,
+            connected_sides=connected_sides,
+            connection_points=connection_points,
         )
 
-        # Create room surface
-        room_surface = pygame.Surface(rect.size, pygame.SRCALPHA)
-
-        # Get room theme colors
-        theme = self.room_config["room_types"][room_type]["color_theme"]
-
-        # Render base elements
-        self._render_floor(room_surface, rect.size, theme["floor"])
-        self._render_framework(room_surface, rect.size, connected_sides)
-
         # Get and render decorations
-        decoration_positions = self.get_decoration_positions(room_type, room_size)
-        self._render_decorations(room_surface, room_type, decoration_positions)
-
-        # Blit to main surface
-        surface.blit(room_surface, rect.topleft)
+        decoration_positions = self.get_decoration_positions(room_type, size)
+        self._render_decorations(surface, room_type, decoration_positions)
 
     def _render_floor(
         self, surface: pygame.Surface, size: Tuple[int, int], color: List[int]
@@ -220,9 +220,17 @@ class RoomRenderer:
         surface: pygame.Surface,
         size: Tuple[int, int],
         connected_sides: List[bool],
+        connection_points: List[Optional[int]] = None,
     ):
-        """Render walls and corners"""
+        """
+        Render walls and corners
+        connection_points: [top_x, right_y, bottom_x, left_y] - grid positions for doors
+        """
         width, height = size
+        debug = DebugSystem()  # Get debug instance
+
+        debug.log(f"Rendering framework for room size: {width}x{height}")
+        debug.log(f"Connected sides: {connected_sides}")
 
         # Draw corners
         surface.blit(self.framework["corner_top_left"], (0, 0))
@@ -247,38 +255,71 @@ class RoomRenderer:
                 self.framework["wall_vertical"], (width - self.TILE_SIZE, y)
             )  # Right wall
 
+        # Use connection points if provided, otherwise center doors
+        if connection_points is None:
+            connection_points = [
+                width // (2 * self.TILE_SIZE),  # Top
+                height // (2 * self.TILE_SIZE),  # Right
+                width // (2 * self.TILE_SIZE),  # Bottom
+                height // (2 * self.TILE_SIZE),  # Left
+            ]
+
         # Add doors where rooms are connected
-        if connected_sides[0]:  # Top
-            door_x = width // 2 - self.TILE_SIZE
-            surface.blit(self.framework["door_horizontal_left"], (door_x, 0))
-            surface.blit(
-                self.framework["door_horizontal_right"], (door_x + self.TILE_SIZE, 0)
-            )
-        if connected_sides[1]:  # Right
-            door_y = height // 2 - self.TILE_SIZE
-            surface.blit(
-                self.framework["door_vertical_top"], (width - self.TILE_SIZE, door_y)
-            )
-            surface.blit(
-                self.framework["door_vertical_bottom"],
-                (width - self.TILE_SIZE, door_y + self.TILE_SIZE),
-            )
-        if connected_sides[2]:  # Bottom
-            door_x = width // 2 - self.TILE_SIZE
-            surface.blit(
-                self.framework["door_horizontal_left"],
-                (door_x, height - self.TILE_SIZE),
-            )
-            surface.blit(
-                self.framework["door_horizontal_right"],
-                (door_x + self.TILE_SIZE, height - self.TILE_SIZE),
-            )
-        if connected_sides[3]:  # Left
-            door_y = height // 2 - self.TILE_SIZE
-            surface.blit(self.framework["door_vertical_top"], (0, door_y))
-            surface.blit(
-                self.framework["door_vertical_bottom"], (0, door_y + self.TILE_SIZE)
-            )
+        if connected_sides[0] and connection_points[0] is not None:  # Top
+            door_x = connection_points[0] * self.TILE_SIZE
+            debug.log(f"Adding top door at x: {door_x}")
+            try:
+                surface.blit(self.framework["door_horizontal_left"], (door_x, 0))
+                surface.blit(
+                    self.framework["door_horizontal_right"],
+                    (door_x + self.TILE_SIZE, 0),
+                )
+            except KeyError as e:
+                debug.log(f"Error: Missing door asset - {e}")
+
+        if connected_sides[1] and connection_points[1] is not None:  # Right
+            door_y = connection_points[1] * self.TILE_SIZE
+            debug.log(f"Adding right door at y: {door_y}")
+            try:
+                surface.blit(
+                    self.framework["door_vertical_top"],
+                    (width - self.TILE_SIZE, door_y),
+                )
+                surface.blit(
+                    self.framework["door_vertical_bottom"],
+                    (width - self.TILE_SIZE, door_y + self.TILE_SIZE),
+                )
+            except KeyError as e:
+                debug.log(f"Error: Missing door asset - {e}")
+
+        if connected_sides[2] and connection_points[2] is not None:  # Bottom
+            door_x = connection_points[2] * self.TILE_SIZE
+            debug.log(f"Adding bottom door at x: {door_x}")
+            try:
+                surface.blit(
+                    self.framework["door_horizontal_left"],
+                    (door_x, height - self.TILE_SIZE),
+                )
+                surface.blit(
+                    self.framework["door_horizontal_right"],
+                    (door_x + self.TILE_SIZE, height - self.TILE_SIZE),
+                )
+            except KeyError as e:
+                debug.log(f"Error: Missing door asset - {e}")
+
+        if connected_sides[3] and connection_points[3] is not None:  # Left
+            door_y = connection_points[3] * self.TILE_SIZE
+            debug.log(f"Adding left door at y: {door_y}")
+            try:
+                surface.blit(self.framework["door_vertical_top"], (0, door_y))
+                surface.blit(
+                    self.framework["door_vertical_bottom"], (0, door_y + self.TILE_SIZE)
+                )
+            except KeyError as e:
+                debug.log(f"Error: Missing door asset - {e}")
+
+        # Debug log available framework pieces
+        debug.log(f"Available framework pieces: {list(self.framework.keys())}")
 
     def _render_decorations(
         self,
@@ -295,3 +336,23 @@ class RoomRenderer:
                 decoration_image = self.decorations[room_type][decoration_name]
                 for pos in positions:
                     surface.blit(decoration_image, pos)
+
+    def _render_interior(self, surface: pygame.Surface, size: Tuple[int, int]):
+        """Render the interior floor and basic walls"""
+        width, height = size
+
+        # Fill with floor tiles
+        for y in range(self.TILE_SIZE, height - self.TILE_SIZE, self.TILE_SIZE):
+            for x in range(self.TILE_SIZE, width - self.TILE_SIZE, self.TILE_SIZE):
+                surface.blit(self.interiors["floor"], (x, y))
+
+        # Add basic wall tiles behind the framework
+        # Top and bottom walls
+        for x in range(0, width, self.TILE_SIZE):
+            surface.blit(self.interiors["wall"], (x, 0))  # Top
+            surface.blit(self.interiors["wall"], (x, height - self.TILE_SIZE))  # Bottom
+
+        # Left and right walls
+        for y in range(0, height, self.TILE_SIZE):
+            surface.blit(self.interiors["wall"], (0, y))  # Left
+            surface.blit(self.interiors["wall"], (width - self.TILE_SIZE, y))  # Right

@@ -86,23 +86,16 @@ class Grid:
                 self._add_door_between_rooms(nx, ny, nw, nh, ox, oy, ow, oh)
 
     def _are_rooms_adjacent(self, nx, ny, nw, nh, ox, oy, ow, oh) -> bool:
-        """Check if rooms have overlapping walls or corners"""
-        # Check each tile along the edges of the new room
-        for dy in range(nh):
-            # Check left edge
-            if self._has_wall_or_corner(nx, ny + dy):
-                return True
-            # Check right edge
-            if self._has_wall_or_corner(nx + nw - 1, ny + dy):
-                return True
+        """Check if rooms share a wall (one tile overlap)"""
+        # For vertical walls (side by side rooms)
+        if nx + nw - 1 == ox or nx == ox + ow - 1:  # One tile overlap
+            # Check if they overlap vertically (excluding corners)
+            return not (ny + nh <= oy or ny >= oy + oh)
 
-        for dx in range(nw):
-            # Check top edge
-            if self._has_wall_or_corner(nx + dx, ny):
-                return True
-            # Check bottom edge
-            if self._has_wall_or_corner(nx + dx, ny + nh - 1):
-                return True
+        # For horizontal walls (stacked rooms)
+        if ny + nh - 1 == oy or ny == oy + oh - 1:  # One tile overlap
+            # Check if they overlap horizontally (excluding corners)
+            return not (nx + nw <= ox or nx >= ox + ow)
 
         return False
 
@@ -210,47 +203,21 @@ class Grid:
         return False
 
     def _add_door_between_rooms(self, nx, ny, nw, nh, ox, oy, ow, oh) -> None:
-        """Add door where walls overlap (2 tiles tall with floor beneath)"""
-        # Find overlapping wall sections
-        overlapping_positions = []
+        """Add door at floor level where walls overlap"""
+        floor_y = ny + nh - 2  # Floor is always 1 tile above bottom wall
 
-        # Check vertical walls
-        for dy in range(1, nh - 1):  # Skip corners
-            # Left wall
-            if self._has_wall_or_corner(nx, ny + dy):
-                overlapping_positions.append((nx, ny + dy, "vertical"))
-            # Right wall
-            if self._has_wall_or_corner(nx + nw - 1, ny + dy):
-                overlapping_positions.append((nx + nw - 1, ny + dy, "vertical"))
+        # For side-by-side rooms
+        if nx + nw == ox:  # New room is left of other room
+            door_x = nx + nw - 1
+        elif nx == ox + ow:  # New room is right of other room
+            door_x = nx
+        else:  # Rooms must be overlapping horizontally
+            # Find middle of overlap
+            overlap_start = max(nx, ox)
+            overlap_end = min(nx + nw, ox + ow)
+            door_x = overlap_start + (overlap_end - overlap_start) // 2
 
-        # Check horizontal walls
-        for dx in range(1, nw - 1):  # Skip corners
-            # Top wall
-            if self._has_wall_or_corner(nx + dx, ny):
-                overlapping_positions.append((nx + dx, ny, "horizontal"))
-            # Bottom wall
-            if self._has_wall_or_corner(nx + dx, ny + nh - 1):
-                overlapping_positions.append((nx + dx, ny + nh - 1, "horizontal"))
-
-        # Place door at best position (prefer bottom wall for side-scroller)
-        if overlapping_positions:
-            # First try bottom wall
-            bottom_positions = [
-                pos
-                for pos in overlapping_positions
-                if pos[1] == ny + nh - 2 and pos[2] == "vertical"
-            ]
-            if bottom_positions:
-                x, y, _ = bottom_positions[0]
-                # Place floor at bottom
-                self.set_tile(x, y, TileType.FLOOR)
-                # Place door tiles above floor (2 tiles tall)
-                self.set_tile(x, y - 1, TileType.DOOR)
-                self.set_tile(x, y - 2, TileType.DOOR)
-                return
-
-            # Otherwise use first valid position
-            x, y, _ = overlapping_positions[0]
-            self.set_tile(x, y, TileType.FLOOR)
-            self.set_tile(x, y - 1, TileType.DOOR)
-            self.set_tile(x, y - 2, TileType.DOOR)
+        # Place floor and door
+        self.set_tile(door_x, floor_y, TileType.FLOOR)  # Floor level
+        self.set_tile(door_x, floor_y - 1, TileType.DOOR)  # Door bottom
+        self.set_tile(door_x, floor_y - 2, TileType.DOOR)  # Door top

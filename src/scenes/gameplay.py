@@ -162,13 +162,10 @@ class GameplayScene(Scene):
         # Update camera to follow player
         self.camera.update(self.player.rect)
 
-        # Update collision map before player movement
-        self.room_manager.collision_system.update_collision_map()
-
         # Core game updates
         self.player.update(self.room_manager, self.input_manager)
         self.room_sprites.update(resource_manager=self.resource_manager)
-        self.room_manager.update(self.resource_manager)
+        # self.room_manager.update(self.resource_manager)
         self.starfield.update()
         self.game_hud.update()
 
@@ -176,7 +173,7 @@ class GameplayScene(Scene):
         self.building_system.update()
 
         super().update()
-        self.debug_system.clock.tick()  # Update FPS counter
+        self.debug_system.clock.tick()
 
     def draw(self, screen):
         # Use the parent Scene's draw method which will handle all layers

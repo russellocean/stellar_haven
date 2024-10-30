@@ -20,31 +20,30 @@ class RoomBuilderLayout(BaseLayout):
         self.room_manager = room_manager
 
     def select_room_type(self, room_type: str):
-        """Select a room type to place"""
-        if room_type in self.room_renderer.room_config["room_types"]:
-            self.selected_room_type = room_type
+        """Select a room type to build"""
+        self.selected_room_type = room_type
+        room_config = self.room_renderer.room_config["room_types"][room_type]
+        size = (
+            room_config["min_size"][0] * self.grid_size,
+            room_config["min_size"][1] * self.grid_size,
+        )
 
-            # Create ghost room using RoomRenderer
-            room_config = self.room_renderer.room_config["room_types"][room_type]
-            min_size = room_config.get("min_size", [6, 4])
-            room_size = (min_size[0] * self.grid_size, min_size[1] * self.grid_size)
+        # Create ghost room surface
+        ghost_surface = pygame.Surface(size, pygame.SRCALPHA)
+        self.room_renderer.render_room(
+            surface=ghost_surface,
+            room_type=room_type,
+            rect=pygame.Rect(0, 0, *size),
+            doors=[],  # Empty list for ghost room
+        )
 
-            # Create ghost room with empty surface
-            self.ghost_room = Room(room_type, None, 0, 0)
-            self.ghost_room.image = pygame.Surface(room_size, pygame.SRCALPHA)
+        # Create ghost room
+        self.ghost_room = Room(room_type, None, 0, 0)
+        self.ghost_room.image = ghost_surface
+        self.ghost_room.rect = ghost_surface.get_rect()
 
-            # Render the room
-            self.room_renderer.render_room(
-                surface=self.ghost_room.image,
-                room_type=room_type,
-                rect=pygame.Rect(0, 0, *room_size),
-                connected_sides=[False, False, False, False],
-            )
-
-            # Set transparency for ghost effect
-            self.ghost_room.image.fill(
-                (255, 255, 255, 128), special_flags=pygame.BLEND_RGBA_MULT
-            )
+        # Set initial alpha
+        self.ghost_room.image.set_alpha(128)
 
     def update(self, mouse_pos: Tuple[int, int], existing_rooms: List[Room]) -> bool:
         """Update ghost room position and check placement validity"""

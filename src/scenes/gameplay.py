@@ -1,3 +1,4 @@
+import math
 import random
 
 import pygame
@@ -57,6 +58,77 @@ class CelestialObject:
             )
 
 
+class ShootingStar:
+    def __init__(self, screen_width, screen_height):
+        # Create a trail of points
+        self.length = random.randint(20, 40)
+        self.speed = random.uniform(15, 25)
+        self.thickness = random.uniform(1.5, 3)
+        # Randomize starting position (always start from left side of screen)
+        self.x = random.randint(-100, 0)
+        self.y = random.randint(0, screen_height)
+
+        # Random angle (mostly rightward)
+        self.angle = random.uniform(-30, 30)  # -30 to 30 degrees for rightward motion
+        self.dx = self.speed * math.cos(math.radians(self.angle))
+        self.dy = self.speed * math.sin(math.radians(self.angle))
+
+        # Trail effect
+        self.points = [(self.x, self.y)]
+        self.alive = True
+
+        # Add subtle color variation
+        base_color = random.randint(200, 255)
+        self.color = (base_color, base_color, random.randint(220, 255))
+
+        # Fade effect
+        self.alpha = 255
+        self.fade_speed = random.uniform(3, 7)
+
+    def update(self):
+        # Move the shooting star
+        self.x += self.dx
+        self.y += self.dy
+
+        # Add new point to trail
+        self.points.append((self.x, self.y))
+
+        # Remove old points to maintain trail length
+        if len(self.points) > self.length:
+            self.points.pop(0)
+
+        # Fade out
+        self.alpha -= self.fade_speed
+        if self.alpha <= 0:
+            self.alive = False
+
+    def draw(self, screen):
+        if len(self.points) < 2:
+            return
+
+        # Create a surface for the trail with alpha support
+        trail_surface = pygame.Surface(screen.get_size(), pygame.SRCALPHA)
+
+        # Draw the trail with fade effect
+        for i in range(len(self.points) - 1):
+            start_pos = self.points[i]
+            end_pos = self.points[i + 1]
+
+            # Calculate alpha for this segment
+            segment_alpha = int(self.alpha * (i / len(self.points)))
+
+            # Draw the trail segment with alpha
+            pygame.draw.line(
+                trail_surface,
+                (*self.color, segment_alpha),
+                start_pos,
+                end_pos,
+                int(self.thickness * (i / len(self.points) + 0.5)),
+            )
+
+        screen.blit(trail_surface, (0, 0))
+
+
 class Starfield:
     def __init__(self, screen_size):
         self.background = pygame.Surface(screen_size)
@@ -93,6 +165,11 @@ class Starfield:
         self.camera_y = 0
         self.last_camera_x = 0
         self.last_camera_y = 0
+
+        self.shooting_stars = []
+        self.shooting_star_timer = 0
+        self.shooting_star_delay = random.uniform(1, 3)  # Time between shooting stars
+        self.screen_size = screen_size
 
     def create_celestial_objects(self):
         screen_w = self.background.get_width()
@@ -234,12 +311,40 @@ class Starfield:
         self.last_camera_x = camera_x
         self.last_camera_y = camera_y
 
+        # Update shooting star timer
+        self.shooting_star_timer -= 1 / 60  # Assuming 60 FPS
+
+        # Create new shooting stars
+        if self.shooting_star_timer <= 0:
+            # Small chance for a burst of shooting stars
+            if random.random() < 0.1:  # 10% chance
+                num_stars = random.randint(2, 4)
+                for _ in range(num_stars):
+                    self.shooting_stars.append(ShootingStar(*self.screen_size))
+            else:
+                self.shooting_stars.append(ShootingStar(*self.screen_size))
+
+            # Reset timer with random delay
+            self.shooting_star_timer = random.uniform(1, 3)
+
+        # Update existing shooting stars
+        for star in self.shooting_stars[:]:
+            star.update()
+            if not star.alive:
+                self.shooting_stars.remove(star)
+
     def draw(self, screen):
+        # Draw regular background first
         screen.blit(self.background, (0, 0))
+
+        # Draw celestial objects
         for obj in self.objects:
-            # Center the rotated image at its position
             rect = obj.image.get_rect(center=(obj.x, obj.y))
             screen.blit(obj.image, rect)
+
+        # Draw shooting stars on top
+        for star in self.shooting_stars:
+            star.draw(screen)
 
 
 class GameplayScene(Scene):

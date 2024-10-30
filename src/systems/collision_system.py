@@ -40,22 +40,14 @@ class CollisionSystem:
         self.collision_map.clear()
         self.floor_map.clear()
 
+        # First pass: Add all interior floors and initial walls
         for room in self.room_manager.get_rooms():
             grid_left = room.rect.left // self.grid_size
             grid_right = room.rect.right // self.grid_size
             grid_top = room.rect.top // self.grid_size
             grid_bottom = room.rect.bottom // self.grid_size
 
-            # Add walls around the perimeter
-            for x in range(grid_left, grid_right):
-                self.collision_map[(x, grid_top)] = self.TILE_WALL
-                self.collision_map[(x, grid_bottom - 1)] = self.TILE_WALL
-
-            for y in range(grid_top, grid_bottom):
-                self.collision_map[(grid_left, y)] = self.TILE_WALL
-                self.collision_map[(grid_right - 1, y)] = self.TILE_WALL
-
-            # Add floor tiles
+            # Add floor tiles first
             for x in range(grid_left + 1, grid_right - 1):
                 for y in range(grid_top + 1, grid_bottom - 1):
                     self.collision_map[(x, y)] = self.TILE_FLOOR
@@ -65,7 +57,27 @@ class CollisionSystem:
                     self.floor_map[x] = []
                 self.floor_map[x].append(grid_bottom - 1)
 
-        # Process doors between rooms
+        # Second pass: Add walls only where there isn't another room
+        for room in self.room_manager.get_rooms():
+            grid_left = room.rect.left // self.grid_size
+            grid_right = room.rect.right // self.grid_size
+            grid_top = room.rect.top // self.grid_size
+            grid_bottom = room.rect.bottom // self.grid_size
+
+            # Add walls only where there isn't a floor tile from another room
+            for x in range(grid_left, grid_right):
+                if (x, grid_top) not in self.collision_map:
+                    self.collision_map[(x, grid_top)] = self.TILE_WALL
+                if (x, grid_bottom - 1) not in self.collision_map:
+                    self.collision_map[(x, grid_bottom - 1)] = self.TILE_WALL
+
+            for y in range(grid_top, grid_bottom):
+                if (grid_left, y) not in self.collision_map:
+                    self.collision_map[(grid_left, y)] = self.TILE_WALL
+                if (grid_right - 1, y) not in self.collision_map:
+                    self.collision_map[(grid_right - 1, y)] = self.TILE_WALL
+
+        # Finally, process doors
         self._process_room_connections()
 
     def _process_room_connections(self):
@@ -75,32 +87,42 @@ class CollisionSystem:
         for room in self.room_manager.get_rooms():
             for other_room in self.room_manager.get_rooms():
                 if room != other_room:
-                    connection = self._get_connection_point(room, other_room)
-                    if connection and connection not in processed_connections:
-                        self._add_door(connection)
-                        processed_connections.add(connection)
+                    # Check if rooms share a wall
+                    shared_wall = self._get_shared_wall(room, other_room)
+                    if shared_wall:
+                        x, y, is_horizontal = shared_wall
+                        if (x, y, is_horizontal) not in processed_connections:
+                            self._add_door(shared_wall)
+                            processed_connections.add((x, y, is_horizontal))
 
-    def _get_connection_point(self, room1, room2):
-        """Get the connection point between two rooms if they're adjacent"""
-        # Return format: (grid_x, grid_y, is_horizontal)
+    def _get_shared_wall(self, room1, room2):
+        """Find shared wall between two rooms"""
         grid1 = self._get_room_grid(room1)
         grid2 = self._get_room_grid(room2)
 
-        # Check horizontal adjacency
-        if abs(grid1.right - grid2.left) <= 1 and self._vertical_overlap(grid1, grid2):
-            overlap_y = self._get_overlap_position(
-                grid1.top, grid1.bottom, grid2.top, grid2.bottom
-            )
-            return (grid1.right, overlap_y, False)
+        # Check for horizontal shared wall
+        if grid1.right == grid2.left or grid1.left == grid2.right:
+            if self._vertical_overlap(grid1, grid2):
+                overlap_y = self._get_overlap_position(
+                    grid1.top + 1,
+                    grid1.bottom - 1,  # Avoid corners
+                    grid2.top + 1,
+                    grid2.bottom - 1,
+                )
+                x = grid1.right if grid1.right == grid2.left else grid1.left
+                return (x, overlap_y, False)
 
-        # Check vertical adjacency
-        if abs(grid1.bottom - grid2.top) <= 1 and self._horizontal_overlap(
-            grid1, grid2
-        ):
-            overlap_x = self._get_overlap_position(
-                grid1.left, grid1.right, grid2.left, grid2.right
-            )
-            return (overlap_x, grid1.bottom, True)
+        # Check for vertical shared wall
+        if grid1.bottom == grid2.top or grid1.top == grid2.bottom:
+            if self._horizontal_overlap(grid1, grid2):
+                overlap_x = self._get_overlap_position(
+                    grid1.left + 1,
+                    grid1.right - 1,  # Avoid corners
+                    grid2.left + 1,
+                    grid2.right - 1,
+                )
+                y = grid1.bottom if grid1.bottom == grid2.top else grid1.top
+                return (overlap_x, y, True)
 
         return None
 

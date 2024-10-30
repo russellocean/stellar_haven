@@ -80,47 +80,74 @@ class RoomBuilderLayout(BaseLayout):
         if not self.ghost_room:
             return False
 
-        # Must be adjacent to at least one room but not overlapping
-        adjacent = False
+        # Must be sharing exactly one wall with an existing room
+        shared_wall_count = 0
         for room in existing_rooms:
-            if self.ghost_room.rect.colliderect(room.rect):
+            # Check for interior overlap (not including walls)
+            ghost_interior = self.ghost_room.rect.inflate(
+                -self.grid_size * 2, -self.grid_size * 2
+            )
+            room_interior = room.rect.inflate(-self.grid_size * 2, -self.grid_size * 2)
+
+            if ghost_interior.colliderect(room_interior):
                 return False
-            if self._is_adjacent(self.ghost_room.rect, room.rect):
-                adjacent = True
 
-        return adjacent
+            # Check if we're sharing a wall
+            shared_wall = self._get_shared_wall(self.ghost_room.rect, room.rect)
+            if shared_wall:
+                shared_wall_count += 1
+                # Snap to the shared wall
+                self._snap_to_shared_wall(self.ghost_room.rect, room.rect, shared_wall)
 
-    def _is_adjacent(self, rect1: pygame.Rect, rect2: pygame.Rect) -> bool:
-        """Check if two rectangles are adjacent with enough space for player passage"""
-        tolerance = self.grid_size // 2
-        min_passage = self.grid_size * 2  # Minimum 2 grid spaces for player
+        return shared_wall_count == 1
 
-        # Check for horizontal adjacency (left or right edges touching)
-        horizontal_adjacent = (
-            abs(rect1.right - rect2.left) <= tolerance
-            or abs(rect1.left - rect2.right) <= tolerance
-        )
-        # Ensure vertical overlap is enough for player height
+    def _get_shared_wall(self, rect1: pygame.Rect, rect2: pygame.Rect) -> Optional[str]:
+        """Check if two rectangles can share a wall"""
+        # Check for sufficient overlap for a doorway
+        min_overlap = self.grid_size * 2
+
+        # Check vertical walls
         vertical_overlap = (
-            rect1.top < rect2.bottom - tolerance - min_passage
-            and rect1.bottom > rect2.top + tolerance + min_passage
-        )
+            min(rect1.bottom - self.grid_size, rect2.bottom - self.grid_size)
+            - max(rect1.top + self.grid_size, rect2.top + self.grid_size)
+        ) >= min_overlap
 
-        if horizontal_adjacent and vertical_overlap:
-            return True
+        if vertical_overlap:
+            # Check if right wall of rect2 can connect to left wall of rect1
+            if abs(rect2.right - rect1.left) <= self.grid_size:
+                return "left"
+            # Check if left wall of rect2 can connect to right wall of rect1
+            if abs(rect2.left - rect1.right) <= self.grid_size:
+                return "right"
 
-        # Check for vertical adjacency (top or bottom edges touching)
-        vertical_adjacent = (
-            abs(rect1.bottom - rect2.top) <= tolerance
-            or abs(rect1.top - rect2.bottom) <= tolerance
-        )
-        # Ensure horizontal overlap is enough for player width
+        # Check horizontal walls
         horizontal_overlap = (
-            rect1.left < rect2.right - tolerance - min_passage
-            and rect1.right > rect2.left + tolerance + min_passage
-        )
+            min(rect1.right - self.grid_size, rect2.right - self.grid_size)
+            - max(rect1.left + self.grid_size, rect2.left + self.grid_size)
+        ) >= min_overlap
 
-        return vertical_adjacent and horizontal_overlap
+        if horizontal_overlap:
+            # Check if bottom wall of rect2 can connect to top wall of rect1
+            if abs(rect2.bottom - rect1.top) <= self.grid_size:
+                return "top"
+            # Check if top wall of rect2 can connect to bottom wall of rect1
+            if abs(rect2.top - rect1.bottom) <= self.grid_size:
+                return "bottom"
+
+        return None
+
+    def _snap_to_shared_wall(
+        self, ghost_rect: pygame.Rect, room_rect: pygame.Rect, shared_wall: str
+    ):
+        """Snap ghost room to align with existing room wall"""
+        if shared_wall == "left":
+            ghost_rect.left = room_rect.right - self.grid_size
+        elif shared_wall == "right":
+            ghost_rect.right = room_rect.left + self.grid_size
+        elif shared_wall == "top":
+            ghost_rect.top = room_rect.bottom - self.grid_size
+        elif shared_wall == "bottom":
+            ghost_rect.bottom = room_rect.top + self.grid_size
 
     def draw(self, surface: pygame.Surface):
         """Override BaseLayout's draw method"""

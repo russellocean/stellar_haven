@@ -16,29 +16,152 @@ from systems.room_manager import RoomManager
 from ui.layouts.game_hud import GameHUD
 
 
+class CelestialObject:
+    def __init__(self, image, x, y, speed, scale=1.0, can_rotate=False):
+        self.original_image = image
+        self.scale = scale
+        self.image = pygame.transform.scale(
+            image, (int(image.get_width() * scale), int(image.get_height() * scale))
+        )
+        self.x = x
+        self.y = y
+        self.speed = speed
+        self.can_rotate = can_rotate
+        self.angle = random.randint(0, 360) if can_rotate else 0
+        self.rotation_speed = random.uniform(-0.5, 0.5) if can_rotate else 0
+        # Add parallax offset based on speed (slower = further back)
+        self.parallax_factor = (
+            speed * 0.1
+        )  # Objects with higher speed will move more with camera
+
+    def update(self):
+        if self.can_rotate:
+            self.angle += self.rotation_speed
+            # Rotate the scaled image
+            self.image = pygame.transform.rotate(
+                pygame.transform.scale(
+                    self.original_image,
+                    (
+                        int(self.original_image.get_width() * self.scale),
+                        int(self.original_image.get_height() * self.scale),
+                    ),
+                ),
+                self.angle,
+            )
+
+
 class Starfield:
     def __init__(self, screen_size):
         self.background = pygame.Surface(screen_size)
         self.background.fill((0, 0, 0))
-        self.stars = []
-        self.create_stars(100)
+        self.objects = []
 
-    def create_stars(self, num_stars):
-        for _ in range(num_stars):
-            x = random.randint(0, self.background.get_width())
-            y = random.randint(0, self.background.get_height())
-            self.stars.append([x, y])
+        # Load sprite sheet
+        spritesheet = pygame.image.load("assets/CelestialObjects.png").convert_alpha()
 
-    def update(self):
-        for star in self.stars:
-            star[1] += 1
-            if star[1] > self.background.get_height():
-                star[1] = 0
+        # Extract sprites
+        self.planets = [
+            spritesheet.subsurface((i * 64, j * 64, 64, 64))
+            for j in range(3)
+            for i in range(4)
+        ]
+        self.moons = [
+            spritesheet.subsurface((i * 32, 3 * 64, 32, 32)) for i in range(4)
+        ]
+        self.dwarf_stars = [
+            spritesheet.subsurface((i * 32, 3 * 64 + 32, 32, 32)) for i in range(4)
+        ]
+        # Add fast-moving stars
+        self.stars = [
+            spritesheet.subsurface(((4 + i) * 32, 3 * 64 + 32, 32, 32))
+            for i in range(4)
+        ]
+
+        self.create_celestial_objects()
+
+        self.camera_x = 0
+        self.camera_y = 0
+        self.last_camera_x = 0
+        self.last_camera_y = 0
+
+    def create_celestial_objects(self):
+        screen_w = self.background.get_width()
+        screen_h = self.background.get_height()
+
+        # Add fast-moving background stars (smallest, fastest)
+        for _ in range(100):
+            star = random.choice(self.stars)
+            x = random.randint(0, screen_w)
+            y = random.randint(-screen_h, screen_h)
+            # 80% chance of slower speed, 20% chance of very fast speed
+            if random.random() < 0.8:
+                speed = random.uniform(1.5, 3.0)  # More common slower speed
+            else:
+                speed = random.uniform(6.0, 12.0)  # Rare but very fast
+            self.objects.append(
+                CelestialObject(star, x, y, speed, scale=0.4, can_rotate=True)
+            )
+
+        # Add planets (larger, slower, no rotation)
+        for _ in range(5):
+            planet = random.choice(self.planets)
+            x = random.randint(0, screen_w)
+            y = random.randint(-screen_h, screen_h)
+            speed = random.uniform(0.1, 0.3)
+            self.objects.append(
+                CelestialObject(planet, x, y, speed, scale=0.8, can_rotate=False)
+            )
+
+        # Add moons (medium, medium speed, with rotation)
+        for _ in range(8):
+            moon = random.choice(self.moons)
+            x = random.randint(0, screen_w)
+            y = random.randint(-screen_h, screen_h)
+            speed = random.uniform(0.3, 0.5)
+            self.objects.append(
+                CelestialObject(moon, x, y, speed, scale=1.0, can_rotate=True)
+            )
+
+        # Add dwarf stars (small, faster, with rotation)
+        for _ in range(12):
+            star = random.choice(self.dwarf_stars)
+            x = random.randint(0, screen_w)
+            y = random.randint(-screen_h, screen_h)
+            speed = random.uniform(0.4, 0.6)
+            self.objects.append(
+                CelestialObject(star, x, y, speed, scale=0.7, can_rotate=True)
+            )
+
+    def update(self, camera_x=0, camera_y=0):
+        screen_w = self.background.get_width()
+
+        # Calculate camera movement delta
+        dx = camera_x - self.last_camera_x
+        dy = camera_y - self.last_camera_y
+
+        for obj in self.objects:
+            # Update horizontal position for scrolling
+            obj.x += obj.speed
+            if obj.x > screen_w:
+                obj.x = -obj.image.get_width()
+
+            # Apply parallax effect based on camera movement
+            obj.x -= dx * obj.parallax_factor
+            obj.y -= dy * obj.parallax_factor
+
+            # Update rotation if applicable
+            obj.update()
+
+        # Store camera position for next frame
+        self.last_camera_x = camera_x
+        self.last_camera_y = camera_y
 
     def draw(self, screen):
         screen.blit(self.background, (0, 0))
-        for star in self.stars:
-            pygame.draw.circle(screen, (255, 255, 255), star, 1)
+        for obj in self.objects:
+            # Center the rotated image at its position
+            rect = obj.image.get_rect(center=(obj.x, obj.y))
+            screen.blit(obj.image, rect)
 
 
 class GameplayScene(Scene):
@@ -169,7 +292,7 @@ class GameplayScene(Scene):
         self.player.update(self.room_manager, self.input_manager)
         # self.room_sprites.update(resource_manager=self.resource_manager)
         # self.room_manager.update(self.resource_manager)
-        self.starfield.update()
+        self.starfield.update(self.camera.x, self.camera.y)
         self.game_hud.update()
 
         # Let building system handle its own toggle

@@ -11,32 +11,36 @@ class GridRenderer:
         self.asset_manager = AssetManager()
         self.camera = None
 
-        # Load tile textures once
+        # Load the industrial tileset
+        tileset = self.asset_manager.get_image("1_Industrial_Tileset_1.png")
+        tile_width = 32  # Assuming each tile is 32x32
+
+        # Extract tiles from the tileset
         self.textures = {
             TileType.WALL: {
-                "horizontal": self.asset_manager.get_image(
-                    "rooms/framework/wall_horizontal.png"
-                ),
-                "vertical": self.asset_manager.get_image(
-                    "rooms/framework/wall_vertical.png"
-                ),
+                "horizontal": tileset.subsurface(
+                    (tile_width * 1, tile_width * 1, tile_width, tile_width)
+                ),  # top wall
+                "vertical": tileset.subsurface(
+                    (tile_width * 3, tile_width * 2, tile_width, tile_width)
+                ),  # side wall
             },
             TileType.CORNER: {
-                "top_left": self.asset_manager.get_image(
-                    "rooms/framework/corner_top_left.png"
+                "top_left": tileset.subsurface(
+                    (0, tile_width * 1, tile_width, tile_width)
                 ),
-                "top_right": self.asset_manager.get_image(
-                    "rooms/framework/corner_top_right.png"
+                "top_right": tileset.subsurface(
+                    (tile_width * 2, tile_width * 1, tile_width, tile_width)
                 ),
-                "bottom_left": self.asset_manager.get_image(
-                    "rooms/framework/corner_bottom_left.png"
+                "bottom_left": tileset.subsurface(
+                    (0, tile_width * 3, tile_width, tile_width)
                 ),
-                "bottom_right": self.asset_manager.get_image(
-                    "rooms/framework/corner_bottom_right.png"
+                "bottom_right": tileset.subsurface(
+                    (tile_width * 2, tile_width * 3, tile_width, tile_width)
                 ),
             },
-            TileType.FLOOR: self.asset_manager.get_image(
-                "rooms/interiors/floor_base.png"
+            TileType.FLOOR: tileset.subsurface(
+                (tile_width * 3, 0, tile_width, tile_width)
             ),
             TileType.DOOR: {
                 "horizontal_left": self.asset_manager.get_image(
@@ -52,10 +56,21 @@ class GridRenderer:
                     "rooms/framework/door_vertical_bottom.png"
                 ),
             },
-            TileType.BACKGROUND: self.asset_manager.get_image(
-                "rooms/interiors/wall_base.png"
-            ),
-            TileType.EMPTY: None,  # Empty tiles are transparent
+            TileType.BACKGROUND: {
+                "top_left": tileset.subsurface(
+                    (4 * tile_width, 0, tile_width, tile_width)
+                ),
+                "top_right": tileset.subsurface(
+                    (5 * tile_width, 0, tile_width, tile_width)
+                ),
+                "bottom_left": tileset.subsurface(
+                    (4 * tile_width, tile_width, tile_width, tile_width)
+                ),
+                "bottom_right": tileset.subsurface(
+                    (5 * tile_width, tile_width, tile_width, tile_width)
+                ),
+            },
+            TileType.EMPTY: None,
         }
 
     def _get_wall_type(self, x: int, y: int) -> str:
@@ -92,13 +107,13 @@ class GridRenderer:
         ] == TileType.WALL
 
         if up and right:
-            return "top_left"
-        if up and left:
-            return "top_right"
-        if down and right:
             return "bottom_left"
-        if down and left:
+        if up and left:
             return "bottom_right"
+        if down and right:
+            return "top_left"
+        if down and left:
+            return "top_right"
 
         # Default to top_left if we can't determine
         return "top_left"
@@ -136,15 +151,26 @@ class GridRenderer:
         # Default to horizontal_left if we can't determine
         return "horizontal_left"
 
+    def _get_background_type(self, x: int, y: int) -> str:
+        """Determine which background tile to use based on world position"""
+        # Use modulo to create a repeating 2x2 pattern
+        is_right = x % 2 == 1
+        is_bottom = y % 2 == 1
+
+        if is_bottom:
+            return "bottom_right" if is_right else "bottom_left"
+        return "top_right" if is_right else "top_left"
+
     def render(self, surface: pygame.Surface, camera):
         """Render the grid based on actual tile types"""
         for pos, tile_type in self.grid.cells.items():
             x, y = pos
             screen_pos = camera.world_to_screen(x * self.tile_size, y * self.tile_size)
 
-            # Render background first if it exists
+            # Update background rendering
             if tile_type == TileType.BACKGROUND:
-                surface.blit(self.textures[TileType.BACKGROUND], screen_pos)
+                bg_type = self._get_background_type(x, y)
+                surface.blit(self.textures[TileType.BACKGROUND][bg_type], screen_pos)
             elif tile_type == TileType.WALL:
                 wall_type = self._get_wall_type(x, y)
                 surface.blit(self.textures[TileType.WALL][wall_type], screen_pos)

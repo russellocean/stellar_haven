@@ -10,6 +10,7 @@ from systems.building_system import BuildingSystem
 from systems.camera import Camera
 from systems.debug_system import DebugSystem
 from systems.game_state_manager import GameState, GameStateManager
+from systems.grid_renderer import GridRenderer
 from systems.resource_manager import ResourceManager
 from systems.room_manager import RoomManager
 from ui.layouts.game_hud import GameHUD
@@ -59,6 +60,9 @@ class GameplayScene(Scene):
         self.asset_manager = AssetManager()
         self.asset_manager.preload_images("images/rooms")
 
+        # Initialize grid renderer BEFORE setup_core_layers
+        self.grid_renderer = GridRenderer(self.room_manager.grid)
+
         # Setup core game elements
         self.starfield = Starfield(game.screen.get_size())
         self._init_player()
@@ -87,15 +91,21 @@ class GameplayScene(Scene):
         # Add debug system to debug layer
         self.debug_layer.append(self.debug_system)
 
+        # Add grid renderer to game layer (before room sprites)
+        self.game_layer.insert(0, self.grid_renderer)
+
     def _setup_core_layers(self):
         """Setup essential game layers"""
         # Create sprite groups
         self.room_sprites = self.room_manager.room_sprites
         self.character_sprites = pygame.sprite.Group(self.player)
 
+        # Set camera for grid renderer
+        self.grid_renderer.set_camera(self.camera)
+
         # Add elements to layers in drawing order
         self.background_layer.append(self.starfield)
-        self.game_layer.extend([self.room_sprites, self.character_sprites])
+        self.game_layer.extend([self.grid_renderer, self.character_sprites])
         self.system_layer.extend([self.building_system])
         self.ui_layer.append(self.game_hud)
 

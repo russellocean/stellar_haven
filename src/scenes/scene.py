@@ -5,7 +5,7 @@ class Scene:
     def __init__(self, game):
         self.game = game
         self.ui_system = UISystem()
-        self.camera = None  # Add camera reference
+        self.camera = None
 
         # Define drawing layers
         self.background_layer = []  # Stars, parallax, etc.
@@ -30,14 +30,18 @@ class Scene:
 
         # Draw game objects with camera offset
         if self.camera:
-            for sprite in self.game_layer:
-                if hasattr(sprite, "sprites"):  # If it's a sprite group
-                    for s in sprite.sprites():
+            for element in self.game_layer:
+                if hasattr(element, "sprites"):  # If it's a sprite group
+                    for s in element.sprites():
                         screen_rect = self.camera.apply(s.rect)
                         screen.blit(s.image, screen_rect)
-                else:  # Single sprite/element
-                    screen_rect = self.camera.apply(sprite.rect)
-                    screen.blit(sprite.image, screen_rect)
+                elif hasattr(element, "render"):  # For tile-based renderers
+                    element.render(screen, self.camera)
+                elif hasattr(element, "rect"):  # For traditional sprites
+                    screen_rect = self.camera.apply(element.rect)
+                    screen.blit(element.image, screen_rect)
+                else:  # Fallback for other elements
+                    element.draw(screen)
         else:
             # Fallback for no camera
             for element in self.game_layer:
@@ -55,6 +59,6 @@ class Scene:
         # Debug layer (elements handle their own camera offset)
         for element in self.debug_layer:
             if hasattr(element, "draw_debug"):
-                element.draw_debug(screen)  # Use specific debug drawing method
+                element.draw_debug(screen)
             else:
-                element.draw(screen)  # Fallback to regular draw
+                element.draw(screen)

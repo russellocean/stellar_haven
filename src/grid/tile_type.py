@@ -1,11 +1,11 @@
-from enum import Enum
+from enum import Enum, auto
 
 
 class TileType(Enum):
-    EMPTY = 0
-    FLOOR = 1
-    WALL = 2
-    DOOR = 3
+    EMPTY = auto()
+    WALL = auto()
+    FLOOR = auto()
+    DOOR = auto()
 
     @property
     def is_walkable(self) -> bool:

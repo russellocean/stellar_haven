@@ -116,10 +116,7 @@ class BuildingSystem:
         if self.room_builder.selected_room_type:
             # Add camera offset to mouse position
             mouse_pos = pygame.mouse.get_pos()
-            world_pos = (
-                mouse_pos[0] + self.camera.offset_x,
-                mouse_pos[1] + self.camera.offset_y,
-            )
+            world_pos = self.camera.screen_to_world(mouse_pos[0], mouse_pos[1])
             self.room_builder.update(world_pos, self.room_manager.get_rooms())
 
     def draw(self, screen: pygame.Surface):

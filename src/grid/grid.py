@@ -1,5 +1,7 @@
 from typing import Dict, List, Optional, Tuple
 
+import pygame
+
 from grid.tile_type import TileType
 from systems.asset_manager import AssetManager
 
@@ -106,6 +108,10 @@ class Grid:
             return tile in [TileType.WALL, TileType.CORNER]
         return False
 
+    def _has_corner(self, x: int, y: int) -> bool:
+        """Check if position has a corner tile"""
+        return self.get_tile(x, y) == TileType.CORNER
+
     def is_valid_room_placement(self, grid_x: int, grid_y: int, room_type: str) -> bool:
         """Check if a room can be placed at grid coordinates"""
         width, height = self.room_config["room_types"][room_type]["grid_size"]
@@ -182,23 +188,49 @@ class Grid:
                 )
         self.cells[(x, y)] = tile_type
 
+    def get_tile(self, x: int, y: int) -> TileType:
+        """Get the tile at a specific position"""
+        return self.cells.get((x, y), TileType.EMPTY)
+
+    def get_adjacent_tiles(self, x: int, y: int) -> List[TileType]:
+        """Get the tiles directly adjacent (left, right, up, down) to a specific position"""
+        return [
+            self.get_tile(x - 1, y),
+            self.get_tile(x + 1, y),
+            self.get_tile(x, y - 1),
+            self.get_tile(x, y + 1),
+        ]
+
+    def get_tile_in_room(self, room_id: str, x: int, y: int) -> TileType:
+        """Get the tile at a specific position in a room"""
+        room = self.rooms[room_id]
+        return self.get_tile(x + room["grid_pos"][0], y + room["grid_pos"][1])
+
+    def get_room_rect(self, room_id: str) -> pygame.Rect:
+        """Get the rectangle of a room"""
+        room = self.rooms[room_id]
+        return pygame.Rect(
+            room["grid_pos"][0] * self.cell_size,
+            room["grid_pos"][1] * self.cell_size,
+            *room["grid_size"],
+        )
+
     def _has_valid_connection(
         self, grid_x: int, grid_y: int, width: int, height: int
     ) -> bool:
-        """Check if a room can connect properly with floor alignment"""
-        new_floor_y = grid_y + height - 2  # Floor is always 1 tile above bottom wall
+        """Check if a room can connect properly by comparing corner positions"""
+        # Get corner positions for the ghost room
+        ghost_corners = [
+            (grid_x, grid_y),  # Top-left
+            (grid_x + width - 1, grid_y),  # Top-right
+            (grid_x, grid_y + height - 1),  # Bottom-left
+            (grid_x + width - 1, grid_y + height - 1),  # Bottom-right
+        ]
 
-        for other in self.rooms.values():
-            ox, oy = other["grid_pos"]
-            ow, oh = other["grid_size"]
-            other_floor_y = oy + oh - 2  # Other room's floor Y
-
-            # If walls overlap (using existing method) and floors align
-            if self._are_rooms_adjacent(grid_x, grid_y, width, height, ox, oy, ow, oh):
-                if (
-                    new_floor_y == other_floor_y
-                ):  # Floors align (regardless of room heights)
-                    return True
+        # Check if any ghost corner position has an existing corner tile
+        for corner_x, corner_y in ghost_corners:
+            if self.get_tile(corner_x, corner_y) == TileType.CORNER:
+                return True
 
         return False
 

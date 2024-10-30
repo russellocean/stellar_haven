@@ -106,21 +106,53 @@ class BuildingSystem:
         if not self.active or not self.selected_room_type or not self.ghost_position:
             return
 
-        # Draw ghost room
-        world_x = self.ghost_position[0] * self.grid.cell_size
-        world_y = self.ghost_position[1] * self.grid.cell_size
-        screen_pos = self.camera.world_to_screen(world_x, world_y)
-
         room_size = self.grid.room_config["room_types"][self.selected_room_type][
             "grid_size"
         ]
-        width = room_size[0] * self.grid.cell_size
-        height = room_size[1] * self.grid.cell_size
+        width, height = room_size
+        grid_x, grid_y = self.ghost_position
 
-        # Draw ghost
-        color = (0, 255, 0, 128) if self.valid_placement else (255, 0, 0, 128)
-        ghost = pygame.Surface((width, height), pygame.SRCALPHA)
-        pygame.draw.rect(ghost, color, ghost.get_rect(), 0)
+        # Create ghost surface
+        world_width = width * self.grid.cell_size
+        world_height = height * self.grid.cell_size
+        ghost = pygame.Surface((world_width, world_height), pygame.SRCALPHA)
+
+        # Draw each tile type with different colors but same opacity
+        opacity = 128
+        for dx in range(width):
+            for dy in range(height):
+                tile_x = dx * self.grid.cell_size
+                tile_y = dy * self.grid.cell_size
+                tile_rect = pygame.Rect(
+                    tile_x, tile_y, self.grid.cell_size, self.grid.cell_size
+                )
+
+                # Determine tile type based on position (similar to _add_room_tiles logic)
+                if dx in (0, width - 1) and dy in (0, height - 1):
+                    # Corners
+                    color = (255, 255, 0, opacity)  # Yellow for corners
+                elif dx in (0, width - 1) or dy in (0, height - 1):
+                    # Walls
+                    color = (128, 128, 128, opacity)  # Gray for walls
+                elif dy == height - 2:
+                    # Floor
+                    color = (0, 255, 255, opacity)  # Cyan for floor
+                else:
+                    # Background
+                    color = (50, 50, 50, opacity)  # Dark gray for background
+
+                pygame.draw.rect(ghost, color, tile_rect)
+
+        # Apply red tint if invalid placement
+        if not self.valid_placement:
+            tint = pygame.Surface((world_width, world_height), pygame.SRCALPHA)
+            pygame.draw.rect(tint, (255, 0, 0, 64), tint.get_rect())
+            ghost.blit(tint, (0, 0))
+
+        # Draw ghost at world position
+        world_x = self.ghost_position[0] * self.grid.cell_size
+        world_y = self.ghost_position[1] * self.grid.cell_size
+        screen_pos = self.camera.world_to_screen(world_x, world_y)
         screen.blit(ghost, screen_pos)
 
     def _handle_state_change(self, event_data: dict):

@@ -218,7 +218,7 @@ class Grid:
     def _has_valid_connection(
         self, grid_x: int, grid_y: int, width: int, height: int
     ) -> bool:
-        """Check if a room can connect properly by comparing corner positions"""
+        """Check if a room can connect properly by comparing corner positions and ensuring wall connection"""
         # Get corner positions for the ghost room
         ghost_corners = [
             (grid_x, grid_y),  # Top-left
@@ -227,10 +227,51 @@ class Grid:
             (grid_x + width - 1, grid_y + height - 1),  # Bottom-right
         ]
 
-        # Check if any ghost corner position has an existing corner tile
+        # Helper function to get wall positions for a corner
+        def get_corner_walls(x: int, y: int, is_ghost: bool) -> List[Tuple[int, int]]:
+            walls = []
+            if is_ghost:
+                # For ghost room, determine where walls would be based on corner position
+                if x == grid_x:  # Left side
+                    walls.append((x, y + 1))  # Vertical wall below
+                    walls.append((x + 1, y))  # Horizontal wall right
+                if x == grid_x + width - 1:  # Right side
+                    walls.append((x, y + 1))  # Vertical wall below
+                    walls.append((x - 1, y))  # Horizontal wall left
+                if y == grid_y:  # Top side
+                    walls.append((x, y + 1))  # Vertical wall below
+                    walls.append((x, y + 1))  # Horizontal wall below
+                if y == grid_y + height - 1:  # Bottom side
+                    walls.append((x, y - 1))  # Vertical wall above
+                    walls.append((x, y - 1))  # Horizontal wall above
+            else:
+                # For existing room, just get adjacent tiles
+                adjacent = self.get_adjacent_tiles(x, y)
+                for i, tile in enumerate(adjacent):
+                    if tile == TileType.WALL:
+                        # Convert adjacent index to position
+                        if i == 0:  # Left
+                            walls.append((x - 1, y))
+                        elif i == 1:  # Right
+                            walls.append((x + 1, y))
+                        elif i == 2:  # Up
+                            walls.append((x, y - 1))
+                        elif i == 3:  # Down
+                            walls.append((x, y + 1))
+            return walls
+
         for corner_x, corner_y in ghost_corners:
+            # First check if this corner overlaps with an existing corner
             if self.get_tile(corner_x, corner_y) == TileType.CORNER:
-                return True
+                # Get wall positions for both ghost and existing room
+                ghost_walls = get_corner_walls(corner_x, corner_y, True)
+                existing_walls = get_corner_walls(corner_x, corner_y, False)
+
+                # Check if any walls match between ghost and existing
+                for ghost_wall in ghost_walls:
+                    for existing_wall in existing_walls:
+                        if ghost_wall == existing_wall:
+                            return True
 
         return False
 

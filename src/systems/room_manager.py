@@ -191,37 +191,24 @@ class RoomManager:
 
     def _is_adjacent(self, rect1: pygame.Rect, rect2: pygame.Rect) -> bool:
         """Check if two rectangles are adjacent (sharing an edge)"""
-        # Add a small tolerance for edge detection
-        tolerance = 32 // 2
+        grid_size = self.collision_system.grid_size
 
-        # Check for horizontal adjacency
-        horizontal_adjacent = (
-            abs(rect1.right - rect2.left) <= tolerance
-            or abs(rect1.left - rect2.right) <= tolerance
-        )
+        # Check for exact alignment
+        horizontal_adjacent = rect1.right == rect2.left or rect1.left == rect2.right
         vertical_overlap = (
-            rect1.top < rect2.bottom - tolerance
-            and rect1.bottom > rect2.top + tolerance
+            rect1.top < rect2.bottom - grid_size
+            and rect1.bottom > rect2.top + grid_size
         )
 
-        # Check for vertical adjacency
-        vertical_adjacent = (
-            abs(rect1.bottom - rect2.top) <= tolerance
-            or abs(rect1.top - rect2.bottom) <= tolerance
-        )
+        vertical_adjacent = rect1.bottom == rect2.top or rect1.top == rect2.bottom
         horizontal_overlap = (
-            rect1.left < rect2.right - tolerance
-            and rect1.right > rect2.left + tolerance
+            rect1.left < rect2.right - grid_size
+            and rect1.right > rect2.left + grid_size
         )
 
-        if (horizontal_adjacent and vertical_overlap) or (
+        return (horizontal_adjacent and vertical_overlap) or (
             vertical_adjacent and horizontal_overlap
-        ):
-            print(f"Adjacent rects: {rect1} and {rect2}")
-            print(f"H-adj: {horizontal_adjacent}, V-overlap: {vertical_overlap}")
-            print(f"V-adj: {vertical_adjacent}, H-overlap: {horizontal_overlap}")
-            return True
-        return False
+        )
 
     def _check_horizontal_overlap(self, rect1: pygame.Rect, rect2: pygame.Rect) -> bool:
         """Check if two rectangles overlap horizontally"""

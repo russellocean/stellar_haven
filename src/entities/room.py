@@ -4,7 +4,6 @@ import pygame
 
 from entities.entity import Entity
 from systems.asset_manager import AssetManager
-from systems.room_renderer import RoomRenderer
 
 
 class Room(Entity):
@@ -36,7 +35,6 @@ class Room(Entity):
 
         self.room_type = name
         self.connected_rooms = []
-        self.renderer = RoomRenderer()
 
     def update(self, resource_manager=None):
         """Update room state"""
@@ -52,16 +50,3 @@ class Room(Entity):
     def contains_point(self, x: int, y: int) -> bool:
         """Check if a point is inside the room"""
         return self.rect.collidepoint(x, y)
-
-    def draw(self, surface: pygame.Surface):
-        """Draw the room with all its components"""
-        # Determine which sides are connected
-        connected_sides = [
-            any(r.rect.bottom == self.rect.top for r in self.connected_rooms),  # Top
-            any(r.rect.left == self.rect.right for r in self.connected_rooms),  # Right
-            any(r.rect.top == self.rect.bottom for r in self.connected_rooms),  # Bottom
-            any(r.rect.right == self.rect.left for r in self.connected_rooms),  # Left
-        ]
-
-        # Render the room using the renderer
-        self.renderer.render_room(surface, self.room_type, self.rect, connected_sides)

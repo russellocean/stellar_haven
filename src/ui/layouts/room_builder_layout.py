@@ -4,12 +4,11 @@ import pygame
 
 from entities.room import Room
 from systems.debug_system import DebugSystem
-from systems.room_renderer import RoomRenderer
 from ui.layouts.base_layout import BaseLayout
 
 
 class RoomBuilderLayout(BaseLayout):
-    def __init__(self, screen: pygame.Surface):
+    def __init__(self, screen: pygame.Surface, room_manager):
         super().__init__(screen)
         self.selected_room_type: Optional[str] = None
         self.ghost_room: Optional[Room] = None
@@ -17,7 +16,8 @@ class RoomBuilderLayout(BaseLayout):
         self.grid_size = 32
         self.ship_rect = None
         self.debug_system = DebugSystem()
-        self.room_renderer = RoomRenderer()
+        self.room_renderer = room_manager.room_renderer
+        self.room_manager = room_manager
 
     def select_room_type(self, room_type: str):
         """Select a room type to place"""

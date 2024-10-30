@@ -2,18 +2,19 @@ from typing import Callable, Optional
 
 import pygame
 
-from systems.room_renderer import RoomRenderer
 from ui.components.button import Button
 
 from .base_layout import BaseLayout
 
 
 class BuildMenu(BaseLayout):
-    def __init__(self, screen: pygame.Surface, on_select: Optional[Callable] = None):
+    def __init__(
+        self, screen: pygame.Surface, room_manager, on_select: Optional[Callable] = None
+    ):
         super().__init__(screen)
         self.on_select = on_select
         self.visible = False
-        self.room_renderer = RoomRenderer()
+        self.room_renderer = room_manager.room_renderer
         self._create_buttons()
 
     def _create_buttons(self):

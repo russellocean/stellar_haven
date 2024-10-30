@@ -12,7 +12,10 @@ class RoomManager:
     def __init__(self, center_x: int, center_y: int):
         self.rooms: Dict[str, Room] = {}
         self.room_sprites = pygame.sprite.Group()
-        self.room_renderer = RoomRenderer()
+        self.collision_system = CollisionSystem(self)  # Create collision system first
+        self.room_renderer = RoomRenderer(
+            self
+        )  # Pass self (RoomManager) to RoomRenderer
         GRID_SIZE = 32
 
         # Snap the position to grid
@@ -46,7 +49,6 @@ class RoomManager:
         self.room_sprites.add(self.ship_room)
 
         # Initialize systems
-        self.collision_system = CollisionSystem(self)
         self.debug = DebugSystem()
         self.debug.add_watch("Total Rooms", lambda: len(self.rooms))
         self.debug.add_watch(

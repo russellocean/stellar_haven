@@ -80,6 +80,7 @@ class Player(Entity):
             self.current_room = new_room
 
     def _update_position(self, room_manager):
+        """Update player position with collision detection"""
         previous_x = self.rect.x
         previous_y = self.rect.y
 
@@ -91,7 +92,7 @@ class Player(Entity):
         # Move vertically
         self.rect.y += self.velocity_y
 
-        # Check for all floor collisions in one pass
+        # Check for floor collision
         if self.velocity_y >= 0:  # Moving down or stationary
             grid_x = self.rect.centerx // room_manager.collision_system.grid_size
             if grid_x in room_manager.collision_system.floor_map:
@@ -102,10 +103,10 @@ class Player(Entity):
                     if room_manager.collision_system.ignored_floor == (grid_x, floor_y):
                         continue
 
-                    # Check if we're on or crossing this floor
-                    if abs(self.rect.bottom - floor_pixel_y) <= 1 or (
-                        self.rect.bottom > floor_pixel_y
-                        and previous_y + self.rect.height <= floor_pixel_y + 1
+                    # Check if we're landing on this floor
+                    if (
+                        previous_y + self.rect.height <= floor_pixel_y
+                        and self.rect.bottom >= floor_pixel_y
                     ):
                         self.rect.bottom = floor_pixel_y
                         self.velocity_y = 0

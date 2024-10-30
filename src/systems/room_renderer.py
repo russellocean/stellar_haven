@@ -9,7 +9,8 @@ from systems.debug_system import DebugSystem
 class RoomRenderer:
     TILE_SIZE = 32
 
-    def __init__(self):
+    def __init__(self, room_manager):
+        self.room_manager = room_manager
         self.asset_manager = AssetManager()
         self.debug = DebugSystem()
 
@@ -111,57 +112,22 @@ class RoomRenderer:
         connected_sides: List[bool],
         connection_points: List[Optional[int]],
     ):
-        """Render walls, corners, and doors"""
+        """Render walls and doors based on collision map"""
         width, height = size
+        grid_width = width // self.TILE_SIZE
+        grid_height = height // self.TILE_SIZE
 
-        # Render walls and corners
+        # First render walls and corners
         self._render_walls(surface, width, height)
         self._render_corners(surface, width, height)
 
-        # Render doors at connection points
-        if connection_points:
-            self._render_doors(
-                surface, width, height, connected_sides, connection_points
-            )
+        # Then render doors based on collision map
+        for x in range(grid_width):
+            for y in range(grid_height):
+                tile_type = self.room_manager.collision_system.collision_map.get((x, y))
 
-    def _render_doors(
-        self,
-        surface: pygame.Surface,
-        width: int,
-        height: int,
-        connected_sides: List[bool],
-        connection_points: List[Optional[int]],
-    ):
-        """Render doors at connection points"""
-        door_positions = [
-            (lambda x: (x, 0), "horizontal"),  # Top
-            (lambda y: (width - self.TILE_SIZE, y), "vertical"),  # Right
-            (lambda x: (x, height - self.TILE_SIZE), "horizontal"),  # Bottom
-            (lambda y: (0, y), "vertical"),  # Left
-        ]
-
-        for i, (pos_func, door_type) in enumerate(door_positions):
-            if connected_sides[i] and connection_points[i] is not None:
-                self._place_door(
-                    surface, pos_func(connection_points[i] * self.TILE_SIZE), door_type
-                )
-
-    def _place_door(
-        self, surface: pygame.Surface, pos: Tuple[int, int], door_type: str
-    ):
-        """Place a door at the specified position"""
-        if door_type == "horizontal":
-            surface.blit(self.framework["door_horizontal_left"], pos)
-            surface.blit(
-                self.framework["door_horizontal_right"],
-                (pos[0] + self.TILE_SIZE, pos[1]),
-            )
-        else:  # vertical
-            surface.blit(self.framework["door_vertical_top"], pos)
-            surface.blit(
-                self.framework["door_vertical_bottom"],
-                (pos[0], pos[1] + self.TILE_SIZE),
-            )
+                if tile_type == self.room_manager.collision_system.TILE_DOOR:
+                    self._render_door_tile(surface, x, y)
 
     def _render_decorations(
         self, surface: pygame.Surface, room_type: str, positions: List[Tuple[int, int]]

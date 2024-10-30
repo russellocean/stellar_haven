@@ -77,41 +77,37 @@ class Grid:
                 self._add_doors_if_adjacent(new_room, other_room)
 
     def _add_doors_if_adjacent(self, room1: dict, room2: dict) -> None:
-        """Add doors between adjacent rooms following door rules"""
+        """Add doors between adjacent rooms"""
         rect1, rect2 = room1["rect"], room2["rect"]
-        door_rules = self.room_config["door_rules"]
-        min_corner_dist = door_rules["min_distance_from_corner"]
 
-        # Check horizontal adjacency (vertical walls)
+        # Check vertical walls for horizontal doors
         if rect1.right == rect2.left or rect1.left == rect2.right:
             overlap_start = max(rect1.top, rect2.top)
             overlap_end = min(rect1.bottom, rect2.bottom)
-            valid_door_range = (
-                overlap_end - overlap_start - (2 * min_corner_dist * self.cell_size)
-            )
 
-            if valid_door_range >= door_rules["door_size"][1] * self.cell_size:
-                door_y = overlap_start + (min_corner_dist * self.cell_size)
+            if overlap_end - overlap_start >= 2 * self.cell_size:
+                # Place door one tile above floor
+                door_y = overlap_end - (2 * self.cell_size)  # One tile above floor
                 door_x = rect1.right if rect1.right == rect2.left else rect1.left
 
-                # Add door tiles
+                # Add horizontal door tiles
                 grid_x, grid_y = self.world_to_grid(door_x, door_y)
                 self.cells[(grid_x, grid_y)] = TileType.DOOR
                 self.cells[(grid_x, grid_y + 1)] = TileType.DOOR
 
-        # Check vertical adjacency (horizontal walls)
+        # Check horizontal walls for vertical doors
         elif rect1.bottom == rect2.top or rect1.top == rect2.bottom:
             overlap_start = max(rect1.left, rect2.left)
             overlap_end = min(rect1.right, rect2.right)
-            valid_door_range = (
-                overlap_end - overlap_start - (2 * min_corner_dist * self.cell_size)
-            )
 
-            if valid_door_range >= door_rules["door_size"][0] * self.cell_size:
-                door_x = overlap_start + (min_corner_dist * self.cell_size)
+            if overlap_end - overlap_start >= 2 * self.cell_size:
+                # Center the door horizontally
+                door_width = 2 * self.cell_size
+                available_width = overlap_end - overlap_start
+                door_x = overlap_start + (available_width - door_width) // 2
                 door_y = rect1.bottom if rect1.bottom == rect2.top else rect1.top
 
-                # Add door tiles
+                # Add vertical door tiles
                 grid_x, grid_y = self.world_to_grid(door_x, door_y)
                 self.cells[(grid_x, grid_y)] = TileType.DOOR
                 self.cells[(grid_x + 1, grid_y)] = TileType.DOOR
@@ -122,28 +118,50 @@ class Grid:
         left, top = self.world_to_grid(rect.left, rect.top)
         right, bottom = self.world_to_grid(rect.right, rect.bottom)
 
-        # Check if area is clear
-        for x in range(left - 1, right + 1):
-            for y in range(top - 1, bottom + 1):
-                if (x, y) in self.cells:
-                    return False
+        # If this is the first room, allow placement
+        if not self.rooms:
+            return True
 
-        # Check if adjacent to at least one room (except first room)
-        if self.rooms:
-            has_adjacent = False
-            for room in self.rooms.values():
-                if (
-                    abs(rect.left - room["rect"].right) <= self.cell_size
-                    or abs(rect.right - room["rect"].left) <= self.cell_size
-                    or abs(rect.top - room["rect"].bottom) <= self.cell_size
-                    or abs(rect.bottom - room["rect"].top) <= self.cell_size
-                ):
-                    has_adjacent = True
+        has_valid_connection = False
+        min_door_space = 2  # Always require 2 tiles for a door
+
+        # Check each existing room for valid connections
+        for room in self.rooms.values():
+            other_rect = room["rect"]
+            other_left, other_top = self.world_to_grid(other_rect.left, other_rect.top)
+            other_right = other_left + room["grid_size"][0]
+            other_bottom = other_top + room["grid_size"][1]
+
+            # Check for wall merging
+
+            # Vertical walls merging
+            if left == other_right - 1 or right - 1 == other_left:
+                overlap_start = max(top + 1, other_top + 1)  # Exclude corners
+                overlap_end = min(bottom - 1, other_bottom - 1)
+                if overlap_end - overlap_start >= min_door_space:
+                    has_valid_connection = True
                     break
-            if not has_adjacent:
+
+            # Horizontal walls merging
+            if top == other_bottom - 1 or bottom - 1 == other_top:
+                overlap_start = max(left + 1, other_left + 1)  # Exclude corners
+                overlap_end = min(right - 1, other_right - 1)
+                if overlap_end - overlap_start >= min_door_space:
+                    has_valid_connection = True
+                    break
+
+        # Check if the new room overlaps too much with any existing room
+        for room in self.rooms.values():
+            other_rect = room["rect"]
+            if (
+                left < other_rect.right - 2
+                and right - 2 > other_rect.left
+                and top < other_rect.bottom - 2
+                and bottom - 2 > other_rect.top
+            ):
                 return False
 
-        return True
+        return has_valid_connection
 
     def get_doors_for_room(self, room_id: str) -> List[dict]:
         """Get all doors for a specific room"""

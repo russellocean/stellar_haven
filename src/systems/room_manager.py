@@ -78,3 +78,7 @@ class RoomManager:
                 connected.append(other_room)
 
         return connected
+
+    def get_rooms(self) -> Dict[str, Room]:
+        """Get all rooms"""
+        return self.rooms

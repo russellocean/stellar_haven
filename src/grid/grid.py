@@ -86,28 +86,46 @@ class Grid:
                 self._add_door_between_rooms(nx, ny, nw, nh, ox, oy, ow, oh)
 
     def _are_rooms_adjacent(self, nx, ny, nw, nh, ox, oy, ow, oh) -> bool:
-        """Check if two rooms are adjacent"""
-        # Check if rooms share a vertical wall
-        vertical_adjacent = (nx + nw == ox or nx == ox + ow) and not (
-            ny + nh <= oy or ny >= oy + oh
-        )
+        """Check if rooms have overlapping walls or corners"""
+        # Check each tile along the edges of the new room
+        for dy in range(nh):
+            # Check left edge
+            if self._has_wall_or_corner(nx, ny + dy):
+                return True
+            # Check right edge
+            if self._has_wall_or_corner(nx + nw - 1, ny + dy):
+                return True
 
-        # Check if rooms share a horizontal wall
-        horizontal_adjacent = (ny + nh == oy or ny == oy + oh) and not (
-            nx + nw <= ox or nx >= ox + ow
-        )
+        for dx in range(nw):
+            # Check top edge
+            if self._has_wall_or_corner(nx + dx, ny):
+                return True
+            # Check bottom edge
+            if self._has_wall_or_corner(nx + dx, ny + nh - 1):
+                return True
 
-        return vertical_adjacent or horizontal_adjacent
+        return False
+
+    def _has_wall_or_corner(self, x: int, y: int) -> bool:
+        """Check if position has a wall or corner tile"""
+        if (x, y) in self.cells:
+            tile = self.cells[(x, y)]
+            return tile in [TileType.WALL, TileType.CORNER]
+        return False
 
     def is_valid_room_placement(self, grid_x: int, grid_y: int, room_type: str) -> bool:
         """Check if a room can be placed at grid coordinates"""
         width, height = self.room_config["room_types"][room_type]["grid_size"]
 
-        # Check for overlaps
+        # Check for overlaps with non-wall tiles
         for dx in range(width):
             for dy in range(height):
-                if (grid_x + dx, grid_y + dy) in self.cells:
-                    return False
+                pos = (grid_x + dx, grid_y + dy)
+                if pos in self.cells:
+                    tile = self.cells[pos]
+                    # Allow overlapping with walls and corners
+                    if tile not in [TileType.WALL, TileType.CORNER]:
+                        return False
 
         # If this is the first room, it's valid
         if not self.rooms:
@@ -188,41 +206,41 @@ class Grid:
         return False
 
     def _add_door_between_rooms(self, nx, ny, nw, nh, ox, oy, ow, oh) -> None:
-        """Add doors between adjacent rooms (side-scroller style)"""
-        # For side-scrollers, we primarily want horizontal connections
-        # Vertical wall connection (side-by-side rooms)
-        if nx + nw == ox or nx == ox + ow:
-            # Place door near the bottom, but not on corners
-            door_y = min(ny + nh - 2, oy + oh - 2)  # One tile up from bottom
+        """Add door where walls overlap"""
+        # Find overlapping wall sections
+        overlapping_positions = []
 
-            # Ensure we're not placing on corners
-            if (
-                door_y == ny
-                or door_y == ny + nh - 1
-                or door_y == oy
-                or door_y == oy + oh - 1
-            ):
-                door_y -= 1  # Move up one more if we'd hit a corner
+        # Check vertical walls
+        for dy in range(1, nh - 1):  # Skip corners
+            # Left wall
+            if self._has_wall_or_corner(nx, ny + dy):
+                overlapping_positions.append((nx, ny + dy, "vertical"))
+            # Right wall
+            if self._has_wall_or_corner(nx + nw - 1, ny + dy):
+                overlapping_positions.append((nx + nw - 1, ny + dy, "vertical"))
 
-            # Place door at valid position
-            if nx + nw == ox:  # New room is left of other room
-                self.set_tile(nx + nw - 1, door_y, TileType.DOOR)
-                self.set_tile(ox, door_y, TileType.DOOR)
-            else:  # New room is right of other room
-                self.set_tile(nx, door_y, TileType.DOOR)
-                self.set_tile(ox + ow - 1, door_y, TileType.DOOR)
+        # Check horizontal walls
+        for dx in range(1, nw - 1):  # Skip corners
+            # Top wall
+            if self._has_wall_or_corner(nx + dx, ny):
+                overlapping_positions.append((nx + dx, ny, "horizontal"))
+            # Bottom wall
+            if self._has_wall_or_corner(nx + dx, ny + nh - 1):
+                overlapping_positions.append((nx + dx, ny + nh - 1, "horizontal"))
 
-        # Horizontal wall connection (stacked rooms - less common in side-scrollers)
-        elif ny + nh == oy or ny == oy + oh:
-            # Find middle of overlapping x range, avoiding corners
-            start_x = max(nx + 1, ox + 1)  # Avoid left corners
-            end_x = min(nx + nw - 2, ox + ow - 2)  # Avoid right corners
-            door_x = start_x + (end_x - start_x) // 2
+        # Place door at best position (prefer bottom wall for side-scroller)
+        if overlapping_positions:
+            # First try bottom wall
+            bottom_positions = [
+                pos
+                for pos in overlapping_positions
+                if pos[1] == ny + nh - 2 and pos[2] == "vertical"
+            ]
+            if bottom_positions:
+                x, y, _ = bottom_positions[0]
+                self.set_tile(x, y, TileType.DOOR)
+                return
 
-            # Place door at valid position
-            if ny + nh == oy:  # New room is above other room
-                self.set_tile(door_x, ny + nh - 1, TileType.DOOR)
-                self.set_tile(door_x, oy, TileType.DOOR)
-            else:  # New room is below other room
-                self.set_tile(door_x, ny, TileType.DOOR)
-                self.set_tile(door_x, oy + oh - 1, TileType.DOOR)
+            # Otherwise use first valid position
+            x, y, _ = overlapping_positions[0]
+            self.set_tile(x, y, TileType.DOOR)

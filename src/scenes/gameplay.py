@@ -17,7 +17,9 @@ from ui.layouts.game_hud import GameHUD
 
 
 class CelestialObject:
-    def __init__(self, image, x, y, speed, scale=1.0, can_rotate=False):
+    def __init__(
+        self, image, x, y, speed, scale=1.0, can_rotate=False, rotation_speed=None
+    ):
         self.original_image = image
         self.scale = scale
         self.image = pygame.transform.scale(
@@ -28,7 +30,12 @@ class CelestialObject:
         self.speed = speed
         self.can_rotate = can_rotate
         self.angle = random.randint(0, 360) if can_rotate else 0
-        self.rotation_speed = random.uniform(-0.5, 0.5) if can_rotate else 0
+        # Use provided rotation speed or generate random if not provided and can rotate
+        self.rotation_speed = (
+            rotation_speed
+            if rotation_speed is not None
+            else (random.uniform(-0.5, 0.5) if can_rotate else 0)
+        )
         # Add parallax offset based on speed (slower = further back)
         self.parallax_factor = (
             speed * 0.1
@@ -71,11 +78,14 @@ class Starfield:
         self.dwarf_stars = [
             spritesheet.subsurface((i * 32, 3 * 64 + 32, 32, 32)) for i in range(4)
         ]
-        # Add fast-moving stars
         self.stars = [
             spritesheet.subsurface(((4 + i) * 32, 3 * 64 + 32, 32, 32))
             for i in range(4)
         ]
+        # Add black holes and nebulae (rightmost column)
+        # Black hole is 128x96 at position (384, 0)
+        self.black_hole = spritesheet.subsurface((256, 0, 128, 96))
+        self.nebulae = spritesheet.subsurface((256, 96, 128, 128))
 
         self.create_celestial_objects()
 
@@ -88,8 +98,42 @@ class Starfield:
         screen_w = self.background.get_width()
         screen_h = self.background.get_height()
 
+        # Add black holes (very slow rotation, dramatic scale)
+        for _ in range(2):
+            x = random.randint(0, screen_w)
+            y = random.randint(-screen_h, screen_h)
+            speed = random.uniform(0.05, 0.1)  # Very slow movement
+            self.objects.append(
+                CelestialObject(
+                    self.black_hole,
+                    x,
+                    y,
+                    speed,
+                    scale=3,
+                    can_rotate=True,
+                    rotation_speed=random.uniform(-0.02, 0.02),  # Slow rotation
+                )
+            )
+
+        # Add nebulae (large, very slow, slight rotation)
+        for _ in range(3):
+            x = random.randint(0, screen_w)
+            y = random.randint(-screen_h, screen_h)
+            speed = random.uniform(0.02, 0.08)  # Extremely slow movement
+            self.objects.append(
+                CelestialObject(
+                    self.nebulae,
+                    x,
+                    y,
+                    speed,
+                    scale=4,
+                    can_rotate=True,
+                    rotation_speed=random.uniform(-0.05, 0.05),  # Very slow rotation
+                )
+            )
+
         # Add fast-moving background stars (smallest, fastest)
-        for _ in range(100):
+        for _ in range(145):
             star = random.choice(self.stars)
             x = random.randint(0, screen_w)
             y = random.randint(-screen_h, screen_h)
@@ -99,10 +143,18 @@ class Starfield:
             else:
                 speed = random.uniform(6.0, 12.0)  # Rare but very fast
             self.objects.append(
-                CelestialObject(star, x, y, speed, scale=0.4, can_rotate=True)
+                CelestialObject(
+                    star,
+                    x,
+                    y,
+                    speed,
+                    scale=0.4,
+                    can_rotate=True,
+                    rotation_speed=random.uniform(-2.0, 2.0),  # Fast rotation
+                )
             )
 
-        # Add planets (larger, slower, no rotation)
+        # Add planets (larger, slower, no rotation) (Closer)
         for _ in range(5):
             planet = random.choice(self.planets)
             x = random.randint(0, screen_w)
@@ -112,6 +164,16 @@ class Starfield:
                 CelestialObject(planet, x, y, speed, scale=0.8, can_rotate=False)
             )
 
+        # Add planets (larger, slower, no rotation) (Farther)
+        for _ in range(30):
+            planet = random.choice(self.planets)
+            x = random.randint(0, screen_w * 3)
+            y = random.randint(-screen_h, screen_h)
+            speed = random.uniform(0.05, 0.8)
+            self.objects.append(
+                CelestialObject(planet, x, y, speed, scale=0.2, can_rotate=False)
+            )
+
         # Add moons (medium, medium speed, with rotation)
         for _ in range(8):
             moon = random.choice(self.moons)
@@ -119,7 +181,15 @@ class Starfield:
             y = random.randint(-screen_h, screen_h)
             speed = random.uniform(0.3, 0.5)
             self.objects.append(
-                CelestialObject(moon, x, y, speed, scale=1.0, can_rotate=True)
+                CelestialObject(
+                    moon,
+                    x,
+                    y,
+                    speed,
+                    scale=1.0,
+                    can_rotate=True,
+                    rotation_speed=random.uniform(-0.8, 0.8),  # Medium rotation
+                )
             )
 
         # Add dwarf stars (small, faster, with rotation)
@@ -129,7 +199,15 @@ class Starfield:
             y = random.randint(-screen_h, screen_h)
             speed = random.uniform(0.4, 0.6)
             self.objects.append(
-                CelestialObject(star, x, y, speed, scale=0.7, can_rotate=True)
+                CelestialObject(
+                    star,
+                    x,
+                    y,
+                    speed,
+                    scale=0.7,
+                    can_rotate=True,
+                    rotation_speed=random.uniform(-1.5, 1.5),  # Fast rotation
+                )
             )
 
     def update(self, camera_x=0, camera_y=0):

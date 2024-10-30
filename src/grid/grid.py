@@ -275,22 +275,77 @@ class Grid:
 
         return False
 
+    def _replace_tile(self, x: int, y: int, new_type: TileType) -> None:
+        """Helper to replace a tile with validation"""
+        current = self.get_tile(x, y)
+        if current != TileType.EMPTY:
+            print(f"Replacing {current} with {new_type} at ({x}, {y})")
+        self.set_tile(x, y, new_type)
+
+    def _get_wall_line(
+        self, start_x: int, start_y: int, end_x: int, end_y: int
+    ) -> List[Tuple[int, int]]:
+        """Get all positions in a straight line between two points"""
+        positions = []
+        if start_x == end_x:  # Vertical line
+            for y in range(min(start_y, end_y), max(start_y, end_y) + 1):
+                positions.append((start_x, y))
+        else:  # Horizontal line
+            for x in range(min(start_x, end_x), max(start_x, end_x) + 1):
+                positions.append((x, start_y))
+        return positions
+
+    def _find_floor_center(self, positions: List[Tuple[int, int]]) -> Tuple[int, int]:
+        """Find the center position of a line of floor tiles"""
+        floor_positions = [
+            (x, y) for x, y in positions if self.get_tile(x, y) == TileType.FLOOR
+        ]
+        if floor_positions:
+            center_idx = len(floor_positions) // 2
+            return floor_positions[center_idx]
+        return positions[len(positions) // 2]  # Fallback to center of line
+
     def _add_door_between_rooms(self, nx, ny, nw, nh, ox, oy, ow, oh) -> None:
-        """Add door at floor level where walls overlap"""
-        floor_y = ny + nh - 2  # Floor is always 1 tile above bottom wall
-
+        """Add door between rooms, handling both side-by-side and stacked configurations"""
         # For side-by-side rooms
-        if nx + nw == ox:  # New room is left of other room
-            door_x = nx + nw - 1
-        elif nx == ox + ow:  # New room is right of other room
-            door_x = nx
-        else:  # Rooms must be overlapping horizontally
-            # Find middle of overlap
-            overlap_start = max(nx, ox)
-            overlap_end = min(nx + nw, ox + ow)
-            door_x = overlap_start + (overlap_end - overlap_start) // 2
+        if nx + nw - 1 == ox or nx == ox + ow - 1:  # One tile overlap
+            floor_y = ny + nh - 2  # Floor is always 1 tile above bottom wall
 
-        # Place floor and door
-        self.set_tile(door_x, floor_y, TileType.FLOOR)  # Floor level
-        self.set_tile(door_x, floor_y - 1, TileType.DOOR)  # Door bottom
-        self.set_tile(door_x, floor_y - 2, TileType.DOOR)  # Door top
+            # For side-by-side rooms
+            if nx + nw - 1 == ox:  # New room is left of other room
+                door_x = nx + nw - 1
+            else:  # New room is right of other room
+                door_x = nx
+
+            # Check to see if the door which is going to be placed has an adjacent tile that is within the bounds of the new room
+
+            # Place floor and door
+            self.set_tile(door_x, floor_y, TileType.FLOOR)  # Floor level
+            self.set_tile(door_x, floor_y - 1, TileType.DOOR)  # Door bottom
+            self.set_tile(door_x, floor_y - 2, TileType.DOOR)  # Door top
+
+        # For stacked rooms
+        elif ny + nh - 1 == oy or ny == oy + oh - 1:  # One tile overlap
+            # Find the overlapping wall line
+            start_x = max(nx + 1, ox + 1)  # Skip corners
+            end_x = min(nx + nw - 1, ox + ow - 1)  # Skip corners
+
+            # Determine which wall we're connecting
+            if ny + nh - 1 == oy:  # New room is above other room
+                wall_y = ny + nh - 1
+            else:  # New room is below other room
+                wall_y = ny
+
+            # Get all positions along the wall
+            wall_positions = self._get_wall_line(start_x, wall_y, end_x, wall_y)
+
+            # Replace walls with background except corners
+            for x, y in wall_positions:
+                if self.get_tile(x, y) == TileType.WALL:
+                    self.set_tile(x, y, TileType.BACKGROUND)
+
+            # Find center and add door
+            center_x = (start_x + end_x) // 2
+            self.set_tile(center_x, wall_y - 1, TileType.DOOR)
+            self.set_tile(center_x - 1, wall_y - 1, TileType.DOOR)
+            self.set_tile(center_x + 1, wall_y - 1, TileType.DOOR)

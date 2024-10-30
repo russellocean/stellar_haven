@@ -9,7 +9,7 @@ from systems.asset_manager import AssetManager
 class Grid:
     def __init__(self, cell_size: int = 32):
         self.cell_size = cell_size
-        self.cells: Dict[Tuple[int, int], TileType] = {}
+        self.cells: Dict[Tuple[int, int], TileType] = {}  # Single source of truth
         self.rooms: Dict[str, dict] = {}  # Stores room data including rect and type
         self.asset_manager = AssetManager()
         self.room_config = self.asset_manager.get_config("rooms")
@@ -52,21 +52,21 @@ class Grid:
 
         # Add walls on left and right sides
         for y in range(top, bottom):
-            self.cells[(left, y)] = TileType.WALL
-            self.cells[(right - 1, y)] = TileType.WALL
+            self.set_tile(left, y, TileType.WALL)
+            self.set_tile(right - 1, y, TileType.WALL)
 
         # Add ceiling
         for x in range(left + 1, right - 1):
-            self.cells[(x, top)] = TileType.WALL
+            self.set_tile(x, top, TileType.WALL)
 
         # Add floor at the bottom
-        for x in range(left + 1, right - 1):
-            self.cells[(x, bottom - 1)] = TileType.FLOOR
+        for x in range(left, right):
+            self.set_tile(x, bottom - 1, TileType.FLOOR)
 
         # Add empty space in the middle
         for x in range(left + 1, right - 1):
             for y in range(top + 1, bottom - 1):
-                self.cells[(x, y)] = TileType.EMPTY
+                self.set_tile(x, y, TileType.EMPTY)
 
     def _process_connections(self, room_id: str) -> None:
         """Process connections for a room"""
@@ -80,37 +80,45 @@ class Grid:
         """Add doors between adjacent rooms"""
         rect1, rect2 = room1["rect"], room2["rect"]
 
-        # Check vertical walls for horizontal doors
-        if rect1.right == rect2.left or rect1.left == rect2.right:
-            overlap_start = max(rect1.top, rect2.top)
-            overlap_end = min(rect1.bottom, rect2.bottom)
+        # Convert to grid coordinates for precise checking
+        r1_left, r1_top = self.world_to_grid(rect1.left, rect1.top)
+        r1_right = r1_left + room1["grid_size"][0] - 1
+        r1_bottom = r1_top + room1["grid_size"][1] - 1
 
-            if overlap_end - overlap_start >= 2 * self.cell_size:
-                # Place door one tile above floor
-                door_y = overlap_end - (2 * self.cell_size)  # One tile above floor
-                door_x = rect1.right if rect1.right == rect2.left else rect1.left
+        r2_left, r2_top = self.world_to_grid(rect2.left, rect2.top)
+        r2_right = r2_left + room2["grid_size"][0] - 1
+        r2_bottom = r2_top + room2["grid_size"][1] - 1
 
-                # Add horizontal door tiles
-                grid_x, grid_y = self.world_to_grid(door_x, door_y)
-                self.cells[(grid_x, grid_y)] = TileType.DOOR
-                self.cells[(grid_x, grid_y + 1)] = TileType.DOOR
+        # Check for shared vertical wall
+        if r1_right == r2_left or r1_left == r2_right:
+            wall_x = r1_right if r1_right == r2_left else r1_left
 
-        # Check horizontal walls for vertical doors
-        elif rect1.bottom == rect2.top or rect1.top == rect2.bottom:
-            overlap_start = max(rect1.left, rect2.left)
-            overlap_end = min(rect1.right, rect2.right)
+            # Find the highest floor between the two rooms
+            floor_y = None
+            for y in range(min(r1_bottom, r2_bottom), max(r1_top, r2_top), -1):
+                if (wall_x, y) in self.cells and self.cells[
+                    (wall_x, y)
+                ] == TileType.FLOOR:
+                    floor_y = y
+                    break
 
-            if overlap_end - overlap_start >= 2 * self.cell_size:
-                # Center the door horizontally
-                door_width = 2 * self.cell_size
-                available_width = overlap_end - overlap_start
-                door_x = overlap_start + (available_width - door_width) // 2
-                door_y = rect1.bottom if rect1.bottom == rect2.top else rect1.top
+            if floor_y is not None:
+                # Place door tiles above the floor
+                self.set_tile(wall_x, floor_y - 2, TileType.DOOR)
+                self.set_tile(wall_x, floor_y - 1, TileType.DOOR)
 
-                # Add vertical door tiles
-                grid_x, grid_y = self.world_to_grid(door_x, door_y)
-                self.cells[(grid_x, grid_y)] = TileType.DOOR
-                self.cells[(grid_x + 1, grid_y)] = TileType.DOOR
+        # Check for shared horizontal wall
+        elif r1_bottom == r2_top or r1_top == r2_bottom:
+            wall_y = r1_bottom if r1_bottom == r2_top else r1_top
+
+            # Find center point between rooms for door placement
+            overlap_start = max(r1_left, r2_left)
+            overlap_end = min(r1_right, r2_right)
+            door_x = overlap_start + ((overlap_end - overlap_start) // 2) - 1
+
+            # Place horizontal door at floor level
+            self.set_tile(door_x, wall_y, TileType.DOOR)
+            self.set_tile(door_x + 1, wall_y, TileType.DOOR)
 
     def is_valid_room_placement(self, rect: pygame.Rect) -> bool:
         """Check if a room can be placed at the given position"""
@@ -207,3 +215,13 @@ class Grid:
 
     def grid_to_world(self, grid_x: int, grid_y: int) -> Tuple[int, int]:
         return (grid_x * self.cell_size, grid_y * self.cell_size)
+
+    def set_tile(self, x: int, y: int, tile_type: TileType) -> None:
+        """Set a tile with validation to prevent multiple types"""
+        if (x, y) in self.cells:
+            current_type = self.cells[(x, y)]
+            if current_type != tile_type:
+                print(
+                    f"WARNING: Changing tile at ({x}, {y}) from {current_type} to {tile_type}"
+                )
+        self.cells[(x, y)] = tile_type

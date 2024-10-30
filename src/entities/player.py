@@ -10,7 +10,7 @@ class Player(Entity):
         self.speed = 5
         self.velocity_x = 0
         self.velocity_y = 0
-        self.gravity = 0.8
+        self.gravity = 0.5
         self.jump_power = -15
         self.is_jumping = False
         self.on_ground = False
@@ -41,20 +41,36 @@ class Player(Entity):
         if input_manager.is_action_pressed("move_right"):
             self.velocity_x = self.speed
 
+        # Check if we're about to walk off a ledge
+        if self.velocity_x != 0 and self.on_ground:
+            # Get the position slightly ahead of where we're moving
+            check_x = (
+                self.rect.centerx
+                + (self.velocity_x / abs(self.velocity_x)) * self.rect.width
+            )
+            check_y = self.rect.bottom + 1  # Check one pixel below feet
+
+            grid_x, grid_y = room_manager.grid.world_to_grid(check_x, check_y)
+            if (
+                grid_x,
+                grid_y,
+            ) not in room_manager.grid.cells or room_manager.grid.cells[
+                (grid_x, grid_y)
+            ] != TileType.FLOOR:
+                self.on_ground = False
+
         # Handle dropping through platforms
         if input_manager.is_action_pressed("move_down") and self.on_ground:
             grid_x, grid_y = room_manager.grid.world_to_grid(
                 self.rect.centerx, self.rect.bottom
             )
-            # Check for floor below
-            next_y = grid_y + 1
-            while next_y < grid_y + 5:  # Check up to 5 tiles down
-                if (grid_x, next_y) in room_manager.grid.cells:
-                    if room_manager.grid.cells[(grid_x, next_y)] == TileType.FLOOR:
-                        self.on_ground = False
-                        self.velocity_y = 1
-                        break
-                next_y += 1
+            # Check if we're standing on a door
+            if (grid_x, grid_y) in room_manager.grid.cells:
+                if room_manager.grid.cells[(grid_x, grid_y)] == TileType.DOOR:
+                    self.on_ground = False
+                    self.velocity_y = 1  # Small downward velocity to start falling
+                    # Move down slightly to clear the door collision
+                    self.rect.y += 1
 
         # Apply gravity
         if not self.on_ground:
@@ -66,7 +82,7 @@ class Player(Entity):
             self.on_ground = False
 
         # Update position and handle collisions
-        self._update_position(room_manager)
+        self._update_position(room_manager, input_manager)
 
         # Check what room we're in
         current_room_id = room_manager.grid.get_room_by_grid_position(grid_x, grid_y)
@@ -80,7 +96,7 @@ class Player(Entity):
                 )
             self.current_room = new_room
 
-    def _update_position(self, room_manager):
+    def _update_position(self, room_manager, input_manager):
         """Update player position with collision detection"""
         previous_x = self.rect.x
         previous_y = self.rect.y
@@ -100,12 +116,19 @@ class Player(Entity):
             )
             if (grid_x, grid_y) in room_manager.grid.cells:
                 tile = room_manager.grid.cells[(grid_x, grid_y)]
-                if tile == TileType.FLOOR or tile == TileType.WALL:
+                # Only treat door as floor if we're moving down and not pressing down key
+                if tile == TileType.DOOR and not input_manager.is_action_pressed(
+                    "move_down"
+                ):
+                    self.rect.bottom = grid_y * room_manager.grid.cell_size
+                    self.velocity_y = 0
+                    self.on_ground = True
+                elif tile == TileType.FLOOR or tile == TileType.WALL:
                     self.rect.bottom = grid_y * room_manager.grid.cell_size
                     self.velocity_y = 0
                     self.on_ground = True
 
-        # Check for ceiling collision
+        # Check for ceiling collision (only for walls, not doors)
         if not self._is_position_valid(room_manager.grid):
             self.rect.y = previous_y
             if self.velocity_y < 0:  # Hit ceiling
@@ -122,6 +145,10 @@ class Player(Entity):
             for y in range(top, bottom + 1):
                 if (x, y) in grid.cells:
                     tile = grid.cells[(x, y)]
-                    if tile == TileType.WALL:
+                    # Doors should never block movement
+                    if tile == TileType.DOOR:
+                        continue
+                    # Both walls and floors should block movement
+                    if tile in (TileType.WALL, TileType.FLOOR):
                         return False
         return True

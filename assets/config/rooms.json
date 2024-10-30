@@ -2,9 +2,7 @@
   "room_types": {
     "bridge": {
       "name": "Bridge",
-      "size": [200, 150],
-      "min_size": [6, 4],
-      "max_size": [8, 6],
+      "grid_size": [8, 6],
       "resource_consumption": {
         "power": 0.1,
         "oxygen": 0.1
@@ -34,9 +32,7 @@
     },
     "engine_room": {
       "name": "Engine Room",
-      "size": [200, 150],
-      "min_size": [5, 4],
-      "max_size": [7, 6],
+      "grid_size": [7, 6],
       "resource_consumption": {
         "oxygen": 0.2
       },
@@ -74,9 +70,7 @@
     },
     "life_support": {
       "name": "Life Support",
-      "size": [200, 150],
-      "min_size": [4, 4],
-      "max_size": [6, 6],
+      "grid_size": [6, 6],
       "resource_consumption": {
         "power": 0.1
       },

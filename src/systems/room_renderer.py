@@ -1,4 +1,4 @@
-from typing import List, Optional, Tuple
+from typing import List, Tuple
 
 import pygame
 
@@ -91,88 +91,43 @@ class RoomRenderer:
         surface: pygame.Surface,
         room_type: str,
         rect: pygame.Rect,
-        connected_sides: List[bool],
-        connection_points: List[Optional[int]] = None,
+        doors: List[dict],
     ):
         """Render a complete room"""
-        size = (rect.width, rect.height)
-        surface.fill((0, 0, 0, 0))  # Clear surface
+        size = rect.size
+        surface.fill((0, 0, 0, 0))
 
-        # Render layers in order
-        self._render_interior(surface, size)
-        self._render_framework(surface, size, connected_sides, connection_points)
-        self._render_decorations(
-            surface, room_type, self.get_decoration_positions(room_type, size)
-        )
+        # Get room theme
+        theme = self.room_config["room_types"][room_type]["color_theme"]
 
-    def _render_framework(
-        self,
-        surface: pygame.Surface,
-        size: Tuple[int, int],
-        connected_sides: List[bool],
-        connection_points: List[Optional[int]],
+        # Render layers
+        self._render_interior(surface, size, theme)
+        self._render_walls(surface, size, theme)
+
+        # Render doors
+        for door in doors:
+            pixel_x = door["x"] * self.TILE_SIZE
+            pixel_y = door["y"] * self.TILE_SIZE
+
+            if door["horizontal"]:
+                surface.blit(self.framework["door_horizontal_left"], (pixel_x, pixel_y))
+                surface.blit(
+                    self.framework["door_horizontal_right"],
+                    (pixel_x + self.TILE_SIZE, pixel_y),
+                )
+            else:
+                surface.blit(self.framework["door_vertical_top"], (pixel_x, pixel_y))
+                surface.blit(
+                    self.framework["door_vertical_bottom"],
+                    (pixel_x, pixel_y + self.TILE_SIZE),
+                )
+
+        # Render corners last
+        self._render_corners(surface, size)
+
+    def _render_interior(
+        self, surface: pygame.Surface, size: Tuple[int, int], theme: str
     ):
-        """Render walls and doors based on collision map"""
-        width, height = size
-        grid_width = width // self.TILE_SIZE
-        grid_height = height // self.TILE_SIZE
-
-        # First render walls and corners
-        self._render_walls(surface, width, height)
-        self._render_corners(surface, width, height)
-
-        # Then render doors based on collision map
-        for x in range(grid_width):
-            for y in range(grid_height):
-                tile_type = self.room_manager.collision_system.collision_map.get((x, y))
-
-                if tile_type == self.room_manager.collision_system.TILE_DOOR:
-                    self._render_door_tile(surface, x, y)
-
-    def _render_decorations(
-        self, surface: pygame.Surface, room_type: str, positions: List[Tuple[int, int]]
-    ):
-        """Render decorations for a room"""
-        if room_type not in self.room_config["room_types"]:
-            return
-
-        room_config = self.room_config["room_types"][room_type]
-        if "decorations" not in room_config:
-            return
-
-        for decoration, pos in zip(room_config["decorations"], positions):
-            key = f"{room_type}_{decoration}"
-            if key in self.decorations:
-                surface.blit(self.decorations[key], pos)
-
-    def get_decoration_positions(
-        self, room_type: str, size: Tuple[int, int]
-    ) -> List[Tuple[int, int]]:
-        """Get positions for room decorations"""
-        if room_type not in self.room_config["room_types"]:
-            return []
-
-        room_config = self.room_config["room_types"][room_type]
-        if "decorations" not in room_config:
-            return []
-
-        width, height = size
-        positions = []
-
-        # For now, just place decorations in a grid pattern
-        num_decorations = len(room_config["decorations"])
-        grid_size = int(num_decorations**0.5) + 1
-        spacing_x = width // (grid_size + 1)
-        spacing_y = height // (grid_size + 1)
-
-        for i in range(num_decorations):
-            x = spacing_x * ((i % grid_size) + 1)
-            y = spacing_y * ((i // grid_size) + 1)
-            positions.append((x, y))
-
-        return positions
-
-    def _render_interior(self, surface: pygame.Surface, size: Tuple[int, int]):
         """Render the interior floor and basic walls"""
         width, height = size
 
@@ -181,8 +136,10 @@ class RoomRenderer:
             for x in range(self.TILE_SIZE, width - self.TILE_SIZE, self.TILE_SIZE):
                 surface.blit(self.interiors["floor"], (x, y))
 
-    def _render_walls(self, surface: pygame.Surface, width: int, height: int):
+    def _render_walls(self, surface: pygame.Surface, size: Tuple[int, int], theme: str):
         """Render the basic walls"""
+        width, height = size
+
         # Top and bottom walls
         for x in range(self.TILE_SIZE, width - self.TILE_SIZE, self.TILE_SIZE):
             surface.blit(self.framework["wall_horizontal"], (x, 0))  # Top
@@ -197,8 +154,10 @@ class RoomRenderer:
                 self.framework["wall_vertical"], (width - self.TILE_SIZE, y)
             )  # Right
 
-    def _render_corners(self, surface: pygame.Surface, width: int, height: int):
+    def _render_corners(self, surface: pygame.Surface, size: Tuple[int, int]):
         """Render the corner pieces"""
+        width, height = size
+
         # Place corner pieces
         surface.blit(self.framework["corner_top_left"], (0, 0))
         surface.blit(self.framework["corner_top_right"], (width - self.TILE_SIZE, 0))

@@ -50,16 +50,17 @@ class CollisionSystem:
             return
 
         debug_surface = pygame.Surface(screen.get_size(), pygame.SRCALPHA)
-        cam_x, cam_y = self.camera.offset_x, self.camera.offset_y
 
         # Draw grid
         for x, y in self.grid.cells:
-            world_x = (x * self.grid.cell_size) - cam_x
-            world_y = (y * self.grid.cell_size) - cam_y
-            tile_type = self.grid.cells[(x, y)]
+            # Convert world coordinates to screen coordinates
+            world_x = x * self.grid.cell_size
+            world_y = y * self.grid.cell_size
+            screen_x, screen_y = self.camera.world_to_screen(world_x, world_y)
 
+            tile_type = self.grid.cells[(x, y)]
             rect = pygame.Rect(
-                world_x, world_y, self.grid.cell_size, self.grid.cell_size
+                screen_x, screen_y, self.grid.cell_size, self.grid.cell_size
             )
             pygame.draw.rect(debug_surface, self.TILE_COLORS[tile_type], rect)
 

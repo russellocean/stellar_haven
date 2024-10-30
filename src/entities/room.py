@@ -1,29 +1,36 @@
-from typing import Dict
-
-import pygame
+from typing import Dict, Tuple
 
 from entities.entity import Entity
 from systems.asset_manager import AssetManager
 
 
 class Room(Entity):
-    def __init__(self, name: str, image_path: str, x: int, y: int):
-        self.name = name
-        self.asset_manager = AssetManager()
+    def __init__(self, room_type: str, grid_pos: Tuple[int, int], cell_size: int):
+        """Initialize a room
+        Args:
+            room_type (str): Type of room from config
+            grid_pos (Tuple[int, int]): Position in grid coordinates
+            cell_size (int): Size of each grid cell in pixels
+        """
+        # Calculate world position from grid position
+        x = grid_pos[0] * cell_size
+        y = grid_pos[1] * cell_size
+
+        # Initialize parent entity
+        super().__init__(None, x, y)
+
+        self.room_type = room_type
+        self.grid_pos = grid_pos
+        self.cell_size = cell_size
 
         # Load room config
-        room_config = (
-            self.asset_manager.get_config("rooms").get("room_types", {}).get(name, {})
-        )
+        self.asset_manager = AssetManager()
+        room_config = self.asset_manager.get_config("rooms")["room_types"][room_type]
 
-        # Create initial surface based on room size from config
-        min_size = room_config.get("min_size", [6, 4])  # Default size if not specified
-        initial_size = (min_size[0] * 32, min_size[1] * 32)
-
-        # Initialize parent with empty surface
-        super().__init__(None, x, y)
-        self.image = pygame.Surface(initial_size, pygame.SRCALPHA)
-        self.rect = self.image.get_rect(topleft=(x, y))  # Use topleft instead of center
+        # Set size based on grid size from config
+        grid_size = room_config["grid_size"]
+        self.width = grid_size[0] * cell_size
+        self.height = grid_size[1] * cell_size
 
         # Initialize room properties from config
         self.resource_generators = room_config.get("resource_generation", {})
@@ -33,11 +40,8 @@ class Room(Entity):
         # Initialize resources
         self.resources: Dict[str, float] = {}
 
-        self.room_type = name
-        self.connected_rooms = []
-
     def update(self, resource_manager=None):
-        """Update room state"""
+        """Update room state and handle resources"""
         if resource_manager:
             # Handle resource generation
             for resource, rate in self.resource_generators.items():
@@ -49,4 +53,10 @@ class Room(Entity):
 
     def contains_point(self, x: int, y: int) -> bool:
         """Check if a point is inside the room"""
-        return self.rect.collidepoint(x, y)
+        return (
+            self.x <= x <= self.x + self.width and self.y <= y <= self.y + self.height
+        )
+
+    def get_center(self) -> Tuple[int, int]:
+        """Get the center position of the room in world coordinates"""
+        return (self.x + (self.width // 2), self.y + (self.height // 2))

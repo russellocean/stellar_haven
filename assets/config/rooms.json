@@ -2,7 +2,7 @@
   "room_types": {
     "starting_quarters": {
       "name": "Starting Quarters",
-      "grid_size": [8, 6],
+      "grid_size": [10, 8],
       "resource_consumption": {
         "power": 0.05,
         "oxygen": 0.05
@@ -33,7 +33,7 @@
     },
     "bridge": {
       "name": "Bridge",
-      "grid_size": [8, 6],
+      "grid_size": [12, 8],
       "resource_consumption": {
         "power": 0.1,
         "oxygen": 0.1
@@ -63,7 +63,7 @@
     },
     "engine_room": {
       "name": "Engine Room",
-      "grid_size": [7, 6],
+      "grid_size": [14, 14],
       "resource_consumption": {
         "oxygen": 0.2
       },
@@ -101,7 +101,7 @@
     },
     "life_support": {
       "name": "Life Support",
-      "grid_size": [6, 6],
+      "grid_size": [8, 8],
       "resource_consumption": {
         "power": 0.1
       },

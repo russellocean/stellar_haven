@@ -192,21 +192,25 @@ class Grid:
     def _has_valid_connection(
         self, grid_x: int, grid_y: int, width: int, height: int
     ) -> bool:
-        """Check if a room at the given position can connect to existing rooms"""
-        # Check each existing room
+        """Check if a room can connect properly with floor alignment"""
+        new_floor_y = grid_y + height - 2  # Floor is always 1 tile above bottom wall
+
         for other in self.rooms.values():
             ox, oy = other["grid_pos"]
             ow, oh = other["grid_size"]
+            other_floor_y = oy + oh - 2  # Other room's floor Y
 
-            # Check if rooms are adjacent
+            # If walls overlap (using existing method) and floors align
             if self._are_rooms_adjacent(grid_x, grid_y, width, height, ox, oy, ow, oh):
-                # If rooms are adjacent, it's a valid connection
-                return True
+                if (
+                    new_floor_y == other_floor_y
+                ):  # Floors align (regardless of room heights)
+                    return True
 
         return False
 
     def _add_door_between_rooms(self, nx, ny, nw, nh, ox, oy, ow, oh) -> None:
-        """Add door where walls overlap"""
+        """Add door where walls overlap (2 tiles tall with floor beneath)"""
         # Find overlapping wall sections
         overlapping_positions = []
 
@@ -238,9 +242,15 @@ class Grid:
             ]
             if bottom_positions:
                 x, y, _ = bottom_positions[0]
-                self.set_tile(x, y, TileType.DOOR)
+                # Place floor at bottom
+                self.set_tile(x, y, TileType.FLOOR)
+                # Place door tiles above floor (2 tiles tall)
+                self.set_tile(x, y - 1, TileType.DOOR)
+                self.set_tile(x, y - 2, TileType.DOOR)
                 return
 
             # Otherwise use first valid position
             x, y, _ = overlapping_positions[0]
-            self.set_tile(x, y, TileType.DOOR)
+            self.set_tile(x, y, TileType.FLOOR)
+            self.set_tile(x, y - 1, TileType.DOOR)
+            self.set_tile(x, y - 2, TileType.DOOR)

@@ -27,6 +27,9 @@ class GameEvent(Enum):
 
     # Alert Events
     ALERT_TRIGGERED = auto()
+    RESOURCE_CRITICAL = auto()
+    RESOURCE_WARNING = auto()
+    RESOURCE_LOW = auto()
 
 
 @dataclass

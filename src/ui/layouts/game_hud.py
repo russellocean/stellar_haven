@@ -29,18 +29,11 @@ class GameHUD(BaseLayout):
         self._setup_event_handlers()
 
     def _init_resource_bars(self):
-        """Initialize resource monitoring bars with bottom-left positioning"""
+        """Initialize resource monitoring bars with enhanced visuals"""
         base_y = self.screen_height - self.MARGIN - self.BAR_HEIGHT
+
+        # Power bar with yellow/gold theme
         self.resource_bars = {
-            "oxygen": ResourceBar(
-                "oxygen",
-                (self.MARGIN, base_y - self.BAR_SPACING),
-                width=self.BAR_WIDTH,
-                height=self.BAR_HEIGHT,
-                color=(64, 156, 255),  # Blue for oxygen
-                # icon_path="assets/images/ui/oxygen_icon.png",
-                icon_path="assets/images/ui/build_icon.png",
-            ),
             "power": ResourceBar(
                 "power",
                 (self.MARGIN, base_y),
@@ -49,6 +42,20 @@ class GameHUD(BaseLayout):
                 color=(255, 215, 0),  # Gold for power
                 # icon_path="assets/images/ui/power_icon.png",
                 icon_path="assets/images/ui/build_icon.png",
+                animation_speed=0.15,  # Faster animation for power fluctuations
+                show_rate=True,  # Show generation/consumption rate
+            ),
+            # Oxygen bar with blue theme
+            "oxygen": ResourceBar(
+                "oxygen",
+                (self.MARGIN, base_y - self.BAR_SPACING),
+                width=self.BAR_WIDTH,
+                height=self.BAR_HEIGHT,
+                color=(64, 156, 255),  # Blue for oxygen
+                # icon_path="assets/images/ui/oxygen_icon.png",
+                icon_path="assets/images/ui/build_icon.png",
+                animation_speed=0.1,
+                show_rate=True,
             ),
         }
 
@@ -91,8 +98,12 @@ class GameHUD(BaseLayout):
         resource = event_data.data.get("resource")
         amount = event_data.data.get("amount")
         previous = event_data.data.get("previous", 0)
+        change = event_data.data.get("change", 0)  # Get the rate of change
 
         if resource in self.resource_bars:
+            # Update the rate display
+            self.resource_bars[resource].update_rate(change)
+
             self._check_resource_status(resource, amount)
 
             # Add visual feedback for significant changes
@@ -105,15 +116,15 @@ class GameHUD(BaseLayout):
         """Show visual feedback for significant resource changes"""
         if change > 0:
             self.alert_system.add_alert(
-                f"+{change:.1f} {resource.title()}",
-                "info",
+                message=f"+{change:.1f} {resource.title()}",
+                alert_type="info",
                 duration=1000,
                 position="bottom",
             )
         else:
             self.alert_system.add_alert(
-                f"{change:.1f} {resource.title()}",
-                "warning",
+                message=f"{change:.1f} {resource.title()}",
+                alert_type="warning",
                 duration=1000,
                 position="bottom",
             )
@@ -137,17 +148,17 @@ class GameHUD(BaseLayout):
 
         if percentage < 0.1:  # Critical threshold (10%)
             self.alert_system.add_alert(
-                f"CRITICAL: {resource.title()} at {percentage:.0%}!",
-                "critical",
-                alert_type=f"resource_critical_{resource}",
+                message=f"CRITICAL: {resource.title()} at {percentage:.0%}!",
+                alert_type="critical",
                 duration=5000,
+                unique_id=f"resource_critical_{resource}",
             )
         elif percentage < 0.2:  # Warning threshold (20%)
             self.alert_system.add_alert(
-                f"Low {resource.title()} - {percentage:.0%}",
-                "warning",
-                alert_type=f"resource_low_{resource}",
+                message=f"Low {resource.title()} - {percentage:.0%}",
+                alert_type="warning",
                 duration=3000,
+                unique_id=f"resource_low_{resource}",
             )
         else:
             # Clear any existing warnings for this resource

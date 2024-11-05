@@ -9,6 +9,14 @@ class ResourceManager:
         self.event_system = EventSystem()
         self._init_resources()
         self._init_debug()
+        self.resource_alerts = {
+            "power": {"critical": 0.1, "warning": 0.2, "low": 0.3},  # 10%  # 20%  # 30%
+            "oxygen": {
+                "critical": 0.15,  # 15%
+                "warning": 0.25,  # 25%
+                "low": 0.35,  # 35%
+            },
+        }
 
     def _init_resources(self):
         """Initialize resource systems"""
@@ -56,13 +64,13 @@ class ResourceManager:
                 ),
             )
 
-            # Emit resource updated event
+            # Emit resource updated event with rate information
             self.event_system.emit(
                 GameEvent.RESOURCE_UPDATED,
                 resource=resource,
                 amount=self.resources[resource],
                 previous=old_value,
-                change=net_change,
+                change=net_change,  # This is the rate per second
             )
 
             # Check resource status
@@ -74,41 +82,58 @@ class ResourceManager:
 
         # Add effects from active rooms
         for room in self.active_rooms:
-            # Generation
-            if resource in room.resource_generators:
+            # Add generation from room config
+            if (
+                hasattr(room, "resource_generators")
+                and resource in room.resource_generators
+            ):
                 net_change += room.resource_generators[resource]
-            # Consumption
-            if resource in room.resource_consumers:
+
+            # Subtract consumption from room config
+            if (
+                hasattr(room, "resource_consumers")
+                and resource in room.resource_consumers
+            ):
                 net_change -= room.resource_consumers[resource]
 
         return net_change
 
     def _check_resource_status(self, resource: str):
-        """Check and handle resource status changes"""
-        current_value = self.resources[resource]
-        max_value = self.max_resources[resource]
+        """Enhanced resource status checking with multiple thresholds"""
+        current = self.resources[resource]
+        maximum = self.max_resources[resource]
+        percentage = current / maximum
 
-        # Check for critical status (below 20%)
-        if current_value < (max_value * 0.2):
+        thresholds = self.resource_alerts[resource]
+
+        if percentage <= thresholds["critical"]:
             if resource not in self.critical_resources:
                 self.critical_resources.add(resource)
                 self.event_system.emit(
-                    GameEvent.RESOURCE_DEPLETED,
+                    GameEvent.RESOURCE_CRITICAL,
                     resource=resource,
-                    current_value=current_value,
+                    percentage=percentage,
+                    threshold="critical",
                 )
-                self.debug.log(f"{resource} critically low: {current_value:.1f}")
-
-        # Check for restoration (above 50%)
-        elif current_value > (max_value * 0.5):
-            if resource in self.critical_resources:
-                self.critical_resources.remove(resource)
-                self.event_system.emit(
-                    GameEvent.RESOURCE_RESTORED,
-                    resource=resource,
-                    current_value=current_value,
-                )
-                self.debug.log(f"{resource} restored: {current_value:.1f}")
+        elif percentage <= thresholds["warning"]:
+            self.event_system.emit(
+                GameEvent.RESOURCE_WARNING,
+                resource=resource,
+                percentage=percentage,
+                threshold="warning",
+            )
+        elif percentage <= thresholds["low"]:
+            self.event_system.emit(
+                GameEvent.RESOURCE_LOW,
+                resource=resource,
+                percentage=percentage,
+                threshold="low",
+            )
+        elif resource in self.critical_resources:
+            self.critical_resources.remove(resource)
+            self.event_system.emit(
+                GameEvent.RESOURCE_RESTORED, resource=resource, percentage=percentage
+            )
 
     def register_room(self, room):
         """Register a room to affect resources"""

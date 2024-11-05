@@ -233,6 +233,38 @@ class GridRenderer:
             return "right"
         return "center"
 
+    def _get_background_context(self, x: int, y: int) -> dict:
+        """Get detailed background context including position and lighting"""
+        # Check adjacent tiles for non-background tiles
+        has_wall_up = (x, y - 1) in self.grid.cells and self.grid.cells[
+            (x, y - 1)
+        ] != TileType.BACKGROUND
+        has_wall_down = (x, y + 1) in self.grid.cells and self.grid.cells[
+            (x, y + 1)
+        ] != TileType.BACKGROUND
+        has_wall_left = (x - 1, y) in self.grid.cells and self.grid.cells[
+            (x - 1, y)
+        ] != TileType.BACKGROUND
+        has_wall_right = (x + 1, y) in self.grid.cells and self.grid.cells[
+            (x + 1, y)
+        ] != TileType.BACKGROUND
+
+        # Determine if we're in the top or bottom half of the room
+        is_top_half = self._is_in_top_half(x, y)
+        lighting = "light" if is_top_half else "dark"
+
+        # Determine position based on adjacent walls
+        if has_wall_up:
+            return {"lighting": lighting, "position": "top_center"}
+        if has_wall_down:
+            return {"lighting": lighting, "position": "bottom_center"}
+        if has_wall_left:
+            return {"lighting": lighting, "position": "right"}
+        if has_wall_right:
+            return {"lighting": lighting, "position": "left"}
+
+        return {"lighting": lighting, "position": "center"}
+
     def render(self, surface: pygame.Surface, camera):
         """Render the grid using tilemap assets"""
         for pos, tile_type in self.grid.cells.items():
@@ -275,10 +307,9 @@ class GridRenderer:
                 texture = self.textures[TileType.FLOOR][position]
 
             elif tile_type == TileType.BACKGROUND:
-                # Use light/dark center based on position in room
-                is_top_half = self._is_in_top_half(x, y)
+                context = self._get_background_context(x, y)
                 texture = self.asset_manager.get_tilemap_group(
-                    "light_center" if is_top_half else "dark_center"
+                    f"{context['lighting']}_{context['position']}"
                 )["surface"]
 
             if texture:

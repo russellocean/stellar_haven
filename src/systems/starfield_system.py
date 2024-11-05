@@ -43,9 +43,12 @@ class StarfieldSystem:
         self.last_camera_x = 0
         self.last_camera_y = 0
 
+        # Optimize shooting star management
+        self.max_shooting_stars = 5  # Limit concurrent shooting stars
         self.shooting_stars = []
-        self.shooting_star_timer = 0
-        self.shooting_star_delay = random.uniform(1, 3)  # Time between shooting stars
+        self.shooting_star_timer = random.uniform(0.5, 1.5)
+        self.last_update_time = pygame.time.get_ticks()
+
         self.screen_size = screen_size
 
     def create_celestial_objects(self):
@@ -188,27 +191,37 @@ class StarfieldSystem:
         self.last_camera_x = camera_x
         self.last_camera_y = camera_y
 
-        # Update shooting star timer
-        self.shooting_star_timer -= 1 / 60  # Assuming 60 FPS
+        # More efficient shooting star timing
+        current_time = pygame.time.get_ticks()
+        dt = (current_time - self.last_update_time) / 1000.0
+        self.last_update_time = current_time
 
-        # Create new shooting stars
-        if self.shooting_star_timer <= 0:
-            # Small chance for a burst of shooting stars
-            if random.random() < 0.1:  # 10% chance
-                num_stars = random.randint(2, 4)
+        # Update shooting star timer
+        self.shooting_star_timer -= dt
+
+        # Create new shooting stars with limits
+        if (
+            self.shooting_star_timer <= 0
+            and len(self.shooting_stars) < self.max_shooting_stars
+        ):
+            # Reduced chance for bursts
+            if random.random() < 0.05:  # 5% chance
+                num_stars = min(
+                    random.randint(2, 3),
+                    self.max_shooting_stars - len(self.shooting_stars),
+                )
                 for _ in range(num_stars):
                     self.shooting_stars.append(ShootingStar(*self.screen_size))
             else:
                 self.shooting_stars.append(ShootingStar(*self.screen_size))
 
-            # Reset timer with random delay
-            self.shooting_star_timer = random.uniform(1, 3)
+            # Reset timer with slightly longer delay
+            self.shooting_star_timer = random.uniform(1.5, 4.0)
 
         # Update existing shooting stars
-        for star in self.shooting_stars[:]:
+        self.shooting_stars = [star for star in self.shooting_stars if star.alive]
+        for star in self.shooting_stars:
             star.update()
-            if not star.alive:
-                self.shooting_stars.remove(star)
 
     def draw(self, screen):
         # Draw regular background first

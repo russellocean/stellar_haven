@@ -4,6 +4,7 @@ from grid.tile_type import TileType
 from systems.asset_manager import AssetManager
 from systems.game_state_manager import GameState
 from systems.room_manager import RoomManager
+from ui.components.button import Button
 from ui.components.toggle_button import ToggleButton
 from ui.layouts.build_menu import BuildMenu
 
@@ -40,6 +41,9 @@ class BuildingSystem:
 
     def select_build_item(self, category: str, item_type: str):
         """Select an item to build"""
+        if category != self.selected_category:
+            self.clear_selection()
+
         self.selected_category = category
         self.selected_type = item_type
         self.ghost_position = None
@@ -248,3 +252,16 @@ class BuildingSystem:
             room_manager=self.room_manager,
             on_select=self.select_build_item,  # Updated to use new select method
         )
+
+    def clear_selection(self):
+        """Clear current building selection"""
+        self.selected_category = None
+        self.selected_type = None
+        self.ghost_position = None
+        self.valid_placement = False
+
+        # Clear button states in build menu
+        if self.build_menu:
+            for element in self.build_menu.ui_system.elements:
+                if isinstance(element, Button):
+                    element.active = False

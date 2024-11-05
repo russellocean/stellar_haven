@@ -56,20 +56,37 @@ class BuildMenu(BaseLayout):
 
     def _clear_build_buttons(self):
         """Clear existing build buttons"""
+        buttons_to_remove = []
         for element in self.ui_system.elements:
-            if (
-                isinstance(element, Button)
-                and element.text.lower() not in self.categories
-            ):
-                self.ui_system.remove_element(element)
+            if isinstance(element, Button):
+                # Keep category buttons, remove everything else
+                is_category = any(
+                    element.text.lower() == cat.title().lower()
+                    for cat in self.categories
+                )
+                if not is_category:
+                    buttons_to_remove.append(element)
+
+        # Remove buttons outside the loop to avoid modifying while iterating
+        for button in buttons_to_remove:
+            self.ui_system.remove_element(button)
 
     def select_category(self, category: str):
         """Switch to a different category"""
-        self.selected_category = category
-        # Clear existing build buttons
-        self._clear_build_buttons()
-        # Create new buttons for category
-        self._create_build_buttons()
+        if category == self.selected_category:
+            # If clicking the same category, just refresh the buttons
+            self._clear_build_buttons()
+            self._create_build_buttons()
+        else:
+            # Switching to new category
+            self.selected_category = category
+            self._clear_build_buttons()
+            self._create_build_buttons()
+
+            # Clear any active selection
+            for element in self.ui_system.elements:
+                if isinstance(element, Button):
+                    element.active = False
 
     def _create_room_buttons(self):
         """Create room selection buttons"""

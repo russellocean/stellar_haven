@@ -181,8 +181,6 @@ class TilemapUI(QMainWindow):
             if self.helper.load_tilemap(file_path):
                 # Reset UI elements
                 self.tile_size_input.setValue(16)  # Reset to default tile size
-                self.multi_tile_width.setValue(1)  # Reset multi-tile size
-                self.multi_tile_height.setValue(1)
                 self.tile_name.clear()  # Clear metadata fields
                 self.custom_props.clear()
                 self.tile_type.setCurrentIndex(0)

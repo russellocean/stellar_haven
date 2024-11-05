@@ -984,6 +984,36 @@
                     "width": 1,
                     "height": 2
                 }
+            },
+            {
+                "tiles": [
+                    {
+                        "x": 2,
+                        "y": 6
+                    }
+                ],
+                "metadata": {
+                    "name": "exterior_bottom_center_1",
+                    "type": "exterior",
+                    "properties": {},
+                    "width": 1,
+                    "height": 1
+                }
+            },
+            {
+                "tiles": [
+                    {
+                        "x": 6,
+                        "y": 6
+                    }
+                ],
+                "metadata": {
+                    "name": "exterior_bottom_center_2",
+                    "type": "exterior",
+                    "properties": {},
+                    "width": 1,
+                    "height": 1
+                }
             }
         ]
     }

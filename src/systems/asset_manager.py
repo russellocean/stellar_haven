@@ -97,36 +97,8 @@ class AssetManager:
     def get_tilemap_group(self, group_name: str) -> Optional[pygame.Surface]:
         """Load and extract a specific tile group from a tilemap based on the config.
 
-        The function automatically finds the correct tilemap containing the group.
-        Group names must be unique across all tilemaps.
-
-        Config file structure:
-        {
-            "global": {
-                "tile_types": [...] # List of valid tile types
-            },
-            "tilemaps/example.png": {
-                "tile_size": 16,
-                "groups": [
-                    {
-                        "tiles": [{"x": 0, "y": 0}, ...],
-                        "metadata": {
-                            "name": "unique_group_name",  # Must be unique across all tilemaps
-                            "type": "tile_type",
-                            "properties": {},
-                            "width": 1,
-                            "height": 1
-                        }
-                    }
-                ]
-            }
-        }
-
-        Args:
-            group_name (str): Unique name of the tile group to extract
-
-        Returns:
-            Optional[pygame.Surface]: The extracted tile group as a surface, or None if not found
+        Returns a tuple of (surface, metadata) where metadata contains width and height
+        in tiles, or None if group not found.
         """
         # Load the tilemap config
         config = self.get_config("tilemap_config")
@@ -161,7 +133,12 @@ class AssetManager:
                         dest_y = (tile["y"] - group["tiles"][0]["y"]) * tile_size
                         surface.blit(tilemap, (dest_x, dest_y), tile_rect)
 
-                    return surface
+                    # Return both surface and tile dimensions
+                    return {
+                        "surface": surface,
+                        "width": group["metadata"]["width"],
+                        "height": group["metadata"]["height"],
+                    }
 
         print(f"Group {group_name} not found in any tilemap")
         return None

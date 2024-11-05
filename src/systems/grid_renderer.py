@@ -1,3 +1,5 @@
+from typing import Optional, Tuple
+
 import pygame
 
 from grid.tile_type import TileType
@@ -125,9 +127,48 @@ class GridRenderer:
                     ],
                 },
             },
-            TileType.BACKGROUND: self.asset_manager.get_tilemap_group("dark_center")[
-                "surface"
-            ],
+            TileType.INTERIOR_BACKGROUND: {
+                "light": {
+                    "top_left": self.asset_manager.get_tilemap_group("light_top_left")[
+                        "surface"
+                    ],
+                    "top_center": self.asset_manager.get_tilemap_group(
+                        "light_top_center"
+                    )["surface"],
+                    "top_right": self.asset_manager.get_tilemap_group(
+                        "light_top_right"
+                    )["surface"],
+                    "left": self.asset_manager.get_tilemap_group("light_left")[
+                        "surface"
+                    ],
+                    "center": self.asset_manager.get_tilemap_group("light_center")[
+                        "surface"
+                    ],
+                    "right": self.asset_manager.get_tilemap_group("light_right")[
+                        "surface"
+                    ],
+                },
+                "dark": {
+                    "bottom_left": self.asset_manager.get_tilemap_group(
+                        "dark_bottom_left"
+                    )["surface"],
+                    "center": self.asset_manager.get_tilemap_group("dark_center")[
+                        "surface"
+                    ],
+                    "bottom_right": self.asset_manager.get_tilemap_group(
+                        "dark_bottom_right"
+                    )["surface"],
+                    "bottom_center": self.asset_manager.get_tilemap_group(
+                        "dark_bottom_center"
+                    )["surface"],
+                    "left": self.asset_manager.get_tilemap_group("dark_left")[
+                        "surface"
+                    ],
+                    "right": self.asset_manager.get_tilemap_group("dark_right")[
+                        "surface"
+                    ],
+                },
+            },
         }
 
         # Store metadata for multi-tile textures
@@ -149,6 +190,8 @@ class GridRenderer:
 
         # Register for tile changes to invalidate cache
         self.grid.add_tile_change_callback(self._on_tiles_changed)
+
+        self.rendered_groups = set()  # Track rendered groups
 
     def _is_exterior_wall(self, x: int, y: int) -> bool:
         """Determine if a wall is on the exterior of the structure"""
@@ -240,46 +283,46 @@ class GridRenderer:
         return "center"
 
     def _get_background_context(self, x: int, y: int) -> dict:
-        """Get detailed background context including position and lighting"""
-        # Check adjacent tiles for non-background tiles
-        has_wall_up = (x, y - 1) in self.grid.cells and self.grid.cells[
-            (x, y - 1)
-        ] != TileType.BACKGROUND
-        has_wall_down = (x, y + 1) in self.grid.cells and self.grid.cells[
-            (x, y + 1)
-        ] != TileType.BACKGROUND
-        has_wall_left = (x - 1, y) in self.grid.cells and self.grid.cells[
-            (x - 1, y)
-        ] != TileType.BACKGROUND
-        has_wall_right = (x + 1, y) in self.grid.cells and self.grid.cells[
-            (x + 1, y)
-        ] != TileType.BACKGROUND
-
+        """Get context for interior background tiles"""
         # Determine if we're in the top or bottom half of the room
         is_top_half = self._is_in_top_half(x, y)
         lighting = "light" if is_top_half else "dark"
 
-        # Check for corners first
+        # Check adjacent walls
+        has_wall_up = (x, y - 1) in self.grid.cells and self.grid.cells[
+            (x, y - 1)
+        ] == TileType.WALL
+        has_wall_down = (x, y + 1) in self.grid.cells and self.grid.cells[
+            (x, y + 1)
+        ] == TileType.WALL
+        has_wall_left = (x - 1, y) in self.grid.cells and self.grid.cells[
+            (x - 1, y)
+        ] == TileType.WALL
+        has_wall_right = (x + 1, y) in self.grid.cells and self.grid.cells[
+            (x + 1, y)
+        ] == TileType.WALL
+
+        # Determine position based on adjacent walls
         if has_wall_up and has_wall_left:
-            return {"lighting": lighting, "position": "top_left"}
-        if has_wall_up and has_wall_right:
-            return {"lighting": lighting, "position": "top_right"}
-        if has_wall_down and has_wall_left:
-            return {"lighting": lighting, "position": "bottom_left"}
-        if has_wall_down and has_wall_right:
-            return {"lighting": lighting, "position": "bottom_right"}
+            position = "top_left"
+        elif has_wall_up and has_wall_right:
+            position = "top_right"
+        elif has_wall_up:
+            position = "top_center"
+        elif has_wall_down and has_wall_left:
+            position = "bottom_left"
+        elif has_wall_down and has_wall_right:
+            position = "bottom_right"
+        elif has_wall_down:
+            position = "bottom_center"
+        elif has_wall_left:
+            position = "left"
+        elif has_wall_right:
+            position = "right"
+        else:
+            position = "center"
 
-        # If not a corner, check for edges
-        if has_wall_up:
-            return {"lighting": lighting, "position": "top_center"}
-        if has_wall_down:
-            return {"lighting": lighting, "position": "bottom_center"}
-        if has_wall_left:
-            return {"lighting": lighting, "position": "left"}  # Flipped from 'right'
-        if has_wall_right:
-            return {"lighting": lighting, "position": "right"}  # Flipped from 'left'
-
-        return {"lighting": lighting, "position": "center"}
+        return {"lighting": lighting, "position": position}
 
     def _on_tiles_changed(self):
         """Clear the tile cache when tiles change"""
@@ -294,10 +337,22 @@ class GridRenderer:
         max_x = visible_area.right + 1
         max_y = visible_area.bottom + 1
 
+        self.rendered_groups.clear()
+
         # Only process tiles within camera bounds
         for pos, tile_type in self.grid.cells.items():
             x, y = pos
+
             if not (min_x <= x <= max_x and min_y <= y <= max_y):
+                continue
+
+            if pos in self.rendered_groups:
+                continue
+
+            # Check if this is part of a tile group
+            group_info = self._find_group_at_position(x, y, tile_type)
+            if group_info:
+                self._render_tile_group(surface, *group_info, camera)
                 continue
 
             screen_pos = camera.world_to_screen(x * self.tile_size, y * self.tile_size)
@@ -349,17 +404,105 @@ class GridRenderer:
                 texture = self.textures[TileType.FLOOR][position]
                 tile_surface.blit(texture, (0, 0))  # Blit to (0,0) of tile_surface
 
-            elif tile_type == TileType.BACKGROUND:
+            elif tile_type == TileType.INTERIOR_BACKGROUND:
                 context = self._get_background_context(x, y)
-                texture = self.asset_manager.get_tilemap_group(
-                    f"{context['lighting']}_{context['position']}"
-                )["surface"]
-                tile_surface.blit(texture, (0, 0))  # Blit to (0,0) of tile_surface
+                texture = self.textures[TileType.INTERIOR_BACKGROUND][
+                    context["lighting"]
+                ][context["position"]]
+                tile_surface.blit(texture, (0, 0))
 
             # Store in cache
             self.tile_cache[pos] = tile_surface
             # Render to main surface
             surface.blit(tile_surface, screen_pos)
+
+    def _find_group_at_position(
+        self, x: int, y: int, tile_type: TileType
+    ) -> Optional[tuple]:
+        """Find if position is part of a tile group"""
+        for group_name, group in self.grid.tile_groups.items():
+            # Skip single-tile groups
+            if group["width"] == 1 and group["height"] == 1:
+                continue
+
+            if group["tile_type"] != tile_type:
+                continue
+
+            # Check if this could be the top-left of a group
+            is_group = True
+            for dx in range(group["width"]):
+                for dy in range(group["height"]):
+                    check_pos = (x + dx, y + dy)
+                    if (
+                        check_pos not in self.grid.cells
+                        or self.grid.cells[check_pos] != tile_type
+                    ):
+                        is_group = False
+                        break
+                if not is_group:
+                    break
+
+            if is_group:
+                return (group_name, x, y)
+        return None
+
+    def _render_tile_group(
+        self, surface: pygame.Surface, group_name: str, x: int, y: int, camera
+    ):
+        """Render a complete tile group"""
+        group = self.grid.tile_groups[group_name]
+        screen_pos = camera.world_to_screen(x * self.tile_size, y * self.tile_size)
+
+        print(f"Rendering group {group_name} at {x}, {y}")
+
+        # Get group texture
+        group_data = self.asset_manager.get_tilemap_group(group_name)
+        if group_data and "surface" in group_data:
+            surface.blit(group_data["surface"], screen_pos)
+
+        # Mark all tiles in group as rendered
+        for dx in range(group["width"]):
+            for dy in range(group["height"]):
+                self.rendered_groups.add((x + dx, y + dy))
+
+    def _find_door_top_left(self, x: int, y: int) -> Optional[Tuple[int, int]]:
+        """Find the top-left coordinates of a door given any door tile position"""
+        # Check if this is already the top-left
+        if all(
+            self.grid.cells.get((x + dx, y + dy)) == TileType.DOOR
+            for dx, dy in [(0, 0), (1, 0), (0, 1), (1, 1), (0, 2), (1, 2)]
+        ):
+            return (x, y)
+
+        # Check if we're in the right column
+        if x > 0 and all(
+            self.grid.cells.get((x - 1, y + dy)) == TileType.DOOR for dy in range(3)
+        ):
+            return (x - 1, y)
+
+        # Check if we're in a lower row
+        if y > 0 and all(
+            self.grid.cells.get((x + dx, y - 1)) == TileType.DOOR for dx in range(2)
+        ):
+            return self._find_door_top_left(x, y - 1)
+
+        return None
+
+    def _render_door(self, surface: pygame.Surface, x: int, y: int, camera):
+        """Render a complete door at the specified position"""
+        screen_pos = camera.world_to_screen(x * self.tile_size, y * self.tile_size)
+
+        # Determine door type and state (default to light/closed for now)
+        door_type = "door_light_closed"
+
+        # Get door texture
+        door_data = self.texture_metadata[door_type]
+        if door_data and "surface" in door_data:
+            # Create a surface for the entire door
+            door_surface = door_data["surface"].copy()
+            surface.blit(door_surface, screen_pos)
+        else:
+            print(f"Warning: Door texture not found for {door_type}")
 
     def set_camera(self, camera):
         """Set camera reference"""

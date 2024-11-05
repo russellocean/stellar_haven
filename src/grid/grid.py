@@ -13,7 +13,29 @@ class Grid:
         self.rooms: Dict[str, dict] = {}  # Keep room data for door connections
         self.asset_manager = AssetManager()
         self.room_config = self.asset_manager.get_config("rooms")
+        self.tilemap_config = self.asset_manager.get_config("tilemap_config")
         self.tile_change_callbacks = []  # Add callback list for tile changes
+
+        # Store tile group definitions
+        self.tile_groups = self._initialize_tile_groups()
+
+    def _initialize_tile_groups(self) -> Dict[str, dict]:
+        """Initialize tile group definitions from config"""
+        groups = {}
+        for tilemap_path, tilemap_data in self.tilemap_config.items():
+            if tilemap_path == "global":
+                continue
+            for group in tilemap_data.get("groups", []):
+                metadata = group["metadata"]
+                # Only add groups that are larger than 1x1
+                if metadata["width"] > 1 or metadata["height"] > 1:
+                    groups[metadata["name"]] = {
+                        "width": metadata["width"],
+                        "height": metadata["height"],
+                        "type": metadata["type"],
+                        "tile_type": TileType[metadata["type"].upper()],
+                    }
+        return groups
 
     def add_room(self, room_id: str, room_type: str, grid_x: int, grid_y: int) -> bool:
         """Add a room at grid coordinates"""
@@ -57,7 +79,7 @@ class Grid:
         # Add background tiles first (for interior)
         for dx in range(1, width - 1):
             for dy in range(1, height - 1):
-                self.set_tile(x + dx, y + dy, TileType.BACKGROUND)
+                self.set_tile(x + dx, y + dy, TileType.INTERIOR_BACKGROUND)
 
         # Add horizontal walls (including corners initially as walls)
         for dx in range(width):
@@ -322,3 +344,81 @@ class Grid:
         """Notify all callbacks that tiles have changed"""
         for callback in self.tile_change_callbacks:
             callback()
+
+    def is_valid_tile_placement(self, grid_x: int, grid_y: int) -> bool:
+        """Check if a single tile can be placed at grid coordinates"""
+        # Check if position is already occupied
+        if (grid_x, grid_y) in self.cells:
+            return False
+
+        # Check if position is adjacent to any existing tile
+        adjacent_positions = [
+            (grid_x - 1, grid_y),
+            (grid_x + 1, grid_y),
+            (grid_x, grid_y - 1),
+            (grid_x, grid_y + 1),
+        ]
+
+        return any(pos in self.cells for pos in adjacent_positions)
+
+    def is_valid_door_placement(self, grid_x: int, grid_y: int) -> bool:
+        """Check if a door (2x3) can be placed at grid coordinates"""
+        # Check if all required tiles are available
+        for dx in range(2):  # Door width
+            for dy in range(3):  # Door height
+                pos = (grid_x + dx, grid_y + dy)
+                # Check if position is already occupied
+                if pos in self.cells:
+                    return False
+
+        # Check if door is adjacent to at least one wall
+        adjacent_positions = [
+            (grid_x - 1, grid_y),  # Left
+            (grid_x + 2, grid_y),  # Right
+            (grid_x, grid_y - 1),  # Top
+            (grid_x, grid_y + 3),  # Bottom
+            (grid_x + 1, grid_y - 1),  # Top middle
+            (grid_x + 1, grid_y + 3),  # Bottom middle
+        ]
+
+        has_adjacent_wall = False
+        for x, y in adjacent_positions:
+            if (x, y) in self.cells and self.cells[(x, y)] == TileType.WALL:
+                has_adjacent_wall = True
+                break
+
+        return has_adjacent_wall
+
+    def is_valid_group_placement(
+        self, grid_x: int, grid_y: int, group_name: str
+    ) -> bool:
+        """Generic validation for any tile group placement"""
+        if group_name not in self.tile_groups:
+            return False
+
+        group = self.tile_groups[group_name]
+        width, height = group["width"], group["height"]
+
+        # Check if area is clear
+        for dx in range(width):
+            for dy in range(height):
+                if (grid_x + dx, grid_y + dy) in self.cells:
+                    return False
+
+        # Check for adjacent tiles (customize based on group type)
+        if group["type"] == "door":
+            return self.is_valid_door_placement(grid_x, grid_y)
+        # Add other group type checks as needed
+
+        return True
+
+    def place_tile_group(self, grid_x: int, grid_y: int, group_name: str) -> bool:
+        """Place a tile group at the specified position"""
+        if not self.is_valid_group_placement(grid_x, grid_y, group_name):
+            return False
+
+        group = self.tile_groups[group_name]
+        for dx in range(group["width"]):
+            for dy in range(group["height"]):
+                self.set_tile(grid_x + dx, grid_y + dy, group["tile_type"])
+        return True

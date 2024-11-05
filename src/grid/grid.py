@@ -124,15 +124,19 @@ class Grid:
         """Check if a room can be placed at grid coordinates"""
         width, height = self.room_config["room_types"][room_type]["grid_size"]
 
-        # Check for overlaps with non-wall tiles
-        for dx in range(width):
-            for dy in range(height):
-                pos = (grid_x + dx, grid_y + dy)
-                if pos in self.cells:
-                    tile = self.cells[pos]
-                    # Allow overlapping with walls and corners
-                    if tile not in [TileType.WALL, TileType.CORNER]:
-                        return False
+        # Check for any overlaps with existing rooms
+        for existing_room in self.rooms.values():
+            ex, ey = existing_room["grid_pos"]
+            ew, eh = existing_room["grid_size"]
+
+            # Check if rectangles overlap
+            if (
+                grid_x < ex + ew
+                and grid_x + width > ex
+                and grid_y < ey + eh
+                and grid_y + height > ey
+            ):
+                return False
 
         # If this is the first room, it's valid
         if not self.rooms:

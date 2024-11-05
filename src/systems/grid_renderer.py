@@ -27,6 +27,9 @@ class GridRenderer:
                     "right": self.asset_manager.get_tilemap_group("exterior_right_1")[
                         "surface"
                     ],
+                    "center": self.asset_manager.get_tilemap_group(
+                        "exterior_connected"
+                    )["surface"],
                 },
                 "interior": {
                     "light": {
@@ -163,53 +166,23 @@ class GridRenderer:
 
     def _get_wall_context(self, x: int, y: int) -> dict:
         """Get detailed wall context including position and lighting"""
-        is_exterior = self._is_exterior_wall(x, y)
+        # Check if any adjacent tile is empty (true exterior)
+        up = (x, y - 1) not in self.grid.cells
+        down = (x, y + 1) not in self.grid.cells
+        left = (x - 1, y) not in self.grid.cells
+        right = (x + 1, y) not in self.grid.cells
 
-        if is_exterior:
-            # Exterior wall logic remains the same
-            up = (x, y - 1) not in self.grid.cells
-            down = (x, y + 1) not in self.grid.cells
-            left = (x - 1, y) not in self.grid.cells
-            right = (x + 1, y) not in self.grid.cells
+        if up:
+            return {"type": "exterior", "position": "top"}
+        if down:
+            return {"type": "exterior", "position": "bottom"}
+        if left:
+            return {"type": "exterior", "position": "left"}
+        if right:
+            return {"type": "exterior", "position": "right"}
 
-            if up:
-                return {"type": "exterior", "position": "top"}
-            if down:
-                return {"type": "exterior", "position": "bottom"}
-            if left:
-                return {"type": "exterior", "position": "left"}
-            if right:
-                return {"type": "exterior", "position": "right"}
-
-        is_top_half = self._is_in_top_half(x, y)
-        context = {"type": "interior", "lighting": "light" if is_top_half else "dark"}
-
-        # Determine position based on adjacent backgrounds
-        has_background_up = (x, y - 1) in self.grid.cells and self.grid.cells[
-            (x, y - 1)
-        ] == TileType.BACKGROUND
-        has_background_down = (x, y + 1) in self.grid.cells and self.grid.cells[
-            (x, y + 1)
-        ] == TileType.BACKGROUND
-        has_background_left = (x - 1, y) in self.grid.cells and self.grid.cells[
-            (x - 1, y)
-        ] == TileType.BACKGROUND
-        has_background_right = (x + 1, y) in self.grid.cells and self.grid.cells[
-            (x + 1, y)
-        ] == TileType.BACKGROUND
-
-        if has_background_left:
-            context["position"] = "right"
-        elif has_background_right:
-            context["position"] = "left"
-        elif has_background_up:
-            context["position"] = "bottom_center" if not is_top_half else "center"
-        elif has_background_down:
-            context["position"] = "top_center" if is_top_half else "center"
-        else:
-            context["position"] = "center"
-
-        return context
+        # If not a true exterior wall, use center texture
+        return {"type": "exterior", "position": "center"}
 
     def _get_corner_context(self, x: int, y: int) -> dict:
         """Get detailed corner context including position and if it's exterior"""
@@ -284,14 +257,7 @@ class GridRenderer:
 
             elif tile_type == TileType.WALL:
                 context = self._get_wall_context(x, y)
-                if context["type"] == "exterior":
-                    texture = self.textures[TileType.WALL]["exterior"][
-                        context["position"]
-                    ]
-                else:
-                    texture = self.textures[TileType.WALL]["interior"][
-                        context["lighting"]
-                    ][context["position"]]
+                texture = self.textures[TileType.WALL]["exterior"][context["position"]]
 
             elif tile_type == TileType.CORNER:
                 context = self._get_corner_context(x, y)

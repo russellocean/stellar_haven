@@ -129,53 +129,64 @@ class GridRenderer:
 
         return False  # Default to bottom half if not in any room
 
+    def _check_adjacent_tile(
+        self, x: int, y: int, tile_type: Optional[TileType] = None
+    ) -> dict:
+        """Helper to check adjacent tiles for a specific type or existence"""
+        adjacent = {
+            "up": (x, y - 1) in self.grid.cells,
+            "down": (x, y + 1) in self.grid.cells,
+            "left": (x - 1, y) in self.grid.cells,
+            "right": (x + 1, y) in self.grid.cells,
+        }
+
+        if tile_type:
+            return {
+                dir: exists and self.grid.cells[(x + dx, y + dy)] == tile_type
+                for dir, exists, (dx, dy) in [
+                    ("up", adjacent["up"], (0, -1)),
+                    ("down", adjacent["down"], (0, 1)),
+                    ("left", adjacent["left"], (-1, 0)),
+                    ("right", adjacent["right"], (1, 0)),
+                ]
+            }
+        return adjacent
+
     def _get_wall_context(self, x: int, y: int) -> dict:
         """Get detailed wall context including position and lighting"""
-        # Check if any adjacent tile is empty (true exterior)
-        up = (x, y - 1) not in self.grid.cells
-        down = (x, y + 1) not in self.grid.cells
-        left = (x - 1, y) not in self.grid.cells
-        right = (x + 1, y) not in self.grid.cells
+        adjacent = self._check_adjacent_tile(x, y)
 
-        if up:
+        if not adjacent["up"]:
             return {"type": "exterior", "position": "top"}
-        if down:
+        if not adjacent["down"]:
             return {"type": "exterior", "position": "bottom"}
-        if left:
+        if not adjacent["left"]:
             return {"type": "exterior", "position": "left"}
-        if right:
+        if not adjacent["right"]:
             return {"type": "exterior", "position": "right"}
 
-        # If not a true exterior wall, use center texture
         return {"type": "exterior", "position": "center"}
 
     def _get_corner_context(self, x: int, y: int) -> dict:
         """Get detailed corner context including position and if it's exterior"""
-        is_exterior = self._is_exterior_wall(x, y)
+        adjacent = self._check_adjacent_tile(x, y)
 
-        if is_exterior:
-            # Determine exterior corner position
-            up = (x, y - 1) not in self.grid.cells
-            down = (x, y + 1) not in self.grid.cells
-            left = (x - 1, y) not in self.grid.cells
-            right = (x + 1, y) not in self.grid.cells
-
-            if up and left:
-                return {"type": "exterior", "position": "top_left"}
-            if up and right:
-                return {"type": "exterior", "position": "top_right"}
-            if down and left:
-                return {"type": "exterior", "position": "bottom_left"}
-            if down and right:
-                return {"type": "exterior", "position": "bottom_right"}
+        # Determine exterior corner position
+        if not adjacent["up"] and not adjacent["left"]:
+            return {"type": "exterior", "position": "top_left"}
+        if not adjacent["up"] and not adjacent["right"]:
+            return {"type": "exterior", "position": "top_right"}
+        if not adjacent["down"] and not adjacent["left"]:
+            return {"type": "exterior", "position": "bottom_left"}
+        if not adjacent["down"] and not adjacent["right"]:
+            return {"type": "exterior", "position": "bottom_right"}
 
         # Interior corner context
-        is_top = (x, y - 1) in self.grid.cells and self.grid.cells[
-            (x, y - 1)
-        ] == TileType.BACKGROUND
-        is_left = (x - 1, y) in self.grid.cells and self.grid.cells[
-            (x - 1, y)
-        ] == TileType.WALL
+        bg_adjacent = self._check_adjacent_tile(x, y, TileType.INTERIOR_BACKGROUND)
+        wall_adjacent = self._check_adjacent_tile(x, y, TileType.WALL)
+
+        is_top = bg_adjacent["up"]
+        is_left = wall_adjacent["left"]
 
         return {
             "type": "interior",
@@ -200,40 +211,27 @@ class GridRenderer:
 
     def _get_background_context(self, x: int, y: int) -> dict:
         """Get context for interior background tiles"""
-        # Determine if we're in the top or bottom half of the room
-        is_top_half = self._is_in_top_half(x, y)
-        lighting = "light" if is_top_half else "dark"
+        lighting = "light" if self._is_in_top_half(x, y) else "dark"
 
         # Check adjacent walls
-        has_wall_up = (x, y - 1) in self.grid.cells and self.grid.cells[
-            (x, y - 1)
-        ] == TileType.WALL
-        has_wall_down = (x, y + 1) in self.grid.cells and self.grid.cells[
-            (x, y + 1)
-        ] == TileType.WALL
-        has_wall_left = (x - 1, y) in self.grid.cells and self.grid.cells[
-            (x - 1, y)
-        ] == TileType.WALL
-        has_wall_right = (x + 1, y) in self.grid.cells and self.grid.cells[
-            (x + 1, y)
-        ] == TileType.WALL
+        wall_adjacent = self._check_adjacent_tile(x, y, TileType.WALL)
 
         # Determine position based on adjacent walls
-        if has_wall_up and has_wall_left:
+        if wall_adjacent["up"] and wall_adjacent["left"]:
             position = "top_left"
-        elif has_wall_up and has_wall_right:
+        elif wall_adjacent["up"] and wall_adjacent["right"]:
             position = "top_right"
-        elif has_wall_up:
+        elif wall_adjacent["up"]:
             position = "top_center"
-        elif has_wall_down and has_wall_left:
+        elif wall_adjacent["down"] and wall_adjacent["left"]:
             position = "bottom_left"
-        elif has_wall_down and has_wall_right:
+        elif wall_adjacent["down"] and wall_adjacent["right"]:
             position = "bottom_right"
-        elif has_wall_down:
+        elif wall_adjacent["down"]:
             position = "bottom_center"
-        elif has_wall_left:
+        elif wall_adjacent["left"]:
             position = "left"
-        elif has_wall_right:
+        elif wall_adjacent["right"]:
             position = "right"
         else:
             position = "center"
@@ -354,23 +352,13 @@ class GridRenderer:
     def _render_wall_tile(self, tile_surface, x, y):
         """Render a single wall tile"""
         context = self._get_wall_context(x, y)
-        if context["type"] == "exterior":
-            texture = self.textures[TileType.WALL]["exterior"][context["position"]]
-        else:
-            texture = self.textures[TileType.WALL]["interior"][context["lighting"]][
-                context["position"]
-            ]
+        texture = self.textures[TileType.WALL]["exterior"][context["position"]]
         tile_surface.blit(texture, (0, 0))
 
     def _render_corner_tile(self, tile_surface, x, y):
         """Render a single corner tile"""
         context = self._get_corner_context(x, y)
-        if context["type"] == "exterior":
-            texture = self.textures[TileType.CORNER]["exterior"][context["position"]]
-        else:
-            texture = self.textures[TileType.CORNER]["interior"][context["lighting"]][
-                context["position"]
-            ]
+        texture = self.textures[TileType.CORNER]["exterior"][context["position"]]
         tile_surface.blit(texture, (0, 0))
 
     def _render_floor_tile(self, tile_surface, x, y):
@@ -390,20 +378,3 @@ class GridRenderer:
     def set_camera(self, camera):
         """Set camera reference"""
         self.camera = camera
-
-    def _get_lighting_context(self, x: int, y: int) -> str:
-        """Determine if position is in light or dark area"""
-        return "light" if self._is_in_top_half(x, y) else "dark"
-
-    def _get_adjacent_walls(self, x: int, y: int) -> dict:
-        """Get adjacent wall information"""
-        return {
-            "up": (x, y - 1) in self.grid.cells
-            and self.grid.cells[(x, y - 1)] == TileType.WALL,
-            "down": (x, y + 1) in self.grid.cells
-            and self.grid.cells[(x, y + 1)] == TileType.WALL,
-            "left": (x - 1, y) in self.grid.cells
-            and self.grid.cells[(x - 1, y)] == TileType.WALL,
-            "right": (x + 1, y) in self.grid.cells
-            and self.grid.cells[(x + 1, y)] == TileType.WALL,
-        }

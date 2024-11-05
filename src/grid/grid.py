@@ -35,6 +35,16 @@ class Grid:
         self._add_room_tiles(room_id)
         self._process_connections(room_id)
 
+        # Recalculate corners for any adjacent rooms
+        for other_id, other in self.rooms.items():
+            if other_id != room_id:
+                ox, oy = other["grid_pos"]
+                ow, oh = other["grid_size"]
+                if self._are_rooms_adjacent(
+                    grid_x, grid_y, width, height, ox, oy, ow, oh
+                ):
+                    self._recalculate_corners(other_id)
+
         return True
 
     def _add_room_tiles(self, room_id: str) -> None:
@@ -48,13 +58,13 @@ class Grid:
             for dy in range(1, height - 1):
                 self.set_tile(x + dx, y + dy, TileType.BACKGROUND)
 
-        # Add horizontal walls (excluding corners)
-        for dx in range(1, width - 1):
+        # Add horizontal walls (including corners initially as walls)
+        for dx in range(width):
             self.set_tile(x + dx, y, TileType.WALL)  # Top wall
             self.set_tile(x + dx, y + height - 1, TileType.WALL)  # Bottom wall
 
-        # Add vertical walls (excluding corners)
-        for dy in range(1, height - 1):
+        # Add vertical walls (including corners initially as walls)
+        for dy in range(height):
             self.set_tile(x, y + dy, TileType.WALL)  # Left wall
             self.set_tile(x + width - 1, y + dy, TileType.WALL)  # Right wall
 
@@ -64,11 +74,8 @@ class Grid:
                 x + dx, y + height - 2, TileType.FLOOR
             )  # One tile above bottom
 
-        # Add corners explicitly
-        self.set_tile(x, y, TileType.CORNER)  # Top-left
-        self.set_tile(x + width - 1, y, TileType.CORNER)  # Top-right
-        self.set_tile(x, y + height - 1, TileType.CORNER)  # Bottom-left
-        self.set_tile(x + width - 1, y + height - 1, TileType.CORNER)  # Bottom-right
+        # Recalculate corners after walls are placed
+        self._recalculate_corners(room_id)
 
     def _process_connections(self, room_id: str) -> None:
         """Verify room has valid connections to existing rooms"""
@@ -270,3 +277,39 @@ class Grid:
             center_idx = len(floor_positions) // 2
             return floor_positions[center_idx]
         return positions[len(positions) // 2]  # Fallback to center of line
+
+    def _recalculate_corners(self, room_id: str) -> None:
+        """Recalculate corners for a room and its adjacent rooms"""
+        room = self.rooms[room_id]
+        x, y = room["grid_pos"]
+        width, height = room["grid_size"]
+
+        # Get area to check (including adjacent tiles)
+        check_area = [
+            (cx, cy)
+            for cx in range(x - 1, x + width + 1)
+            for cy in range(y - 1, y + height + 1)
+        ]
+
+        # Check each position
+        for cx, cy in check_area:
+            # Skip if not a wall or corner
+            if not self._has_wall_or_corner(cx, cy):
+                continue
+
+            # Check if this is part of a horizontal wall
+            is_horizontal = self._has_wall_or_corner(
+                cx - 1, cy
+            ) or self._has_wall_or_corner(cx + 1, cy)
+
+            # Check if this is part of a vertical wall
+            is_vertical = self._has_wall_or_corner(
+                cx, cy - 1
+            ) or self._has_wall_or_corner(cx, cy + 1)
+
+            # Only make it a corner if we have both horizontal and vertical walls
+            # and it's not part of a continuous wall
+            if is_horizontal and is_vertical and not (is_horizontal and is_vertical):
+                self.set_tile(cx, cy, TileType.CORNER)
+            else:
+                self.set_tile(cx, cy, TileType.WALL)

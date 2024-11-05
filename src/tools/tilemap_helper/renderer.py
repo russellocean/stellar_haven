@@ -27,30 +27,48 @@ class TilemapRenderer:
 
     def render_tilemap(self):
         """Render the tilemap"""
-        scaled_map = pygame.transform.scale(
-            self.helper.current_tilemap, self.helper.scaled_size
+        # Round the scaled size to prevent floating point errors
+        scaled_size = (
+            round(self.helper.scaled_size[0]),
+            round(self.helper.scaled_size[1]),
         )
-        self.screen.blit(scaled_map, self.helper.image_pos)
+
+        # Round the image position to ensure pixel-perfect alignment
+        image_pos = (round(self.helper.image_pos[0]), round(self.helper.image_pos[1]))
+
+        scaled_map = pygame.transform.scale(self.helper.current_tilemap, scaled_size)
+        self.screen.blit(scaled_map, image_pos)
 
     def render_grid(self):
         """Draw the tile grid"""
+        if not self.helper.current_tilemap:
+            return
+
+        # Get the number of tiles in each dimension
+        tiles_x = self.helper.current_tilemap.get_width() // self.helper.tile_size
+        tiles_y = self.helper.current_tilemap.get_height() // self.helper.tile_size
+
         # Draw vertical lines
-        for x in range(0, self.helper.scaled_size[0] + 1, self.helper.scaled_tile_size):
-            start_pos = (x + self.helper.image_pos[0], self.helper.image_pos[1])
-            end_pos = (
-                x + self.helper.image_pos[0],
-                self.helper.image_pos[1] + self.helper.scaled_size[1],
+        for i in range(tiles_x + 1):
+            x = self.helper.image_pos[0] + (i * self.helper.scaled_tile_size)
+            pygame.draw.line(
+                self.screen,
+                (255, 255, 255, 64),
+                (x, self.helper.image_pos[1]),
+                (x, self.helper.image_pos[1] + self.helper.scaled_size[1]),
+                1,
             )
-            pygame.draw.line(self.screen, (255, 255, 255, 64), start_pos, end_pos, 1)
 
         # Draw horizontal lines
-        for y in range(0, self.helper.scaled_size[1] + 1, self.helper.scaled_tile_size):
-            start_pos = (self.helper.image_pos[0], y + self.helper.image_pos[1])
-            end_pos = (
-                self.helper.image_pos[0] + self.helper.scaled_size[0],
-                y + self.helper.image_pos[1],
+        for i in range(tiles_y + 1):
+            y = self.helper.image_pos[1] + (i * self.helper.scaled_tile_size)
+            pygame.draw.line(
+                self.screen,
+                (255, 255, 255, 64),
+                (self.helper.image_pos[0], y),
+                (self.helper.image_pos[0] + self.helper.scaled_size[0], y),
+                1,
             )
-            pygame.draw.line(self.screen, (255, 255, 255, 64), start_pos, end_pos, 1)
 
     def render_selections(self):
         """Draw selected tiles"""

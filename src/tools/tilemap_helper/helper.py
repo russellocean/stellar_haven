@@ -47,6 +47,17 @@ class TilemapHelper:
         self.tile_size = 32
         self.selected_tiles = []
         self.tile_configs = {}
+        self.tile_types = [
+            "ground",
+            "wall",
+            "decoration",
+            "planet",
+            "star",
+            "door",
+            "floor",
+            "window",
+            "furniture",
+        ]  # Default types
 
         # View state
         self.grid_visible = True
@@ -97,9 +108,11 @@ class TilemapHelper:
     def save_config(self, filename: str):
         """Save current configuration to file"""
         if not hasattr(self, "tilemap_configs"):
+            print("No config to save")
             return
 
         try:
+            print(f"Saving config to {AssetManager().config_path}/{filename}")
             config_path = os.path.join(AssetManager().config_path, filename)
             with open(config_path, "w") as f:
                 json.dump(self.tilemap_configs, f, indent=4)
@@ -110,8 +123,28 @@ class TilemapHelper:
         """Load configuration from file"""
         try:
             config_path = os.path.join(AssetManager().config_path, filename)
+
+            # Create default config if file doesn't exist
+            if not os.path.exists(config_path):
+                default_config = {"global": {"tile_types": self.tile_types}}
+                # Ensure config directory exists
+                os.makedirs(os.path.dirname(config_path), exist_ok=True)
+                # Write default config
+                with open(config_path, "w") as f:
+                    json.dump(default_config, f, indent=4)
+                self.tilemap_configs = default_config
+                return
+
+            # Load existing config
             with open(config_path, "r") as f:
                 self.tilemap_configs = json.load(f)
+
+            # Load global tile types if they exist
+            if "global" in self.tilemap_configs:
+                self.tile_types = self.tilemap_configs["global"].get(
+                    "tile_types", self.tile_types
+                )
+                self.ui.update_tile_types(self.tile_types)
 
             # Update tile_configs for current tilemap
             if self.tilemap_path:
@@ -288,3 +321,23 @@ class TilemapHelper:
 
         except Exception as e:
             print(f"Failed to load state: {e}")
+
+    def save_tile_types(self, types: list):
+        """Save tile types to configuration"""
+        if not hasattr(self, "tilemap_configs"):
+            self.tilemap_configs = {}
+
+        # Add/update global tile types
+        self.tilemap_configs["global"] = {"tile_types": types}
+        self.tile_types = types
+
+        # Ensure config directory exists
+        os.makedirs(
+            os.path.dirname(
+                os.path.join(AssetManager().config_path, "tilemap_config.json")
+            ),
+            exist_ok=True,
+        )
+
+        # Save to file
+        self.save_config("tilemap_config.json")

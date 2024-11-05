@@ -3,13 +3,17 @@ from pathlib import Path
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (
     QComboBox,
+    QDialog,
     QDockWidget,
     QFileDialog,
     QFormLayout,
     QGroupBox,
     QHBoxLayout,
+    QInputDialog,
     QLabel,
     QLineEdit,
+    QListWidget,
+    QListWidgetItem,
     QMainWindow,
     QMessageBox,
     QPushButton,
@@ -88,6 +92,9 @@ class TilemapUI(QMainWindow):
         # Tile type
         self.tile_type = QComboBox()
         self.tile_type.addItems(["ground", "wall", "decoration", "planet", "custom"])
+        manage_types_btn = QPushButton("Manage Types")
+        manage_types_btn.clicked.connect(self.manage_types)
+        metadata_layout.addRow("", manage_types_btn)
         metadata_layout.addRow("Type:", self.tile_type)
 
         # Multi-tile size
@@ -250,3 +257,84 @@ class TilemapUI(QMainWindow):
         self.multi_tile_height.setValue(1)
         self.custom_props.clear()
         self.pos_label.setText("No tile selected")
+
+    def manage_types(self):
+        """Open type manager dialog"""
+        dialog = TypeManagerDialog(self, self.helper.tile_types)
+        if dialog.exec_():
+            new_types = dialog.get_types()
+            if new_types:  # Don't allow empty type list
+                print(f"New types: {new_types}")
+                # Update helper's types and save to config
+                self.helper.save_tile_types(new_types)
+                # Update UI combobox
+                self.update_tile_types(new_types)
+
+    def update_tile_types(self, types: list):
+        """Update the tile type combo box"""
+        current = self.tile_type.currentText()
+        self.tile_type.clear()
+        self.tile_type.addItems(types)
+
+        # Try to restore previous selection
+        index = self.tile_type.findText(current)
+        if index >= 0:
+            self.tile_type.setCurrentIndex(index)
+
+
+class TypeManagerDialog(QDialog):
+    def __init__(self, parent=None, current_types=None):
+        super().__init__(parent)
+        self.setWindowTitle("Manage Tile Types")
+        self.setModal(True)
+        self.setup_ui(current_types or [])
+
+    def setup_ui(self, current_types):
+        layout = QVBoxLayout()
+
+        # Type list
+        self.type_list = QListWidget()
+        self.type_list.addItems(current_types)
+        layout.addWidget(self.type_list)
+
+        # Action buttons
+        btn_layout = QHBoxLayout()
+        add_btn = QPushButton("Add Type")
+        add_btn.clicked.connect(self.add_type)
+        btn_layout.addWidget(add_btn)
+
+        remove_btn = QPushButton("Remove Type")
+        remove_btn.clicked.connect(self.remove_type)
+        btn_layout.addWidget(remove_btn)
+        layout.addLayout(btn_layout)
+
+        # Dialog buttons
+        dialog_buttons = QHBoxLayout()
+        ok_btn = QPushButton("Done")
+        ok_btn.clicked.connect(self.accept)
+        cancel_btn = QPushButton("Cancel")
+        cancel_btn.clicked.connect(self.reject)
+        dialog_buttons.addWidget(ok_btn)
+        dialog_buttons.addWidget(cancel_btn)
+        layout.addLayout(dialog_buttons)
+
+        self.setLayout(layout)
+
+    def add_type(self):
+        new_type, ok = QInputDialog.getText(self, "Add Type", "Enter new tile type:")
+        if ok and new_type:
+            if new_type not in [
+                self.type_list.item(i).text() for i in range(self.type_list.count())
+            ]:
+                item = QListWidgetItem(new_type)
+                self.type_list.addItem(item)
+            else:
+                QMessageBox.warning(self, "Warning", "Type already exists!")
+
+    def remove_type(self):
+        current = self.type_list.currentItem()
+        if current:
+            self.type_list.takeItem(self.type_list.row(current))
+
+    def get_types(self):
+        return [self.type_list.item(i).text() for i in range(self.type_list.count())]

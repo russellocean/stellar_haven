@@ -65,7 +65,7 @@ class TilemapUI(QMainWindow):
         size_layout = QFormLayout()
         self.tile_size_input = QSpinBox()
         self.tile_size_input.setRange(8, 256)
-        self.tile_size_input.setValue(32)
+        self.tile_size_input.setValue(16)
         self.tile_size_input.valueChanged.connect(self.update_tile_size)
         size_layout.addRow("Tile Size (px):", self.tile_size_input)
         size_group.setLayout(size_layout)

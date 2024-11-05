@@ -11,118 +11,174 @@ class GridRenderer:
         self.asset_manager = AssetManager()
         self.camera = None
 
-        # Initialize texture mappings
+        # Initialize texture mappings with more specific contexts
         self.textures = {
             TileType.WALL: {
-                "horizontal": self.asset_manager.get_tilemap_group("light_top_center"),
-                "vertical": self.asset_manager.get_tilemap_group("dark_left"),
+                "exterior": {
+                    "top": self.asset_manager.get_tilemap_group(
+                        "exterior_top_center_1"
+                    ),
+                    "bottom": self.asset_manager.get_tilemap_group(
+                        "exterior_bottom_center"
+                    ),
+                    "left": self.asset_manager.get_tilemap_group("exterior_left_1"),
+                    "right": self.asset_manager.get_tilemap_group("exterior_right_1"),
+                },
+                "interior": {
+                    "light": {
+                        "top": self.asset_manager.get_tilemap_group("light_top_center"),
+                        "center": self.asset_manager.get_tilemap_group("light_center"),
+                        "left": self.asset_manager.get_tilemap_group("light_left"),
+                        "right": self.asset_manager.get_tilemap_group("light_right"),
+                    },
+                    "dark": {
+                        "center": self.asset_manager.get_tilemap_group("dark_center"),
+                        "left": self.asset_manager.get_tilemap_group("dark_left"),
+                        "right": self.asset_manager.get_tilemap_group("dark_right"),
+                        "bottom": self.asset_manager.get_tilemap_group(
+                            "dark_bottom_center"
+                        ),
+                    },
+                },
             },
             TileType.CORNER: {
-                "top_left": self.asset_manager.get_tilemap_group("light_top_left"),
-                "top_right": self.asset_manager.get_tilemap_group("light_top_right"),
-                "bottom_left": self.asset_manager.get_tilemap_group("dark_bottom_left"),
-                "bottom_right": self.asset_manager.get_tilemap_group(
-                    "dark_bottom_right"
-                ),
+                "exterior": {
+                    "top_left": self.asset_manager.get_tilemap_group(
+                        "exterior_top_left"
+                    ),
+                    "top_right": self.asset_manager.get_tilemap_group(
+                        "exterior_top_right"
+                    ),
+                    "bottom_left": self.asset_manager.get_tilemap_group(
+                        "exterior_bottom_left"
+                    ),
+                    "bottom_right": self.asset_manager.get_tilemap_group(
+                        "exterior_bottom_right"
+                    ),
+                },
+                "interior": {
+                    "light": {
+                        "top_left": self.asset_manager.get_tilemap_group(
+                            "light_top_left"
+                        ),
+                        "top_right": self.asset_manager.get_tilemap_group(
+                            "light_top_right"
+                        ),
+                    },
+                    "dark": {
+                        "bottom_left": self.asset_manager.get_tilemap_group(
+                            "dark_bottom_left"
+                        ),
+                        "bottom_right": self.asset_manager.get_tilemap_group(
+                            "dark_bottom_right"
+                        ),
+                    },
+                },
             },
-            TileType.FLOOR: self.asset_manager.get_tilemap_group("platform_center"),
+            TileType.FLOOR: {
+                "left": self.asset_manager.get_tilemap_group("platform_left"),
+                "center": self.asset_manager.get_tilemap_group("platform_center"),
+                "right": self.asset_manager.get_tilemap_group("platform_right"),
+            },
             TileType.DOOR: {
-                "horizontal": self.asset_manager.get_tilemap_group("door_light_closed"),
-                "vertical": self.asset_manager.get_tilemap_group("door_light_closed"),
+                "light": {
+                    "closed": self.asset_manager.get_tilemap_group("door_light_closed"),
+                    "open": self.asset_manager.get_tilemap_group("door_light_open"),
+                },
+                "special": {
+                    "closed": self.asset_manager.get_tilemap_group(
+                        "door_special_closed"
+                    ),
+                    "open": self.asset_manager.get_tilemap_group("door_special_open"),
+                },
             },
-            TileType.BACKGROUND: {
-                "default": self.asset_manager.get_tilemap_group("dark_center"),
-            },
-            TileType.EMPTY: None,
+            TileType.BACKGROUND: self.asset_manager.get_tilemap_group("dark_center"),
         }
 
-    def _get_wall_type(self, x: int, y: int) -> str:
-        """Determine wall type based on surrounding tiles"""
-        # Check surrounding tiles
-        left = (x - 1, y) in self.grid.cells and self.grid.cells[(x - 1, y)] in [
-            TileType.WALL,
-            TileType.CORNER,
-        ]
-        right = (x + 1, y) in self.grid.cells and self.grid.cells[(x + 1, y)] in [
-            TileType.WALL,
-            TileType.CORNER,
-        ]
+    def _is_exterior_wall(self, x: int, y: int) -> bool:
+        """Determine if a wall is on the exterior of the structure"""
+        # Check if any adjacent tile is empty
+        adjacent = [(x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)]
+        return any(pos not in self.grid.cells for pos in adjacent)
 
-        # For walls, we only need to check if it's horizontal or vertical
-        if left or right:
-            return "horizontal"
-        return "vertical"
+    def _get_wall_context(self, x: int, y: int) -> dict:
+        """Get detailed wall context including position and lighting"""
+        is_exterior = self._is_exterior_wall(x, y)
 
-    def _get_corner_type(self, x: int, y: int) -> str:
-        """Determine corner type based on position relative to walls"""
-        # Check surrounding tiles
-        left = (x - 1, y) in self.grid.cells and self.grid.cells[
+        if is_exterior:
+            # Determine exterior wall position
+            up = (x, y - 1) not in self.grid.cells
+            down = (x, y + 1) not in self.grid.cells
+            left = (x - 1, y) not in self.grid.cells
+            right = (x + 1, y) not in self.grid.cells
+
+            if up:
+                return {"type": "exterior", "position": "top"}
+            if down:
+                return {"type": "exterior", "position": "bottom"}
+            if left:
+                return {"type": "exterior", "position": "left"}
+            if right:
+                return {"type": "exterior", "position": "right"}
+
+        # Interior wall context
+        is_top = (x, y - 1) in self.grid.cells and self.grid.cells[
+            (x, y - 1)
+        ] == TileType.BACKGROUND
+        return {
+            "type": "interior",
+            "lighting": "light" if is_top else "dark",
+            "position": "top" if is_top else "center",
+        }
+
+    def _get_corner_context(self, x: int, y: int) -> dict:
+        """Get detailed corner context including position and if it's exterior"""
+        is_exterior = self._is_exterior_wall(x, y)
+
+        if is_exterior:
+            # Determine exterior corner position
+            up = (x, y - 1) not in self.grid.cells
+            down = (x, y + 1) not in self.grid.cells
+            left = (x - 1, y) not in self.grid.cells
+            right = (x + 1, y) not in self.grid.cells
+
+            if up and left:
+                return {"type": "exterior", "position": "top_left"}
+            if up and right:
+                return {"type": "exterior", "position": "top_right"}
+            if down and left:
+                return {"type": "exterior", "position": "bottom_left"}
+            if down and right:
+                return {"type": "exterior", "position": "bottom_right"}
+
+        # Interior corner context
+        is_top = (x, y - 1) in self.grid.cells and self.grid.cells[
+            (x, y - 1)
+        ] == TileType.BACKGROUND
+        is_left = (x - 1, y) in self.grid.cells and self.grid.cells[
             (x - 1, y)
         ] == TileType.WALL
+
+        return {
+            "type": "interior",
+            "lighting": "light" if is_top else "dark",
+            "position": f"{'top' if is_top else 'bottom'}_{'left' if is_left else 'right'}",
+        }
+
+    def _get_floor_context(self, x: int, y: int) -> str:
+        """Determine floor piece type (left, center, right)"""
+        left = (x - 1, y) in self.grid.cells and self.grid.cells[
+            (x - 1, y)
+        ] == TileType.FLOOR
         right = (x + 1, y) in self.grid.cells and self.grid.cells[
             (x + 1, y)
-        ] == TileType.WALL
-        up = (x, y - 1) in self.grid.cells and self.grid.cells[
-            (x, y - 1)
-        ] == TileType.WALL
-        down = (x, y + 1) in self.grid.cells and self.grid.cells[
-            (x, y + 1)
-        ] == TileType.WALL
+        ] == TileType.FLOOR
 
-        if up and right:
-            return "bottom_left"
-        if up and left:
-            return "bottom_right"
-        if down and right:
-            return "top_left"
-        if down and left:
-            return "top_right"
-
-        # Default to top_left if we can't determine
-        return "top_left"
-
-    def _get_door_type(self, x: int, y: int) -> str:
-        """Determine door type based on surrounding walls"""
-        # Check surrounding tiles
-        left = (x - 1, y) in self.grid.cells and self.grid.cells[(x - 1, y)] in [
-            TileType.WALL,
-            TileType.DOOR,
-        ]
-        right = (x + 1, y) in self.grid.cells and self.grid.cells[(x + 1, y)] in [
-            TileType.WALL,
-            TileType.DOOR,
-        ]
-        up = (x, y - 1) in self.grid.cells and self.grid.cells[(x, y - 1)] in [
-            TileType.WALL,
-            TileType.DOOR,
-        ]
-        down = (x, y + 1) in self.grid.cells and self.grid.cells[(x, y + 1)] in [
-            TileType.WALL,
-            TileType.DOOR,
-        ]
-
-        # For side-scroller, we primarily want horizontal doors
-        if left and right:  # Horizontal door
-            if self.grid.cells.get((x - 1, y)) == TileType.DOOR:
-                return "horizontal_right"
-            return "horizontal_left"
-        elif up and down:  # Vertical door
-            if self.grid.cells.get((x, y - 1)) == TileType.DOOR:
-                return "vertical_bottom"
-            return "vertical_top"
-
-        # Default to horizontal_left if we can't determine
-        return "horizontal_left"
-
-    def _get_background_type(self, x: int, y: int) -> str:
-        """Determine which background tile to use based on world position"""
-        # Use modulo to create a repeating 2x2 pattern
-        is_right = x % 2 == 1
-        is_bottom = y % 2 == 1
-
-        if is_bottom:
-            return "bottom_right" if is_right else "bottom_left"
-        return "top_right" if is_right else "top_left"
+        if not left and right:
+            return "left"
+        if left and not right:
+            return "right"
+        return "center"
 
     def render(self, surface: pygame.Surface, camera):
         """Render the grid using tilemap assets"""
@@ -131,36 +187,41 @@ class GridRenderer:
             screen_pos = camera.world_to_screen(x * self.tile_size, y * self.tile_size)
 
             texture = None
-            if tile_type == TileType.BACKGROUND:
-                texture = self.textures[TileType.BACKGROUND]["default"]
-            elif tile_type == TileType.WALL:
-                wall_type = self._get_wall_type(x, y)
-                texture = self.textures[TileType.WALL][wall_type]
+            if tile_type == TileType.WALL:
+                context = self._get_wall_context(x, y)
+                if context["type"] == "exterior":
+                    texture = self.textures[TileType.WALL]["exterior"][
+                        context["position"]
+                    ]
+                else:
+                    texture = self.textures[TileType.WALL]["interior"][
+                        context["lighting"]
+                    ][context["position"]]
+
             elif tile_type == TileType.CORNER:
-                corner_type = self._get_corner_type(x, y)
-                texture = self.textures[TileType.CORNER][corner_type]
-            elif tile_type == TileType.DOOR:
-                door_type = (
-                    "horizontal" if self._is_horizontal_door(x, y) else "vertical"
-                )
-                texture = self.textures[TileType.DOOR][door_type]
+                context = self._get_corner_context(x, y)
+                if context["type"] == "exterior":
+                    texture = self.textures[TileType.CORNER]["exterior"][
+                        context["position"]
+                    ]
+                else:
+                    texture = self.textures[TileType.CORNER]["interior"][
+                        context["lighting"]
+                    ][context["position"]]
+
             elif tile_type == TileType.FLOOR:
-                texture = self.textures[TileType.FLOOR]
+                position = self._get_floor_context(x, y)
+                texture = self.textures[TileType.FLOOR][position]
+
+            elif tile_type == TileType.DOOR:
+                # Default to light closed doors for now
+                texture = self.textures[TileType.DOOR]["light"]["closed"]
+
+            elif tile_type == TileType.BACKGROUND:
+                texture = self.textures[TileType.BACKGROUND]
 
             if texture:
                 surface.blit(texture, screen_pos)
-
-    def _is_horizontal_door(self, x: int, y: int) -> bool:
-        """Helper to determine if a door is horizontal"""
-        left = (x - 1, y) in self.grid.cells and self.grid.cells[(x - 1, y)] in [
-            TileType.WALL,
-            TileType.DOOR,
-        ]
-        right = (x + 1, y) in self.grid.cells and self.grid.cells[(x + 1, y)] in [
-            TileType.WALL,
-            TileType.DOOR,
-        ]
-        return left or right
 
     def set_camera(self, camera):
         """Set camera reference"""

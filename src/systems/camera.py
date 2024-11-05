@@ -2,12 +2,13 @@ import pygame
 
 
 class Camera:
-    def __init__(self, width: int, height: int):
+    def __init__(self, width: int, height: int, tile_size: int = 16):
         self.width = width
         self.height = height
         self.x = 0
         self.y = 0
         self.target = None
+        self.tile_size = tile_size
 
     def apply(self, rect: pygame.Rect) -> pygame.Rect:
         """Convert a rect from world space to screen space"""
@@ -30,3 +31,13 @@ class Camera:
         # Center the camera on the target
         self.x = target_rect.centerx - self.width // 2
         self.y = target_rect.centery - self.height // 2
+
+    def get_visible_area(self):
+        """Return a pygame.Rect representing the visible area in world coordinates"""
+        return pygame.Rect(
+            self.x // self.tile_size,
+            self.y // self.tile_size,
+            (self.width // self.tile_size)
+            + 2,  # Add buffer for partially visible tiles
+            (self.height // self.tile_size) + 2,
+        )

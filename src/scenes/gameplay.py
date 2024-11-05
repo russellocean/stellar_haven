@@ -18,66 +18,114 @@ from ui.layouts.game_hud import GameHUD
 class GameplayScene(Scene):
     def __init__(self, game):
         super().__init__(game)
+        self._init_managers()
+        self._init_systems()
+        self._init_entities()
+        self._init_ui()
+        self._setup_debug()
+        self._setup_layers()
+
+    def _init_managers(self):
+        """Initialize all manager systems"""
         self.input_manager = InputManager()
-        self.resource_manager = ResourceManager()
         self.state_manager = GameStateManager()
-
-        # Add camera with tile_size
-        self.camera = Camera(
-            game.screen.get_width(),
-            game.screen.get_height(),
-            tile_size=16,  # Match the tile size used in GridRenderer
-        )
-
-        # Initialize core systems
-        screen_center_x = game.screen.get_width() // 2
-        screen_center_y = game.screen.get_height() // 2
-        self.room_manager = RoomManager(screen_center_x, screen_center_y)
-
-        # Initialize asset manager and preload room assets
         self.asset_manager = AssetManager()
         self.asset_manager.preload_images("images/rooms")
 
-        # Initialize grid renderer BEFORE setup_core_layers
+        # Initialize resource manager first
+        self.resource_manager = ResourceManager()
+        # Add custom resource configurations if needed
+        self._setup_resource_config()
+
+    def _setup_resource_config(self):
+        """Setup custom resource configurations"""
+        # Example: Modify base consumption rates
+        self.resource_manager.base_consumption_rates.update(
+            {
+                "power": 0.05,  # Slower power drain
+                "oxygen": 0.03,  # Slower oxygen consumption
+            }
+        )
+
+        # Example: Modify maximum resource amounts
+        self.resource_manager.max_resources.update(
+            {
+                "power": 200.0,  # Larger power capacity
+                "oxygen": 150.0,  # Larger oxygen capacity
+            }
+        )
+
+    def _init_systems(self):
+        """Initialize core game systems"""
+        self.camera = Camera(
+            self.game.screen.get_width(), self.game.screen.get_height(), tile_size=16
+        )
+
+        # Pass resource manager to RoomManager
+        self.room_manager = RoomManager(
+            self.game.screen.get_width() // 2,
+            self.game.screen.get_height() // 2,
+            resource_manager=self.resource_manager,
+        )
+
         self.grid_renderer = GridRenderer(self.room_manager.grid)
+        self.starfield = StarfieldSystem(self.game.screen.get_size())
 
-        # Setup core game elements
-        self.starfield = StarfieldSystem(game.screen.get_size())
-        self._init_player()
-
-        # Initialize GameHUD with resource manager
-        self.game_hud = GameHUD(game.screen, self.resource_manager)
-
-        # Initialize building system before setting up layers
-        self._init_building_system()
-
-        # Setup layers after all systems are initialized
-        self._setup_core_layers()
-
-        # Initialize debug system
-        self.debug_system = DebugSystem()
-
-        # Add some useful debug watches
-        self.debug_system.add_watch("Room Count", lambda: len(self.room_manager.rooms))
-        self.debug_system.add_watch(
-            "Power", lambda: f"{self.resource_manager.resources['power']:.1f}"
+        # Initialize building system properly
+        self.building_system = BuildingSystem(
+            self.room_manager, self.resource_manager, self.game.screen
         )
-        self.debug_system.add_watch(
-            "Oxygen", lambda: f"{self.resource_manager.resources['oxygen']:.1f}"
-        )
+        self.building_system.set_state_manager(self.state_manager)
+        self.building_system.set_input_manager(self.input_manager)
+        self.building_system.set_camera(self.camera)
+        self.building_system.init_ui(self.game.screen)  # Initialize UI elements
 
-        # Add debug system to debug layer
-        self.debug_layer.append(self.debug_system)
-
-        # Add grid renderer to game layer (before room sprites)
-        self.game_layer.insert(0, self.grid_renderer)
-
-    def _setup_core_layers(self):
-        """Setup essential game layers"""
-        # Create sprite groups
+    def _init_entities(self):
+        # Get starting position from room manager
+        player_x, player_y = self.room_manager.get_starting_position()
+        self.player = Player(player_x, player_y)
         self.character_sprites = pygame.sprite.Group(self.player)
 
-        # Set camera for grid renderer
+    def _init_ui(self):
+        # Initialize GameHUD with resource manager
+        self.game_hud = GameHUD(self.game.screen, self.resource_manager)
+
+        # Add building system UI elements to the scene's UI system
+        if hasattr(self, "ui_system"):
+            self.ui_system.add_element(self.building_system.toggle_button)
+            self.ui_system.add_element(self.building_system.build_menu)
+
+    def _setup_debug(self):
+        """Setup debug system and watches"""
+        self.debug_system = DebugSystem()
+        self._add_debug_watches()
+
+    def _add_debug_watches(self):
+        """Add debug watches for monitoring game state"""
+        # Add resource-related watches
+        self.debug_system.add_watch(
+            "Power Generation", lambda: f"{self._get_resource_rate('power'):+.2f}/s"
+        )
+        self.debug_system.add_watch(
+            "Oxygen Generation", lambda: f"{self._get_resource_rate('oxygen'):+.2f}/s"
+        )
+        self.debug_system.add_watch(
+            "Active Rooms", lambda: len(self.resource_manager.active_rooms)
+        )
+
+    def _get_resource_rate(self, resource: str) -> float:
+        """Helper to calculate current resource generation/consumption rate"""
+        return self.resource_manager._calculate_net_resource_change(resource)
+
+    def _setup_layers(self):
+        """Setup rendering layers"""
+        self.background_layer = [self.starfield]
+        self.game_layer = [self.grid_renderer, self.character_sprites]
+        self.system_layer = [self.building_system]
+        self.ui_layer = [self.game_hud]
+        self.debug_layer = [self.debug_system, self.room_manager.collision_system]
+
+        # Setup camera references
         self.grid_renderer.set_camera(self.camera)
 
         # Add elements to layers in drawing order
@@ -89,29 +137,6 @@ class GameplayScene(Scene):
         # Setup debug visualization
         self.room_manager.collision_system.set_camera(self.camera)
         self.debug_layer.append(self.room_manager.collision_system)
-
-    def _init_building_system(self):
-        """Initialize building system"""
-        self.building_system = BuildingSystem(room_manager=self.room_manager)
-        self.building_system.set_state_manager(self.state_manager)
-        self.building_system.set_input_manager(self.input_manager)
-        self.building_system.set_camera(self.camera)
-
-        # Initialize UI elements with screen reference
-        self.building_system.init_ui(self.game.screen)
-
-        # Add to layers
-        self.system_layer.append(self.building_system)
-
-        # Add UI elements to UI system
-        self.ui_system.add_element(self.building_system.toggle_button)
-        self.ui_system.add_element(self.building_system.build_menu)
-
-    def _init_player(self):
-        # Get starting position from room manager
-        player_x, player_y = self.room_manager.get_starting_position()
-        self.player = Player(player_x, player_y)
-        self.character_sprites = pygame.sprite.Group(self.player)
 
     def handle_event(self, event):
         # Scene's UI system handles events first
@@ -137,16 +162,19 @@ class GameplayScene(Scene):
         return False
 
     def update(self):
+        """Update scene state"""
         # Update input first
         self.input_manager.update()
 
         # Update camera to follow player
         self.camera.update(self.player.rect)
 
+        # Update resource system with delta time
+        dt = self.debug_system.clock.get_time() / 1000.0  # Convert to seconds
+        self.resource_manager.update(dt)
+
         # Core game updates
         self.player.update(self.room_manager, self.input_manager)
-        # self.room_sprites.update(resource_manager=self.resource_manager)
-        # self.room_manager.update(self.resource_manager)
         self.starfield.update(self.camera.x, self.camera.y)
         self.game_hud.update()
 

@@ -2,6 +2,8 @@ import pygame
 
 from grid.tile_type import TileType
 from systems.asset_manager import AssetManager
+from systems.debug_system import DebugSystem
+from systems.event_system import GameEvent
 from systems.game_state_manager import GameState
 from systems.room_manager import RoomManager
 from ui.components.button import Button
@@ -10,14 +12,16 @@ from ui.layouts.build_menu import BuildMenu
 
 
 class BuildingSystem:
-    def __init__(self, room_manager: RoomManager):
+    def __init__(self, room_manager: RoomManager, resource_manager, screen):
         self.room_manager = room_manager
+        self.resource_manager = resource_manager
         self.asset_manager = AssetManager()
         self.grid = room_manager.grid
         self.active = False
         self.camera = None
         self.state_manager = None
         self.input_manager = None
+        self.debug = DebugSystem()
 
         # Building state
         self.selected_category = None
@@ -25,9 +29,8 @@ class BuildingSystem:
         self.ghost_position = None
         self.valid_placement = False
 
-        # UI elements will be initialized later
-        self.toggle_button = None
-        self.build_menu = None
+        # Initialize UI elements right away
+        self.init_ui(screen)
 
     def set_state_manager(self, state_manager):
         self.state_manager = state_manager
@@ -50,8 +53,14 @@ class BuildingSystem:
         self.valid_placement = False
 
     def toggle_building_mode(self):
+        """Toggle building mode on/off"""
+        if not hasattr(self, "build_menu") or self.build_menu is None:
+            self.debug.log("Error: Build menu not initialized")
+            return
+
         self.active = not self.active
         self.build_menu.visible = self.active
+
         if self.state_manager:
             new_state = GameState.BUILDING if self.active else GameState.PLAYING
             self.state_manager.set_state(new_state)
@@ -241,17 +250,25 @@ class BuildingSystem:
 
     def init_ui(self, screen: pygame.Surface):
         """Initialize UI elements that need screen reference"""
-        self.toggle_button = ToggleButton(
-            rect=pygame.Rect(20, 20, 60, 60),
-            text="Build",
-            action=self.toggle_building_mode,
-            image_path="assets/images/ui/build_icon.png",
-        )
-        self.build_menu = BuildMenu(
-            screen=screen,
-            room_manager=self.room_manager,
-            on_select=self.select_build_item,  # Updated to use new select method
-        )
+        try:
+            self.toggle_button = ToggleButton(
+                rect=pygame.Rect(20, 20, 60, 60),
+                text="Build",
+                action=self.toggle_building_mode,
+                image_path="assets/images/ui/build_icon.png",
+            )
+
+            self.build_menu = BuildMenu(
+                screen=screen,
+                room_manager=self.room_manager,
+                on_select=self.select_build_item,
+            )
+            self.build_menu.visible = False  # Start hidden
+
+            self.debug.log("Building system UI initialized successfully")
+        except Exception as e:
+            self.debug.log(f"Error initializing building system UI: {e}")
+            raise
 
     def clear_selection(self):
         """Clear current building selection"""
@@ -265,3 +282,27 @@ class BuildingSystem:
             for element in self.build_menu.ui_system.elements:
                 if isinstance(element, Button):
                     element.active = False
+
+    def try_build_room(self, room_type: str, position: tuple[int, int]) -> bool:
+        """Attempt to build a room if resources are available"""
+        # Get room costs from config
+        room_config = self.room_manager.grid.room_config["room_types"][room_type]
+        resource_costs = room_config.get("build_costs", {})
+
+        # Check if we have enough resources
+        for resource, cost in resource_costs.items():
+            if self.resource_manager.resources[resource] < cost:
+                self.debug.log(f"Not enough {resource} to build {room_type}")
+                return False
+
+        # Deduct resources if we can build
+        if self.room_manager.add_room(room_type, position[0], position[1]):
+            for resource, cost in resource_costs.items():
+                self.resource_manager.resources[resource] -= cost
+                self.resource_manager.event_system.emit(
+                    GameEvent.RESOURCE_UPDATED,
+                    resource=resource,
+                    amount=self.resource_manager.resources[resource],
+                )
+            return True
+        return False

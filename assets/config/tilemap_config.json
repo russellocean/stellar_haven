@@ -8,7 +8,180 @@
             "door",
             "floor",
             "window",
-            "furniture"
+            "furniture",
+            "background"
+        ]
+    },
+    "tilemaps/background_space.png": {
+        "tile_size": 16,
+        "groups": [
+            {
+                "tiles": [
+                    {
+                        "x": 1,
+                        "y": 3
+                    },
+                    {
+                        "x": 2,
+                        "y": 3
+                    }
+                ],
+                "metadata": {
+                    "name": "galaxy_1",
+                    "type": "background",
+                    "properties": {},
+                    "width": 2,
+                    "height": 1
+                }
+            },
+            {
+                "tiles": [
+                    {
+                        "x": 3,
+                        "y": 3
+                    },
+                    {
+                        "x": 4,
+                        "y": 3
+                    }
+                ],
+                "metadata": {
+                    "name": "galaxy_2",
+                    "type": "background",
+                    "properties": {},
+                    "width": 2,
+                    "height": 1
+                }
+            },
+            {
+                "tiles": [
+                    {
+                        "x": 7,
+                        "y": 4
+                    },
+                    {
+                        "x": 8,
+                        "y": 4
+                    },
+                    {
+                        "x": 7,
+                        "y": 5
+                    },
+                    {
+                        "x": 8,
+                        "y": 5
+                    }
+                ],
+                "metadata": {
+                    "name": "galaxy_3",
+                    "type": "furniture",
+                    "properties": {},
+                    "width": 2,
+                    "height": 2
+                }
+            },
+            {
+                "tiles": [
+                    {
+                        "x": 9,
+                        "y": 4
+                    },
+                    {
+                        "x": 10,
+                        "y": 4
+                    },
+                    {
+                        "x": 9,
+                        "y": 5
+                    },
+                    {
+                        "x": 10,
+                        "y": 5
+                    }
+                ],
+                "metadata": {
+                    "name": "galaxy_4",
+                    "type": "background",
+                    "properties": {},
+                    "width": 2,
+                    "height": 2
+                }
+            },
+            {
+                "tiles": [
+                    {
+                        "x": 1,
+                        "y": 4
+                    }
+                ],
+                "metadata": {
+                    "name": "star_1",
+                    "type": "background",
+                    "properties": {},
+                    "width": 1,
+                    "height": 1
+                }
+            },
+            {
+                "tiles": [
+                    {
+                        "x": 2,
+                        "y": 4
+                    }
+                ],
+                "metadata": {
+                    "name": "star_2",
+                    "type": "background",
+                    "properties": {},
+                    "width": 1,
+                    "height": 1
+                }
+            },
+            {
+                "tiles": [
+                    {
+                        "x": 3,
+                        "y": 4
+                    }
+                ],
+                "metadata": {
+                    "name": "star_3",
+                    "type": "background",
+                    "properties": {},
+                    "width": 1,
+                    "height": 1
+                }
+            },
+            {
+                "tiles": [
+                    {
+                        "x": 4,
+                        "y": 4
+                    }
+                ],
+                "metadata": {
+                    "name": "star_4",
+                    "type": "background",
+                    "properties": {},
+                    "width": 1,
+                    "height": 1
+                }
+            },
+            {
+                "tiles": [
+                    {
+                        "x": 5,
+                        "y": 4
+                    }
+                ],
+                "metadata": {
+                    "name": "star_5",
+                    "type": "background",
+                    "properties": {},
+                    "width": 1,
+                    "height": 1
+                }
+            }
         ]
     }
 }

@@ -44,7 +44,7 @@ class TilemapHelper:
         # Tilemap state
         self.current_tilemap = None
         self.tilemap_path = None
-        self.tile_size = 32
+        self.tile_size = 16
         self.selected_tiles = []
         self.tile_configs = {}
         self.tile_types = [
@@ -57,18 +57,12 @@ class TilemapHelper:
             "floor",
             "window",
             "furniture",
-        ]  # Default types
+        ]
 
         # View state
         self.grid_visible = True
         self.zoom_level = 1.0
         self.scroll_offset = [0, 0]
-        self.dragging = False
-        self.last_mouse_pos = None
-
-        # Multi-tile state
-        self.multi_tile_width = 1
-        self.multi_tile_height = 1
 
         # Transform state
         self.scale = 1.0
@@ -92,10 +86,6 @@ class TilemapHelper:
             self.scroll_offset = [0, 0]
             self.dragging = False
             self.last_mouse_pos = None
-
-            # Reset multi-tile state
-            self.multi_tile_width = 1
-            self.multi_tile_height = 1
 
             # Automatically load configuration for this tilemap
             self.load_config("tilemap_config.json")
@@ -164,11 +154,6 @@ class TilemapHelper:
         except Exception as e:
             QMessageBox.critical(self.ui, "Error", f"Failed to load configuration: {e}")
 
-    def set_multi_tile_size(self, width: int, height: int):
-        """Set the size for multi-tile selections"""
-        self.multi_tile_width = width
-        self.multi_tile_height = height
-
     def _update_transform(self):
         """Update all transformation calculations for the current frame"""
         if not self.current_tilemap:
@@ -235,8 +220,18 @@ class TilemapHelper:
 
     def add_tile_group(self, tiles: List[Tuple[int, int]], metadata: dict):
         """Add a new tile group to the configuration"""
-        if not self.tilemap_path:
+        if not self.tilemap_path or not tiles:
             return
+
+        # Calculate width and height from selected tiles
+        x_coords = [x for x, _ in tiles]
+        y_coords = [y for _, y in tiles]
+        width = max(x_coords) - min(x_coords) + 1
+        height = max(y_coords) - min(y_coords) + 1
+
+        # Update metadata with calculated dimensions
+        metadata["width"] = width
+        metadata["height"] = height
 
         # Create config entry for this tilemap if it doesn't exist
         if not hasattr(self, "tilemap_configs"):
@@ -311,7 +306,7 @@ class TilemapHelper:
                 self.scroll_offset = state.get("scroll_offset", [0, 0])
 
                 # Restore tile size
-                self.tile_size = state.get("tile_size", 32)
+                self.tile_size = state.get("tile_size", 16)
                 self.ui.tile_size_input.setValue(self.tile_size)
 
                 # Load last opened file

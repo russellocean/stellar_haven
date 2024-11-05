@@ -65,7 +65,7 @@ class TilemapUI(QMainWindow):
         size_layout = QFormLayout()
         self.tile_size_input = QSpinBox()
         self.tile_size_input.setRange(8, 256)
-        self.tile_size_input.setValue(16)
+        self.tile_size_input.setValue(self.helper.tile_size)
         self.tile_size_input.valueChanged.connect(self.update_tile_size)
         size_layout.addRow("Tile Size (px):", self.tile_size_input)
         size_group.setLayout(size_layout)
@@ -81,35 +81,17 @@ class TilemapUI(QMainWindow):
         metadata = QWidget()
         metadata_layout = QFormLayout()
 
-        # Tile position info
-        self.pos_label = QLabel("No tile selected")
-        metadata_layout.addRow("Position:", self.pos_label)
-
         # Tile name
         self.tile_name = QLineEdit()
         metadata_layout.addRow("Name:", self.tile_name)
 
         # Tile type
         self.tile_type = QComboBox()
-        self.tile_type.addItems(["ground", "wall", "decoration", "planet", "custom"])
+        self.tile_type.addItems(self.helper.tile_types)
         manage_types_btn = QPushButton("Manage Types")
         manage_types_btn.clicked.connect(self.manage_types)
         metadata_layout.addRow("", manage_types_btn)
         metadata_layout.addRow("Type:", self.tile_type)
-
-        # Multi-tile size
-        self.multi_tile_width = QSpinBox()
-        self.multi_tile_height = QSpinBox()
-        self.multi_tile_width.setRange(1, 16)
-        self.multi_tile_height.setRange(1, 16)
-
-        multi_size = QWidget()
-        multi_layout = QHBoxLayout()
-        multi_layout.addWidget(QLabel("W:"))
-        multi_layout.addWidget(self.multi_tile_width)
-        multi_layout.addWidget(QLabel("H:"))
-        multi_layout.addWidget(self.multi_tile_height)
-        metadata_layout.addRow("Multi-tile:", multi_size)
 
         # Custom properties
         self.custom_props = QLineEdit()
@@ -170,12 +152,6 @@ class TilemapUI(QMainWindow):
                 QMessageBox.warning(self, "Warning", "Invalid property format")
         return props
 
-    def update_multi_tile(self):
-        """Handle multi-tile selection changes"""
-        width = self.multi_tile_width.value()
-        height = self.multi_tile_height.value()
-        self.helper.set_multi_tile_size(width, height)
-
     def update_selected_position(self, pos=None):
         """Update the position label for selected tile"""
         if pos:
@@ -204,7 +180,7 @@ class TilemapUI(QMainWindow):
             # Load the new tilemap
             if self.helper.load_tilemap(file_path):
                 # Reset UI elements
-                self.tile_size_input.setValue(32)  # Reset to default tile size
+                self.tile_size_input.setValue(16)  # Reset to default tile size
                 self.multi_tile_width.setValue(1)  # Reset multi-tile size
                 self.multi_tile_height.setValue(1)
                 self.tile_name.clear()  # Clear metadata fields
@@ -235,8 +211,6 @@ class TilemapUI(QMainWindow):
         metadata = {
             "name": self.tile_name.text(),
             "type": self.tile_type.currentText(),
-            "width": self.multi_tile_width.value(),
-            "height": self.multi_tile_height.value(),
             "properties": self._parse_custom_props(),
         }
 
@@ -253,10 +227,7 @@ class TilemapUI(QMainWindow):
         """Clear all metadata form fields"""
         self.tile_name.clear()
         self.tile_type.setCurrentIndex(0)
-        self.multi_tile_width.setValue(1)
-        self.multi_tile_height.setValue(1)
         self.custom_props.clear()
-        self.pos_label.setText("No tile selected")
 
     def manage_types(self):
         """Open type manager dialog"""

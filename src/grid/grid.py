@@ -278,32 +278,39 @@ class Grid:
             callback()
 
     def is_valid_door_placement(self, grid_x: int, grid_y: int) -> bool:
-        """Check if a door (2x3) can be placed at grid coordinates"""
-        # Check if all required tiles are available
-        for dx in range(2):  # Door width
-            for dy in range(3):  # Door height
-                pos = (grid_x + dx, grid_y + dy)
-                # Check if position is already occupied
-                if pos in self.cells:
-                    return False
-
-        # Check if door is adjacent to at least one wall
-        adjacent_positions = [
-            (grid_x - 1, grid_y),  # Left
-            (grid_x + 2, grid_y),  # Right
-            (grid_x, grid_y - 1),  # Top
-            (grid_x, grid_y + 3),  # Bottom
-            (grid_x + 1, grid_y - 1),  # Top middle
-            (grid_x + 1, grid_y + 3),  # Bottom middle
+        """
+        Check if a door (2x3) can be placed at grid coordinates.
+        Door must be placed on wall tiles, with wall tiles above and below.
+        """
+        # Check if the placement positions are currently walls
+        door_positions = [
+            (grid_x, grid_y),  # Left door tile
+            (grid_x + 1, grid_y),  # Right door tile
         ]
 
-        has_adjacent_wall = False
-        for x, y in adjacent_positions:
-            if (x, y) in self.cells and self.cells[(x, y)] == TileType.WALL:
-                has_adjacent_wall = True
-                break
+        # Check if door positions are currently walls
+        for x, y in door_positions:
+            if self.get_tile(x, y) != TileType.WALL:
+                return False
 
-        return has_adjacent_wall
+        # Check wall support above door
+        wall_above = [
+            (grid_x, grid_y - 1),  # Above left door
+            (grid_x + 1, grid_y - 1),  # Above right door
+        ]
+
+        # Check wall support below door
+        wall_below = [
+            (grid_x, grid_y + 1),  # Below left door
+            (grid_x + 1, grid_y + 1),  # Below right door
+        ]
+
+        # Verify walls exist above and below
+        for pos in wall_above + wall_below:
+            if self.get_tile(*pos) != TileType.WALL:
+                return False
+
+        return True
 
     def is_valid_tile_placement(self, grid_x: int, grid_y: int) -> bool:
         """Check if a single tile can be placed at grid coordinates"""
@@ -329,18 +336,17 @@ class Grid:
             return False
 
         group = self.tile_groups[group_name]
-        width, height = group["width"], group["height"]
 
-        # Check if area is clear
+        # Check door placement first, before the clear area check
+        if group["type"] == "door":
+            return self.is_valid_door_placement(grid_x, grid_y)
+
+        # For non-door groups, check if area is clear
+        width, height = group["width"], group["height"]
         for dx in range(width):
             for dy in range(height):
                 if (grid_x + dx, grid_y + dy) in self.cells:
                     return False
-
-        # Check for adjacent tiles (customize based on group type)
-        if group["type"] == "door":
-            return self.is_valid_door_placement(grid_x, grid_y)
-        # Add other group type checks as needed
 
         return True
 

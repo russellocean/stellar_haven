@@ -117,13 +117,13 @@ class Player(Entity):
             if (grid_x, grid_y) in room_manager.grid.cells:
                 tile = room_manager.grid.cells[(grid_x, grid_y)]
                 # Only treat door as floor if we're moving down and not pressing down key
-                if tile == TileType.DOOR and not input_manager.is_action_pressed(
+                if tile == TileType.PLATFORM and not input_manager.is_action_pressed(
                     "move_down"
                 ):
                     self.rect.bottom = grid_y * room_manager.grid.cell_size
                     self.velocity_y = 0
                     self.on_ground = True
-                elif tile == TileType.FLOOR or tile == TileType.WALL:
+                elif tile == tile == TileType.WALL:
                     self.rect.bottom = grid_y * room_manager.grid.cell_size
                     self.velocity_y = 0
                     self.on_ground = True

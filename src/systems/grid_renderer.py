@@ -253,15 +253,25 @@ class GridRenderer:
         is_top_half = self._is_in_top_half(x, y)
         lighting = "light" if is_top_half else "dark"
 
-        # Determine position based on adjacent walls
+        # Check for corners first
+        if has_wall_up and has_wall_left:
+            return {"lighting": lighting, "position": "top_left"}
+        if has_wall_up and has_wall_right:
+            return {"lighting": lighting, "position": "top_right"}
+        if has_wall_down and has_wall_left:
+            return {"lighting": lighting, "position": "bottom_left"}
+        if has_wall_down and has_wall_right:
+            return {"lighting": lighting, "position": "bottom_right"}
+
+        # If not a corner, check for edges
         if has_wall_up:
             return {"lighting": lighting, "position": "top_center"}
         if has_wall_down:
             return {"lighting": lighting, "position": "bottom_center"}
         if has_wall_left:
-            return {"lighting": lighting, "position": "right"}
+            return {"lighting": lighting, "position": "left"}  # Flipped from 'right'
         if has_wall_right:
-            return {"lighting": lighting, "position": "left"}
+            return {"lighting": lighting, "position": "right"}  # Flipped from 'left'
 
         return {"lighting": lighting, "position": "center"}
 

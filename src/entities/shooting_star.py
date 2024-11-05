@@ -5,71 +5,81 @@ import pygame
 
 
 class ShootingStar:
+    # Class-level surface cache
+    _trail_surface = None
+    _trail_size = (0, 0)
+
     def __init__(self, screen_width, screen_height):
-        # Create a trail of points
-        self.length = random.randint(20, 40)
+        # Initialize shared surface if needed
+        if ShootingStar._trail_surface is None or ShootingStar._trail_size != (
+            screen_width,
+            screen_height,
+        ):
+            ShootingStar._trail_surface = pygame.Surface(
+                (screen_width, screen_height), pygame.SRCALPHA
+            )
+            ShootingStar._trail_size = (screen_width, screen_height)
+
+        # Optimized initialization
+        self.length = random.randint(10, 20)  # Reduced length
         self.speed = random.uniform(15, 25)
         self.thickness = random.uniform(1.5, 3)
-        # Randomize starting position (always start from left side of screen)
         self.x = random.randint(-100, 0)
         self.y = random.randint(0, screen_height)
 
-        # Random angle (mostly rightward)
-        self.angle = random.uniform(-30, 30)  # -30 to 30 degrees for rightward motion
-        self.dx = self.speed * math.cos(math.radians(self.angle))
-        self.dy = self.speed * math.sin(math.radians(self.angle))
+        # Precalculate angle calculations
+        angle = random.uniform(-30, 30)
+        self.dx = self.speed * math.cos(math.radians(angle))
+        self.dy = self.speed * math.sin(math.radians(angle))
 
-        # Trail effect
-        self.points = [(self.x, self.y)]
+        # Use deque for better performance with fixed length
+        from collections import deque
+
+        self.points = deque([(self.x, self.y)], maxlen=self.length)
+
         self.alive = True
 
-        # Add subtle color variation
+        # Simplified color (reduce random calls)
         base_color = random.randint(200, 255)
-        self.color = (base_color, base_color, random.randint(220, 255))
+        self.color = (base_color, base_color, 255)
 
-        # Fade effect
+        # Optimized fade
         self.alpha = 255
-        self.fade_speed = random.uniform(3, 7)
+        self.fade_speed = random.uniform(5, 10)  # Slightly faster fade
 
     def update(self):
         # Move the shooting star
         self.x += self.dx
         self.y += self.dy
-
-        # Add new point to trail
         self.points.append((self.x, self.y))
 
-        # Remove old points to maintain trail length
-        if len(self.points) > self.length:
-            self.points.pop(0)
-
-        # Fade out
+        # Simplified fade
         self.alpha -= self.fade_speed
-        if self.alpha <= 0:
-            self.alive = False
+        self.alive = self.alpha > 0
 
     def draw(self, screen):
         if len(self.points) < 2:
             return
 
-        # Create a surface for the trail with alpha support
-        trail_surface = pygame.Surface(screen.get_size(), pygame.SRCALPHA)
+        # Clear the shared surface
+        ShootingStar._trail_surface.fill((0, 0, 0, 0))
 
-        # Draw the trail with fade effect
-        for i in range(len(self.points) - 1):
-            start_pos = self.points[i]
-            end_pos = self.points[i + 1]
+        # Draw fewer segments with optimized alpha
+        points = list(self.points)  # Convert deque to list for indexing
+        num_segments = min(len(points) - 1, 8)  # Limit number of segments
+        step = max(1, (len(points) - 1) // num_segments)
 
-            # Calculate alpha for this segment
-            segment_alpha = int(self.alpha * (i / len(self.points)))
+        for i in range(0, len(points) - 1, step):
+            segment_alpha = int(self.alpha * (i / len(points)))
+            if segment_alpha <= 0:
+                continue
 
-            # Draw the trail segment with alpha
             pygame.draw.line(
-                trail_surface,
+                ShootingStar._trail_surface,
                 (*self.color, segment_alpha),
-                start_pos,
-                end_pos,
-                int(self.thickness * (i / len(self.points) + 0.5)),
+                points[i],
+                points[i + 1],
+                int(self.thickness * (i / len(points) + 0.5)),
             )
 
-        screen.blit(trail_surface, (0, 0))
+        screen.blit(ShootingStar._trail_surface, (0, 0))

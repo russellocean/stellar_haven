@@ -83,18 +83,33 @@ class Player(Entity):
 
     def _check_room_change(self, room_manager):
         """Check and handle room transitions"""
+        # Get grid position of player's center
         grid_x = self.rect.centerx // room_manager.grid.cell_size
         grid_y = self.rect.centery // room_manager.grid.cell_size
 
+        # Get room at current position
         current_room_id = room_manager.grid.get_room_by_grid_position(grid_x, grid_y)
         new_room = room_manager.rooms.get(current_room_id) if current_room_id else None
 
+        # Only emit events if the room has actually changed
         if new_room != self.current_room:
+            if self.current_room:
+                self.event_system.emit(
+                    GameEvent.ROOM_EXITED, room=self.current_room, player=self
+                )
             if new_room:
+                # Add debug output
+                print(f"Entering room: {new_room.room_type}")
                 self.event_system.emit(
                     GameEvent.ROOM_ENTERED, room=new_room, player=self
                 )
             self.current_room = new_room
+
+            # # Update debug watch
+            # self.debug.watch(
+            #     "Current Room",
+            #     lambda: self.current_room.room_type if self.current_room else "None",
+            # )
 
     def _update_position(self, room_manager, input_manager):
         """Update player position with collision detection"""

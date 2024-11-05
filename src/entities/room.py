@@ -27,6 +27,9 @@ class Room(Entity):
         self.asset_manager = AssetManager()
         room_config = self.asset_manager.get_config("rooms")["room_types"][room_type]
 
+        # Set name from config or use room type
+        self.name = room_config.get("name", room_type.replace("_", " ").title())
+
         # Set size based on grid size from config
         grid_size = room_config["grid_size"]
         self.width = grid_size[0] * cell_size

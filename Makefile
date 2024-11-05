@@ -1,9 +1,10 @@
-.PHONY: setup clean run
+.PHONY: setup clean run tilemap-helper
 
 # Default Python version
 PYTHON=python3
 VENV=stellar_haven_env
-MAIN_SCRIPT=src/main.py  # Replace with your actual main script
+MAIN_SCRIPT=src/main.py
+TILEMAP_HELPER=src/tools/launch_tilemap_helper.py
 
 setup:
 	# Create virtual environment if it doesn't exist
@@ -17,6 +18,11 @@ run:
 	# Activate venv and run the main script
 	. $(VENV)/bin/activate && \
 	$(PYTHON) $(MAIN_SCRIPT)
+
+tilemap-helper:
+	# Activate venv and run the tilemap helper
+	. $(VENV)/bin/activate && \
+	$(PYTHON) $(TILEMAP_HELPER)
 
 clean:
 	# Remove virtual environment and cache files

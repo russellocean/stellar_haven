@@ -7,6 +7,11 @@ from systems.asset_manager import AssetManager
 
 
 class GridRenderer:
+    """
+    Handles the rendering of grid-based tiles and tile groups with texture caching.
+    Supports walls, corners, doors, and interior backgrounds with contextual rendering.
+    """
+
     def __init__(self, grid, tile_size=16):
         self.grid = grid
         self.tile_size = tile_size
@@ -109,12 +114,6 @@ class GridRenderer:
             for key, group_name in texture_map.items()
         }
 
-    def _is_exterior_wall(self, x: int, y: int) -> bool:
-        """Determine if a wall is on the exterior of the structure"""
-        # Check if any adjacent tile is empty
-        adjacent = [(x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)]
-        return any(pos not in self.grid.cells for pos in adjacent)
-
     def _is_in_top_half(self, x: int, y: int) -> bool:
         """Determine if a position is in the top half of its room"""
         for room_id, room in self.grid.rooms.items():
@@ -168,46 +167,21 @@ class GridRenderer:
         return {"type": "exterior", "position": "center"}
 
     def _get_corner_context(self, x: int, y: int) -> dict:
-        """Get detailed corner context including position and if it's exterior"""
+        """Get corner context for exterior corners"""
         adjacent = self._check_adjacent_tile(x, y)
 
         # Determine exterior corner position
         if not adjacent["up"] and not adjacent["left"]:
-            return {"type": "exterior", "position": "top_left"}
+            return {"position": "top_left"}
         if not adjacent["up"] and not adjacent["right"]:
-            return {"type": "exterior", "position": "top_right"}
+            return {"position": "top_right"}
         if not adjacent["down"] and not adjacent["left"]:
-            return {"type": "exterior", "position": "bottom_left"}
+            return {"position": "bottom_left"}
         if not adjacent["down"] and not adjacent["right"]:
-            return {"type": "exterior", "position": "bottom_right"}
+            return {"position": "bottom_right"}
 
-        # Interior corner context
-        bg_adjacent = self._check_adjacent_tile(x, y, TileType.INTERIOR_BACKGROUND)
-        wall_adjacent = self._check_adjacent_tile(x, y, TileType.WALL)
-
-        is_top = bg_adjacent["up"]
-        is_left = wall_adjacent["left"]
-
-        return {
-            "type": "interior",
-            "lighting": "light" if is_top else "dark",
-            "position": f"{'top' if is_top else 'bottom'}_{'left' if is_left else 'right'}",
-        }
-
-    def _get_floor_context(self, x: int, y: int) -> str:
-        """Determine floor piece type (left, center, right)"""
-        left = (x - 1, y) in self.grid.cells and self.grid.cells[
-            (x - 1, y)
-        ] == TileType.FLOOR
-        right = (x + 1, y) in self.grid.cells and self.grid.cells[
-            (x + 1, y)
-        ] == TileType.FLOOR
-
-        if not left and right:
-            return "left"
-        if left and not right:
-            return "right"
-        return "center"
+        # Default case (shouldn't happen if corner placement is correct)
+        return {"position": "top_left"}
 
     def _get_background_context(self, x: int, y: int) -> dict:
         """Get context for interior background tiles"""
@@ -287,8 +261,6 @@ class GridRenderer:
                 self._render_wall_tile(tile_surface, x, y)
             elif tile_type == TileType.CORNER:
                 self._render_corner_tile(tile_surface, x, y)
-            elif tile_type == TileType.FLOOR:
-                self._render_floor_tile(tile_surface, x, y)
             elif tile_type == TileType.INTERIOR_BACKGROUND:
                 self._render_background_tile(tile_surface, x, y)
 
@@ -355,16 +327,10 @@ class GridRenderer:
         texture = self.textures[TileType.WALL]["exterior"][context["position"]]
         tile_surface.blit(texture, (0, 0))
 
-    def _render_corner_tile(self, tile_surface, x, y):
+    def _render_corner_tile(self, tile_surface: pygame.Surface, x: int, y: int) -> None:
         """Render a single corner tile"""
         context = self._get_corner_context(x, y)
         texture = self.textures[TileType.CORNER]["exterior"][context["position"]]
-        tile_surface.blit(texture, (0, 0))
-
-    def _render_floor_tile(self, tile_surface, x, y):
-        """Render a single floor tile"""
-        position = self._get_floor_context(x, y)
-        texture = self.textures[TileType.FLOOR][position]
         tile_surface.blit(texture, (0, 0))
 
     def _render_background_tile(self, tile_surface, x, y):

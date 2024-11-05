@@ -123,7 +123,7 @@ class BuildingSystem:
             )
         else:
             # Handle single-tile items
-            tile_type = TileType.FLOOR  # Default or determine based on category
+            tile_type = TileType.EMPTY  # Default or determine based on category
             self.grid.set_tile(
                 self.ghost_position[0], self.ghost_position[1], tile_type
             )

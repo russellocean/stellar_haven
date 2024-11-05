@@ -8,7 +8,6 @@ class TileType(Enum):
     PLANET = auto()
     STAR = auto()
     DOOR = auto()
-    FLOOR = auto()
     WINDOW = auto()
     FURNITURE = auto()
     BACKGROUND = auto()
@@ -19,4 +18,18 @@ class TileType(Enum):
 
     @property
     def is_walkable(self) -> bool:
-        return self in (TileType.FLOOR, TileType.PLATFORM)
+        """Return True if the tile type can be walked through"""
+        return self in (
+            TileType.EMPTY,
+            TileType.DOOR,
+            TileType.INTERIOR_BACKGROUND,
+            TileType.BACKGROUND,
+            TileType.PLATFORM,  # Platform is special case, handled separately for dropping
+            TileType.DECORATION,  # Decorations should be walkable
+            TileType.FURNITURE,  # Furniture should be walkable
+        )
+
+    @property
+    def blocks_movement(self) -> bool:
+        """Return True if the tile type blocks movement"""
+        return self in (TileType.WALL, TileType.CORNER, TileType.EXTERIOR)

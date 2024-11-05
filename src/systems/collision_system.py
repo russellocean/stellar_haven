@@ -13,7 +13,6 @@ class CollisionSystem:
         # Debug colors
         self.TILE_COLORS = {
             TileType.EMPTY: (0, 0, 0, 0),
-            TileType.FLOOR: (0, 255, 0, 100),
             TileType.WALL: (255, 0, 0, 100),
             TileType.DOOR: (0, 0, 255, 100),
             TileType.CORNER: (255, 0, 255, 100),
@@ -21,18 +20,43 @@ class CollisionSystem:
         }
 
     def is_position_valid(self, rect: pygame.Rect) -> bool:
-        """Check if a position is valid (inside room and not in wall)"""
+        """Check if a position is valid (not blocked by walls or other obstacles)"""
         grid_left, grid_top = self.grid.world_to_grid(rect.left, rect.top)
         grid_right, grid_bottom = self.grid.world_to_grid(
             rect.right - 1, rect.bottom - 1
         )
 
+        # Check each grid cell the rect overlaps
         for x in range(grid_left, grid_right + 1):
             for y in range(grid_top, grid_bottom + 1):
                 tile = self.grid.cells.get((x, y), TileType.EMPTY)
-                if not tile.is_walkable:
+                if tile.blocks_movement:
                     return False
         return True
+
+    def check_collision_with_tile(self, rect: pygame.Rect, tile_pos: tuple) -> bool:
+        """Check if a rect collides with a specific tile"""
+        tile_rect = pygame.Rect(
+            tile_pos[0] * self.grid.cell_size,
+            tile_pos[1] * self.grid.cell_size,
+            self.grid.cell_size,
+            self.grid.cell_size,
+        )
+        return rect.colliderect(tile_rect)
+
+    def get_colliding_tiles(self, rect: pygame.Rect) -> list:
+        """Get all tiles that collide with a rect"""
+        grid_left, grid_top = self.grid.world_to_grid(rect.left, rect.top)
+        grid_right, grid_bottom = self.grid.world_to_grid(
+            rect.right - 1, rect.bottom - 1
+        )
+
+        colliding_tiles = []
+        for x in range(grid_left, grid_right + 1):
+            for y in range(grid_top, grid_bottom + 1):
+                if (x, y) in self.grid.cells:
+                    colliding_tiles.append((x, y, self.grid.cells[(x, y)]))
+        return colliding_tiles
 
     def get_valid_floor(self, x: int, y: int) -> int:
         """Find the nearest valid floor position below a point"""
@@ -41,7 +65,7 @@ class CollisionSystem:
         while grid_y < (y + 1000) // self.grid.cell_size:  # Reasonable search limit
             if (grid_x, grid_y) in self.grid.cells:
                 tile = self.grid.cells[(grid_x, grid_y)]
-                if tile == TileType.FLOOR:
+                if tile.blocks_movement:
                     return grid_y * self.grid.cell_size
             grid_y += 1
         return y

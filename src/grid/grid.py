@@ -68,12 +68,6 @@ class Grid:
             self.set_tile(x, y + dy, TileType.WALL)  # Left wall
             self.set_tile(x + width - 1, y + dy, TileType.WALL)  # Right wall
 
-        # Add floor tiles one tile above bottom wall
-        for dx in range(1, width - 1):
-            self.set_tile(
-                x + dx, y + height - 2, TileType.FLOOR
-            )  # One tile above bottom
-
         # Recalculate corners after walls are placed
         self._recalculate_corners(room_id)
 

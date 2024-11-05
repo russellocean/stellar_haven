@@ -13,6 +13,7 @@ class Grid:
         self.rooms: Dict[str, dict] = {}  # Keep room data for door connections
         self.asset_manager = AssetManager()
         self.room_config = self.asset_manager.get_config("rooms")
+        self.tile_change_callbacks = []  # Add callback list for tile changes
 
     def add_room(self, room_id: str, room_type: str, grid_x: int, grid_y: int) -> bool:
         """Add a room at grid coordinates"""
@@ -199,6 +200,7 @@ class Grid:
                     f"WARNING: Changing tile at ({x}, {y}) from {current_type} to {tile_type}"
                 )
         self.cells[(x, y)] = tile_type
+        self._notify_tile_changes()  # Notify observers when a tile changes
 
     def get_tile(self, x: int, y: int) -> TileType:
         """Get the tile at a specific position"""
@@ -311,3 +313,12 @@ class Grid:
                 self.set_tile(cx, cy, TileType.CORNER)
             else:
                 self.set_tile(cx, cy, TileType.WALL)
+
+    def add_tile_change_callback(self, callback):
+        """Add a callback to be notified when tiles change"""
+        self.tile_change_callbacks.append(callback)
+
+    def _notify_tile_changes(self):
+        """Notify all callbacks that tiles have changed"""
+        for callback in self.tile_change_callbacks:
+            callback()

@@ -354,8 +354,12 @@ class GameplayScene(Scene):
         self.resource_manager = ResourceManager()
         self.state_manager = GameStateManager()
 
-        # Add camera
-        self.camera = Camera(game.screen.get_width(), game.screen.get_height())
+        # Add camera with tile_size
+        self.camera = Camera(
+            game.screen.get_width(),
+            game.screen.get_height(),
+            tile_size=16,  # Match the tile size used in GridRenderer
+        )
 
         # Initialize core systems
         screen_center_x = game.screen.get_width() // 2

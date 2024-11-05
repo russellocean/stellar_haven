@@ -144,6 +144,12 @@ class GridRenderer:
             ),
         }
 
+        # Add cache for rendered tiles
+        self.tile_cache = {}  # (x, y) -> rendered surface
+
+        # Register for tile changes to invalidate cache
+        self.grid.add_tile_change_callback(self._on_tiles_changed)
+
     def _is_exterior_wall(self, x: int, y: int) -> bool:
         """Determine if a wall is on the exterior of the structure"""
         # Check if any adjacent tile is empty
@@ -275,11 +281,36 @@ class GridRenderer:
 
         return {"lighting": lighting, "position": "center"}
 
+    def _on_tiles_changed(self):
+        """Clear the tile cache when tiles change"""
+        self.tile_cache.clear()
+
     def render(self, surface: pygame.Surface, camera):
-        """Render the grid using tilemap assets"""
+        """Render the grid using tilemap assets with caching"""
+        # Get visible area in grid coordinates
+        visible_area = camera.get_visible_area()
+        min_x = visible_area.left
+        min_y = visible_area.top
+        max_x = visible_area.right + 1
+        max_y = visible_area.bottom + 1
+
+        # Only process tiles within camera bounds
         for pos, tile_type in self.grid.cells.items():
             x, y = pos
+            if not (min_x <= x <= max_x and min_y <= y <= max_y):
+                continue
+
             screen_pos = camera.world_to_screen(x * self.tile_size, y * self.tile_size)
+
+            # Check cache first
+            if pos in self.tile_cache:
+                surface.blit(self.tile_cache[pos], screen_pos)
+                continue
+
+            # Create a new surface for this tile
+            tile_surface = pygame.Surface(
+                (self.tile_size, self.tile_size), pygame.SRCALPHA
+            )
 
             texture = None
             if tile_type == TileType.DOOR:
@@ -287,19 +318,19 @@ class GridRenderer:
                 door_data = self.texture_metadata["door_light_closed"]
                 if door_data:
                     texture = door_data["surface"]
-                    # Calculate the full door rectangle
-                    door_rect = pygame.Rect(
-                        screen_pos[0],
-                        screen_pos[1] - (door_data["height"] - 1) * self.tile_size,
-                        door_data["width"] * self.tile_size,
-                        door_data["height"] * self.tile_size,
-                    )
-                    surface.blit(texture, door_rect)
-                    continue  # Skip the normal blit below
+                    tile_surface.blit(texture, (0, 0))  # Blit to (0,0) of tile_surface
 
             elif tile_type == TileType.WALL:
                 context = self._get_wall_context(x, y)
-                texture = self.textures[TileType.WALL]["exterior"][context["position"]]
+                if context["type"] == "exterior":
+                    texture = self.textures[TileType.WALL]["exterior"][
+                        context["position"]
+                    ]
+                else:
+                    texture = self.textures[TileType.WALL]["interior"][
+                        context["lighting"]
+                    ][context["position"]]
+                tile_surface.blit(texture, (0, 0))  # Blit to (0,0) of tile_surface
 
             elif tile_type == TileType.CORNER:
                 context = self._get_corner_context(x, y)
@@ -311,22 +342,24 @@ class GridRenderer:
                     texture = self.textures[TileType.CORNER]["interior"][
                         context["lighting"]
                     ][context["position"]]
+                tile_surface.blit(texture, (0, 0))  # Blit to (0,0) of tile_surface
 
             elif tile_type == TileType.FLOOR:
                 position = self._get_floor_context(x, y)
                 texture = self.textures[TileType.FLOOR][position]
+                tile_surface.blit(texture, (0, 0))  # Blit to (0,0) of tile_surface
 
             elif tile_type == TileType.BACKGROUND:
                 context = self._get_background_context(x, y)
                 texture = self.asset_manager.get_tilemap_group(
                     f"{context['lighting']}_{context['position']}"
                 )["surface"]
+                tile_surface.blit(texture, (0, 0))  # Blit to (0,0) of tile_surface
 
-            if texture:
-                if isinstance(texture, dict):  # If it's a multi-tile texture
-                    surface.blit(texture["surface"], screen_pos)
-                else:  # Single-tile texture
-                    surface.blit(texture, screen_pos)
+            # Store in cache
+            self.tile_cache[pos] = tile_surface
+            # Render to main surface
+            surface.blit(tile_surface, screen_pos)
 
     def set_camera(self, camera):
         """Set camera reference"""

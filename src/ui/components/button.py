@@ -13,15 +13,16 @@ class Button(UIComponent):
         action: Callable,
         image_path: Optional[str] = None,
         font_size: int = 24,
-        tooltip: str = None,  # Add tooltip support
-        disabled: bool = False,  # Add disabled state
+        tooltip: str = None,
+        disabled: bool = False,
     ):
         super().__init__(rect, text, image_path, font_size)
         self.action = action
         self.tooltip = tooltip
         self.disabled = disabled
+        self.active = False
 
-        # Enhance colors
+        # Enhanced colors while keeping existing ones
         self.colors.update(
             {
                 "pressed": (80, 80, 80),
@@ -30,10 +31,13 @@ class Button(UIComponent):
                 "border_normal": (100, 100, 100),
                 "border_hover": (200, 200, 200),
                 "border_pressed": (150, 150, 150),
+                "border_active": (100, 149, 237),  # Cornflower blue for active state
+                "resource_positive": (100, 200, 100),  # Green for generation
+                "resource_negative": (200, 100, 100),  # Red for consumption
             }
         )
 
-        # Animation properties
+        # Keep existing animation properties
         self.pulse_amount = 0
         self.pulse_direction = 1
         self.is_pulsing = False
@@ -108,32 +112,66 @@ class Button(UIComponent):
         return self.colors["border_normal"]
 
     def draw(self, surface: pygame.Surface):
-        """Draw the button with enhanced visuals"""
-        # Draw base button
+        """Enhanced button drawing while keeping existing functionality"""
+        # Handle pulse animation
         rect = self.rect.copy()
         if self.is_pulsing:
-            # Adjust rect for pulse animation
             pulse_offset = int(self.pulse_amount * 4)
             rect.inflate_ip(pulse_offset, pulse_offset)
 
-        # Draw button background
-        pygame.draw.rect(surface, self._get_current_color(), rect)
+        # Draw button background with rounded corners
+        pygame.draw.rect(surface, self._get_current_color(), rect, border_radius=3)
 
-        # Draw border
-        pygame.draw.rect(surface, self._get_border_color(), rect, 2)
+        # Draw border (active state or normal)
+        border_color = (
+            self.colors["border_active"] if self.active else self._get_border_color()
+        )
+        pygame.draw.rect(surface, border_color, rect, 2, border_radius=3)
 
-        # Draw text
-        if self.text:
-            text_surface = self.font.render(
-                self.text, True, self._get_current_text_color()
-            )
-            text_rect = text_surface.get_rect(center=rect.center)
-            surface.blit(text_surface, text_rect)
+        # Calculate content area
+        padding = 10
+        content_rect = rect.inflate(-padding * 2, -padding * 2)
 
-        # Draw image if present
+        # Handle image if present
         if self.image:
-            image_rect = self.image.get_rect(center=rect.center)
-            surface.blit(self.image, image_rect)
+            image_size = min(content_rect.height, 32)
+            scaled_image = pygame.transform.scale(self.image, (image_size, image_size))
+            image_rect = scaled_image.get_rect(midleft=content_rect.midleft)
+            surface.blit(scaled_image, image_rect)
+            content_rect.left += image_size + padding
+
+        # Handle multiline text with resource colors
+        if self.text:
+            lines = self.text.split("\n")
+            line_height = self.font.get_height()
+            total_height = line_height * len(lines)
+            start_y = content_rect.centery - (total_height / 2)
+
+            for i, line in enumerate(lines):
+                # Determine color and font for each line
+                if i == 0:
+                    color = self._get_current_text_color()
+                    font = self.font
+                else:
+                    # Resource info coloring
+                    if "+" in line:
+                        color = self.colors["resource_positive"]
+                    elif "-" in line:
+                        color = self.colors["resource_negative"]
+                    else:
+                        color = self._get_current_text_color()
+                    font = pygame.font.Font(None, self.font_size - 4)
+
+                text_surface = font.render(line, True, color)
+                if len(lines) == 1:
+                    # Single line centered
+                    text_rect = text_surface.get_rect(center=content_rect.center)
+                else:
+                    # Multiple lines aligned left
+                    text_rect = text_surface.get_rect(
+                        midleft=(content_rect.left, start_y + i * line_height)
+                    )
+                surface.blit(text_surface, text_rect)
 
         # Draw tooltip if hovered
         if self.tooltip and self.is_hovered:

@@ -101,12 +101,8 @@ class InputHandler:
 
         # Generate all tiles in the multi-tile selection
         tiles_to_toggle = []
-        for y in range(
-            base_y, min(base_y + self.helper.multi_tile_height, max_tiles_y)
-        ):
-            for x in range(
-                base_x, min(base_x + self.helper.multi_tile_width, max_tiles_x)
-            ):
+        for y in range(base_y, min(base_y + 1, max_tiles_y)):
+            for x in range(base_x, min(base_x + 1, max_tiles_x)):
                 if 0 <= x < max_tiles_x and 0 <= y < max_tiles_y:
                     tiles_to_toggle.append((x, y))
 

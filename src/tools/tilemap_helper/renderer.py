@@ -74,18 +74,17 @@ class TilemapRenderer:
 
     def render_configured_tiles(self):
         """Draw green grid lines for configured tiles"""
+        # Get all configured tile groups
         for pos_str, config in self.helper.tile_configs.items():
             try:
                 x, y = eval(pos_str)  # Convert string position back to tuple
-                width = config.get("width", 1)
-                height = config.get("height", 1)
 
-                # Draw green rectangle around configured tiles
+                # Draw green rectangle around the individual tile
                 rect = pygame.Rect(
                     self.helper.image_pos[0] + x * self.helper.scaled_tile_size,
                     self.helper.image_pos[1] + y * self.helper.scaled_tile_size,
-                    self.helper.scaled_tile_size * width,
-                    self.helper.scaled_tile_size * height,
+                    self.helper.scaled_tile_size,
+                    self.helper.scaled_tile_size,
                 )
                 pygame.draw.rect(self.screen, (0, 255, 0, 128), rect, 2)
             except (ValueError, SyntaxError):
@@ -94,36 +93,39 @@ class TilemapRenderer:
     def render_hover(self):
         """Draw hover effect for tile groups"""
         if self.hover_pos:
-            # Find the base tile of the group by checking all configured tiles
-            base_tile = None
-            base_config = None
-
+            # Find the tile group that contains the hovered position
+            hover_group = None
             for pos_str, config in self.helper.tile_configs.items():
                 try:
                     x, y = eval(pos_str)
-                    width = config.get("width", 1)
-                    height = config.get("height", 1)
+                    # Get all tiles in this group
+                    tiles = []
+                    for tile_pos_str in self.helper.tile_configs:
+                        tile_x, tile_y = eval(tile_pos_str)
+                        if self.helper.tile_configs[tile_pos_str] == config:
+                            tiles.append((tile_x, tile_y))
 
-                    # Check if hover_pos is within this tile group's bounds
-                    if (
-                        x <= self.hover_pos[0] < x + width
-                        and y <= self.hover_pos[1] < y + height
-                    ):
-                        base_tile = (x, y)
-                        base_config = config
+                    # Check if hover_pos matches any tile in this group
+                    if (self.hover_pos[0], self.hover_pos[1]) in tiles:
+                        hover_group = tiles
                         break
+
                 except (ValueError, SyntaxError):
                     continue
 
-            if base_tile and base_config:
+            if hover_group:
+                # Find bounds of the tile group
+                min_x = min(x for x, y in hover_group)
+                min_y = min(y for x, y in hover_group)
+                max_x = max(x for x, y in hover_group)
+                max_y = max(y for x, y in hover_group)
+
                 # Draw rectangle around the entire group
                 rect = pygame.Rect(
-                    self.helper.image_pos[0]
-                    + base_tile[0] * self.helper.scaled_tile_size,
-                    self.helper.image_pos[1]
-                    + base_tile[1] * self.helper.scaled_tile_size,
-                    self.helper.scaled_tile_size * base_config.get("width", 1),
-                    self.helper.scaled_tile_size * base_config.get("height", 1),
+                    self.helper.image_pos[0] + min_x * self.helper.scaled_tile_size,
+                    self.helper.image_pos[1] + min_y * self.helper.scaled_tile_size,
+                    self.helper.scaled_tile_size * (max_x - min_x + 1),
+                    self.helper.scaled_tile_size * (max_y - min_y + 1),
                 )
                 pygame.draw.rect(self.screen, (100, 200, 255, 128), rect, 2)
 

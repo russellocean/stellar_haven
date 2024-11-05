@@ -215,13 +215,11 @@ class TilemapUI(QMainWindow):
         }
 
         # Add the tile group to configuration
-        self.helper.add_tile_group(self.helper.selected_tiles.copy(), metadata)
-
-        # Clear selection and form
-        self.helper.selected_tiles.clear()
-        self.clear_metadata_form()
-
-        QMessageBox.information(self, "Success", "Tile group added successfully!")
+        if self.helper.add_tile_group(self.helper.selected_tiles.copy(), metadata):
+            # Clear selection and form only if save was successful
+            self.helper.selected_tiles.clear()
+            self.clear_metadata_form()
+            QMessageBox.information(self, "Success", "Tile group added successfully!")
 
     def clear_metadata_form(self):
         """Clear all metadata form fields"""

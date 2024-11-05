@@ -221,7 +221,19 @@ class TilemapHelper:
     def add_tile_group(self, tiles: List[Tuple[int, int]], metadata: dict):
         """Add a new tile group to the configuration"""
         if not self.tilemap_path or not tiles:
-            return
+            return False
+
+        # Get relative path for the tilemap
+        rel_path = os.path.relpath(self.tilemap_path, AssetManager().asset_path)
+
+        # Check for duplicate name
+        if self._name_exists(metadata["name"], rel_path):
+            QMessageBox.warning(
+                self.ui,
+                "Duplicate Name",
+                f"A tile group named '{metadata['name']}' already exists. Please choose a different name.",
+            )
+            return False
 
         # Calculate width and height from selected tiles
         x_coords = [x for x, _ in tiles]
@@ -236,9 +248,6 @@ class TilemapHelper:
         # Create config entry for this tilemap if it doesn't exist
         if not hasattr(self, "tilemap_configs"):
             self.tilemap_configs = {}
-
-        # Get relative path for the tilemap
-        rel_path = os.path.relpath(self.tilemap_path, AssetManager().asset_path)
 
         # Initialize config for this tilemap if needed
         if rel_path not in self.tilemap_configs:
@@ -258,6 +267,7 @@ class TilemapHelper:
 
         # Auto-save the configuration
         self.save_config("tilemap_config.json")
+        return True
 
     def save_state(self):
         """Save current application state"""
@@ -336,3 +346,11 @@ class TilemapHelper:
 
         # Save to file
         self.save_config("tilemap_config.json")
+
+    def _name_exists(self, name: str, rel_path: str) -> bool:
+        """Check if a tile group name already exists"""
+        if rel_path not in self.tilemap_configs:
+            return False
+
+        existing_groups = self.tilemap_configs[rel_path].get("groups", [])
+        return any(group["metadata"].get("name") == name for group in existing_groups)

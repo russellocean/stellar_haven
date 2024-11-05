@@ -1,5 +1,34 @@
 {
-  "tilemap": "/Users/russellocean/Developer/stellar_haven/assets/tilemaps/background_space.png",
-  "tile_size": 32,
-  "tiles": {}
+    "tilemap": "tilemaps/background_space.png",
+    "tile_size": 16,
+    "tiles": {
+        "(3, 1)": {
+            "name": "planet_1",
+            "type": "planet",
+            "width": 1,
+            "height": 1,
+            "properties": {}
+        },
+        "(4, 1)": {
+            "name": "planet_1",
+            "type": "planet",
+            "width": 1,
+            "height": 1,
+            "properties": {}
+        },
+        "(3, 2)": {
+            "name": "planet_1",
+            "type": "planet",
+            "width": 1,
+            "height": 1,
+            "properties": {}
+        },
+        "(4, 2)": {
+            "name": "planet_1",
+            "type": "planet",
+            "width": 1,
+            "height": 1,
+            "properties": {}
+        }
+    }
 }

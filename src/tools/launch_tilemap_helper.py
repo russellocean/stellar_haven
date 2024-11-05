@@ -15,14 +15,23 @@ sys.path.insert(0, str(src_dir))
 from tools.tilemap_helper import TilemapHelper
 
 
-def main():
-    # Create QApplication first
-    app = QApplication(sys.argv)
+def print_controls():
+    """Print control information to console"""
+    print("Tilemap loaded successfully!")
+    print("\nControls:")
+    print("- Left click: Select/deselect tiles")
+    print("- Middle click + drag: Pan view")
+    print("- Mouse wheel: Zoom in/out")
+    print("- G: Toggle grid")
+    print("- Ctrl+S: Save configuration")
+    print("- Ctrl+L: Load configuration")
 
+
+def select_tilemap() -> str:
+    """Open a file dialog to select a tilemap"""
     # Create the tilemaps directory if it doesn't exist
     assets_dir.mkdir(parents=True, exist_ok=True)
 
-    # Show file dialog before creating helper
     file_path, _ = QFileDialog.getOpenFileName(
         None,
         "Select Tilemap",
@@ -30,20 +39,22 @@ def main():
         "Image Files (*.png *.jpg *.jpeg *.bmp);;All Files (*.*)",
     )
 
+    return file_path
+
+
+def main():
+    # Create QApplication first
+    app = QApplication(sys.argv)
+
+    # Show file dialog before creating helper
+    file_path = select_tilemap()
+
     # Create helper with the existing QApplication
     helper = TilemapHelper(app)
 
     if file_path:
-        success = helper.load_tilemap(file_path)
-        if success:
-            print("Tilemap loaded successfully!")
-            print("\nControls:")
-            print("- Left click: Select/deselect tiles")
-            print("- Middle click + drag: Pan view")
-            print("- Mouse wheel: Zoom in/out")
-            print("- G: Toggle grid")
-            print("- Ctrl+S: Save configuration")
-            print("- Ctrl+L: Load configuration")
+        if helper.load_tilemap(file_path):
+            print_controls()
         else:
             print("Failed to load selected tilemap!")
     else:

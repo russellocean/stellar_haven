@@ -171,8 +171,13 @@ class Grid:
 
     def get_room_by_grid_position(self, grid_x: int, grid_y: int) -> Optional[str]:
         """Get the room ID at a specific grid position"""
+        # Check each room's bounds
         for room_id, room in self.rooms.items():
-            if room["grid_pos"] == (grid_x, grid_y):
+            rx, ry = room["grid_pos"]
+            width, height = room["grid_size"]
+
+            # Check if the point is within the room's bounds
+            if rx <= grid_x < rx + width and ry <= grid_y < ry + height:
                 return room_id
         return None
 

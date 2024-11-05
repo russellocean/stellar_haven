@@ -23,8 +23,6 @@ def print_controls():
     print("- Middle click + drag: Pan view")
     print("- Mouse wheel: Zoom in/out")
     print("- G: Toggle grid")
-    print("- Ctrl+S: Save configuration")
-    print("- Ctrl+L: Load configuration")
 
 
 def select_tilemap() -> str:

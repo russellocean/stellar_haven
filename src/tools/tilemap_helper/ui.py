@@ -1,7 +1,10 @@
+from pathlib import Path
+
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (
     QComboBox,
     QDockWidget,
+    QFileDialog,
     QFormLayout,
     QGroupBox,
     QHBoxLayout,
@@ -35,23 +38,17 @@ class TilemapUI(QMainWindow):
         controls = QWidget()
         controls_layout = QVBoxLayout()
 
+        # Load Tilemap Button
+        load_tilemap_btn = QPushButton("Load Tilemap")
+        load_tilemap_btn.clicked.connect(self.load_new_tilemap)
+        controls_layout.addWidget(load_tilemap_btn)
+        controls_layout.addWidget(QLabel("Load a different tilemap"))
+
         # Toggle Grid Button
         grid_btn = QPushButton("Toggle Grid")
         grid_btn.clicked.connect(self.toggle_grid)
         controls_layout.addWidget(grid_btn)
         controls_layout.addWidget(QLabel("Hotkey: G"))
-
-        # Save Config Button
-        save_btn = QPushButton("Save Configuration")
-        save_btn.clicked.connect(self.save_config)
-        controls_layout.addWidget(save_btn)
-        controls_layout.addWidget(QLabel("Hotkey: Ctrl+S"))
-
-        # Load Config Button
-        load_btn = QPushButton("Load Configuration")
-        load_btn.clicked.connect(self.load_config)
-        controls_layout.addWidget(load_btn)
-        controls_layout.addWidget(QLabel("Hotkey: Ctrl+L"))
 
         # Navigation hints
         controls_layout.addWidget(QLabel("\nNavigation:"))
@@ -86,13 +83,11 @@ class TilemapUI(QMainWindow):
 
         # Tile name
         self.tile_name = QLineEdit()
-        self.tile_name.textChanged.connect(self.update_metadata)
         metadata_layout.addRow("Name:", self.tile_name)
 
         # Tile type
         self.tile_type = QComboBox()
         self.tile_type.addItems(["ground", "wall", "decoration", "planet", "custom"])
-        self.tile_type.currentTextChanged.connect(self.update_metadata)
         metadata_layout.addRow("Type:", self.tile_type)
 
         # Multi-tile size
@@ -100,8 +95,6 @@ class TilemapUI(QMainWindow):
         self.multi_tile_height = QSpinBox()
         self.multi_tile_width.setRange(1, 16)
         self.multi_tile_height.setRange(1, 16)
-        self.multi_tile_width.valueChanged.connect(self.update_multi_tile)
-        self.multi_tile_height.valueChanged.connect(self.update_multi_tile)
 
         multi_size = QWidget()
         multi_layout = QHBoxLayout()
@@ -114,8 +107,12 @@ class TilemapUI(QMainWindow):
         # Custom properties
         self.custom_props = QLineEdit()
         self.custom_props.setPlaceholderText("key1:value1,key2:value2")
-        self.custom_props.textChanged.connect(self.update_metadata)
         metadata_layout.addRow("Properties:", self.custom_props)
+
+        # Add Tile Group Button
+        save_group_btn = QPushButton("Add Tile Group")
+        save_group_btn.clicked.connect(self.save_tile_group)
+        metadata_layout.addRow("", save_group_btn)
 
         metadata.setLayout(metadata_layout)
         self.metadata_dock.setWidget(metadata)
@@ -129,14 +126,7 @@ class TilemapUI(QMainWindow):
     def toggle_grid(self):
         """Toggle grid visibility"""
         self.helper.grid_visible = not self.helper.grid_visible
-
-    def save_config(self):
-        """Save current configuration"""
-        self.helper.save_config("tilemap_config.json")
-
-    def load_config(self):
-        """Load configuration"""
-        self.helper.load_config("tilemap_config.json")
+        self.helper.save_state()  # Save state when grid visibility changes
 
     def update_tile_size(self):
         """Update the tile size in the helper"""
@@ -185,3 +175,78 @@ class TilemapUI(QMainWindow):
             self.pos_label.setText(f"({pos[0]}, {pos[1]})")
         else:
             self.pos_label.setText("No tile selected")
+
+    def load_new_tilemap(self):
+        """Open file dialog to load a new tilemap"""
+        # Get the assets directory
+        project_root = (
+            Path(self.helper.tilemap_path).parent.parent.parent
+            if self.helper.tilemap_path
+            else None
+        )
+        assets_dir = project_root / "assets" / "tilemaps" if project_root else None
+
+        file_path, _ = QFileDialog.getOpenFileName(
+            self,
+            "Select Tilemap",
+            str(assets_dir) if assets_dir else "",
+            "Image Files (*.png *.jpg *.jpeg *.bmp);;All Files (*.*)",
+        )
+
+        if file_path:
+            # Load the new tilemap
+            if self.helper.load_tilemap(file_path):
+                # Reset UI elements
+                self.tile_size_input.setValue(32)  # Reset to default tile size
+                self.multi_tile_width.setValue(1)  # Reset multi-tile size
+                self.multi_tile_height.setValue(1)
+                self.tile_name.clear()  # Clear metadata fields
+                self.custom_props.clear()
+                self.tile_type.setCurrentIndex(0)
+
+                QMessageBox.information(
+                    self, "Success", "New tilemap loaded successfully!"
+                )
+            else:
+                QMessageBox.critical(
+                    self, "Error", "Failed to load the selected tilemap!"
+                )
+
+    def save_tile_group(self):
+        """Save the current selection as a tile group"""
+        if not self.helper.selected_tiles:
+            QMessageBox.warning(self, "Warning", "No tiles selected!")
+            return
+
+        if not self.tile_name.text().strip():
+            QMessageBox.warning(
+                self, "Warning", "Please provide a name for the tile group!"
+            )
+            return
+
+        # Create metadata for the tile group
+        metadata = {
+            "name": self.tile_name.text(),
+            "type": self.tile_type.currentText(),
+            "width": self.multi_tile_width.value(),
+            "height": self.multi_tile_height.value(),
+            "properties": self._parse_custom_props(),
+        }
+
+        # Add the tile group to configuration
+        self.helper.add_tile_group(self.helper.selected_tiles.copy(), metadata)
+
+        # Clear selection and form
+        self.helper.selected_tiles.clear()
+        self.clear_metadata_form()
+
+        QMessageBox.information(self, "Success", "Tile group added successfully!")
+
+    def clear_metadata_form(self):
+        """Clear all metadata form fields"""
+        self.tile_name.clear()
+        self.tile_type.setCurrentIndex(0)
+        self.multi_tile_width.setValue(1)
+        self.multi_tile_height.setValue(1)
+        self.custom_props.clear()
+        self.pos_label.setText("No tile selected")

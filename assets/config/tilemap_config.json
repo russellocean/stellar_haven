@@ -1,34 +1,61 @@
 {
-    "tilemap": "tilemaps/background_space.png",
-    "tile_size": 16,
-    "tiles": {
-        "(3, 1)": {
-            "name": "planet_1",
-            "type": "planet",
-            "width": 1,
-            "height": 1,
-            "properties": {}
-        },
-        "(4, 1)": {
-            "name": "planet_1",
-            "type": "planet",
-            "width": 1,
-            "height": 1,
-            "properties": {}
-        },
-        "(3, 2)": {
-            "name": "planet_1",
-            "type": "planet",
-            "width": 1,
-            "height": 1,
-            "properties": {}
-        },
-        "(4, 2)": {
-            "name": "planet_1",
-            "type": "planet",
-            "width": 1,
-            "height": 1,
-            "properties": {}
-        }
+    "tilemaps/background_space.png": {
+        "tile_size": 16,
+        "groups": [
+            {
+                "tiles": [
+                    {
+                        "x": 3,
+                        "y": 1
+                    },
+                    {
+                        "x": 4,
+                        "y": 1
+                    },
+                    {
+                        "x": 3,
+                        "y": 2
+                    },
+                    {
+                        "x": 4,
+                        "y": 2
+                    }
+                ],
+                "metadata": {
+                    "name": "planet_1",
+                    "type": "planet",
+                    "width": 1,
+                    "height": 1,
+                    "properties": {}
+                }
+            },
+            {
+                "tiles": [
+                    {
+                        "x": 7,
+                        "y": 4
+                    },
+                    {
+                        "x": 8,
+                        "y": 4
+                    },
+                    {
+                        "x": 7,
+                        "y": 5
+                    },
+                    {
+                        "x": 8,
+                        "y": 5
+                    }
+                ],
+                "metadata": {
+                    "name": "planet_2",
+                    "type": "planet",
+                    "width": 1,
+                    "height": 1,
+                    "properties": {}
+                }
+            }
+        ]
     }
 }

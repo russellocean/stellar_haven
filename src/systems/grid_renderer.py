@@ -17,27 +17,45 @@ class GridRenderer:
                 "exterior": {
                     "top": self.asset_manager.get_tilemap_group(
                         "exterior_top_center_1"
-                    ),
+                    )["surface"],
                     "bottom": self.asset_manager.get_tilemap_group(
-                        "exterior_bottom_center"
-                    ),
-                    "left": self.asset_manager.get_tilemap_group("exterior_left_1"),
-                    "right": self.asset_manager.get_tilemap_group("exterior_right_1"),
+                        "exterior_bottom_center_1"
+                    )["surface"],
+                    "left": self.asset_manager.get_tilemap_group("exterior_left_1")[
+                        "surface"
+                    ],
+                    "right": self.asset_manager.get_tilemap_group("exterior_right_1")[
+                        "surface"
+                    ],
                 },
                 "interior": {
                     "light": {
-                        "top": self.asset_manager.get_tilemap_group("light_top_center"),
-                        "center": self.asset_manager.get_tilemap_group("light_center"),
-                        "left": self.asset_manager.get_tilemap_group("light_left"),
-                        "right": self.asset_manager.get_tilemap_group("light_right"),
+                        "top": self.asset_manager.get_tilemap_group("light_top_center")[
+                            "surface"
+                        ],
+                        "center": self.asset_manager.get_tilemap_group("light_center")[
+                            "surface"
+                        ],
+                        "left": self.asset_manager.get_tilemap_group("light_left")[
+                            "surface"
+                        ],
+                        "right": self.asset_manager.get_tilemap_group("light_right")[
+                            "surface"
+                        ],
                     },
                     "dark": {
-                        "center": self.asset_manager.get_tilemap_group("dark_center"),
-                        "left": self.asset_manager.get_tilemap_group("dark_left"),
-                        "right": self.asset_manager.get_tilemap_group("dark_right"),
+                        "center": self.asset_manager.get_tilemap_group("dark_center")[
+                            "surface"
+                        ],
+                        "left": self.asset_manager.get_tilemap_group("dark_left")[
+                            "surface"
+                        ],
+                        "right": self.asset_manager.get_tilemap_group("dark_right")[
+                            "surface"
+                        ],
                         "bottom": self.asset_manager.get_tilemap_group(
                             "dark_bottom_center"
-                        ),
+                        )["surface"],
                     },
                 },
             },
@@ -45,54 +63,82 @@ class GridRenderer:
                 "exterior": {
                     "top_left": self.asset_manager.get_tilemap_group(
                         "exterior_top_left"
-                    ),
+                    )["surface"],
                     "top_right": self.asset_manager.get_tilemap_group(
                         "exterior_top_right"
-                    ),
+                    )["surface"],
                     "bottom_left": self.asset_manager.get_tilemap_group(
                         "exterior_bottom_left"
-                    ),
+                    )["surface"],
                     "bottom_right": self.asset_manager.get_tilemap_group(
                         "exterior_bottom_right"
-                    ),
+                    )["surface"],
                 },
                 "interior": {
                     "light": {
                         "top_left": self.asset_manager.get_tilemap_group(
                             "light_top_left"
-                        ),
+                        )["surface"],
                         "top_right": self.asset_manager.get_tilemap_group(
                             "light_top_right"
-                        ),
+                        )["surface"],
                     },
                     "dark": {
                         "bottom_left": self.asset_manager.get_tilemap_group(
                             "dark_bottom_left"
-                        ),
+                        )["surface"],
                         "bottom_right": self.asset_manager.get_tilemap_group(
                             "dark_bottom_right"
-                        ),
+                        )["surface"],
                     },
                 },
             },
             TileType.FLOOR: {
-                "left": self.asset_manager.get_tilemap_group("platform_left"),
-                "center": self.asset_manager.get_tilemap_group("platform_center"),
-                "right": self.asset_manager.get_tilemap_group("platform_right"),
+                "left": self.asset_manager.get_tilemap_group("platform_left")[
+                    "surface"
+                ],
+                "center": self.asset_manager.get_tilemap_group("platform_center")[
+                    "surface"
+                ],
+                "right": self.asset_manager.get_tilemap_group("platform_right")[
+                    "surface"
+                ],
             },
             TileType.DOOR: {
                 "light": {
-                    "closed": self.asset_manager.get_tilemap_group("door_light_closed"),
-                    "open": self.asset_manager.get_tilemap_group("door_light_open"),
+                    "closed": self.asset_manager.get_tilemap_group("door_light_closed")[
+                        "surface"
+                    ],
+                    "open": self.asset_manager.get_tilemap_group("door_light_open")[
+                        "surface"
+                    ],
                 },
                 "special": {
                     "closed": self.asset_manager.get_tilemap_group(
                         "door_special_closed"
-                    ),
-                    "open": self.asset_manager.get_tilemap_group("door_special_open"),
+                    )["surface"],
+                    "open": self.asset_manager.get_tilemap_group("door_special_open")[
+                        "surface"
+                    ],
                 },
             },
-            TileType.BACKGROUND: self.asset_manager.get_tilemap_group("dark_center"),
+            TileType.BACKGROUND: self.asset_manager.get_tilemap_group("dark_center")[
+                "surface"
+            ],
+        }
+
+        # Store metadata for multi-tile textures
+        self.texture_metadata = {
+            "door_light_closed": self.asset_manager.get_tilemap_group(
+                "door_light_closed"
+            ),
+            "door_light_open": self.asset_manager.get_tilemap_group("door_light_open"),
+            "door_special_closed": self.asset_manager.get_tilemap_group(
+                "door_special_closed"
+            ),
+            "door_special_open": self.asset_manager.get_tilemap_group(
+                "door_special_open"
+            ),
         }
 
     def _is_exterior_wall(self, x: int, y: int) -> bool:
@@ -187,7 +233,22 @@ class GridRenderer:
             screen_pos = camera.world_to_screen(x * self.tile_size, y * self.tile_size)
 
             texture = None
-            if tile_type == TileType.WALL:
+            if tile_type == TileType.DOOR:
+                # Get door metadata
+                door_data = self.texture_metadata["door_light_closed"]
+                if door_data:
+                    texture = door_data["surface"]
+                    # Calculate the full door rectangle
+                    door_rect = pygame.Rect(
+                        screen_pos[0],
+                        screen_pos[1] - (door_data["height"] - 1) * self.tile_size,
+                        door_data["width"] * self.tile_size,
+                        door_data["height"] * self.tile_size,
+                    )
+                    surface.blit(texture, door_rect)
+                    continue  # Skip the normal blit below
+
+            elif tile_type == TileType.WALL:
                 context = self._get_wall_context(x, y)
                 if context["type"] == "exterior":
                     texture = self.textures[TileType.WALL]["exterior"][
@@ -213,15 +274,14 @@ class GridRenderer:
                 position = self._get_floor_context(x, y)
                 texture = self.textures[TileType.FLOOR][position]
 
-            elif tile_type == TileType.DOOR:
-                # Default to light closed doors for now
-                texture = self.textures[TileType.DOOR]["light"]["closed"]
-
             elif tile_type == TileType.BACKGROUND:
                 texture = self.textures[TileType.BACKGROUND]
 
             if texture:
-                surface.blit(texture, screen_pos)
+                if isinstance(texture, dict):  # If it's a multi-tile texture
+                    surface.blit(texture["surface"], screen_pos)
+                else:  # Single-tile texture
+                    surface.blit(texture, screen_pos)
 
     def set_camera(self, camera):
         """Set camera reference"""

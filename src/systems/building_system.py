@@ -135,7 +135,7 @@ class BuildingSystem:
 
         if self.selected_category == "rooms":
             self._draw_room_ghost(screen)
-        elif self.selected_category == "doors":
+        elif self.selected_category == "structures":
             self._draw_door_ghost(screen)
         else:
             self._draw_item_ghost(screen)

@@ -24,9 +24,8 @@ class BuildMenu(BaseLayout):
         self.selected_category = "rooms"  # Default category
         self.categories = {
             "rooms": self._create_room_buttons,
-            "doors": self._create_door_buttons,
+            "structures": self._create_structure_buttons,
             "platforms": self._create_platform_buttons,
-            "decorations": self._create_decoration_buttons,
         }
         self._create_category_buttons()
         self._create_build_buttons()
@@ -89,11 +88,11 @@ class BuildMenu(BaseLayout):
                     element.active = False
 
     def _create_room_buttons(self):
-        """Create room selection buttons"""
+        """Create room selection buttons with enhanced layout"""
         start_x = self.screen.get_width() - 220
-        start_y = 150  # Below category buttons
-        button_height = 60
-        spacing = 10
+        start_y = 150
+        button_height = 70  # Taller buttons for more info
+        spacing = 15  # More spacing between buttons
 
         room_types = self.room_manager.grid.room_config.get("room_types", {})
 
@@ -104,8 +103,8 @@ class BuildMenu(BaseLayout):
             y_pos = start_y + (button_height + spacing) * i
             rect = pygame.Rect(start_x, y_pos, 200, button_height)
 
+            # Format display text
             display_name = config.get("name", room_type.replace("_", " ").title())
-
             resource_info = self._get_resource_info(config)
             if resource_info:
                 display_name += f"\n{resource_info}"
@@ -116,6 +115,7 @@ class BuildMenu(BaseLayout):
                 action=lambda rt=room_type: self.select_build_item("rooms", rt),
                 image_path=f"assets/images/ui/room_icons/{room_type}.png",
                 tooltip=config.get("description", ""),
+                font_size=20,  # Slightly smaller font for better fit
             )
             self.ui_system.add_element(button)
 
@@ -148,58 +148,66 @@ class BuildMenu(BaseLayout):
                     )
 
     def _draw_background(self, surface: pygame.Surface):
-        """Draw menu background"""
+        """Draw an enhanced menu background"""
         menu_rect = pygame.Rect(surface.get_width() - 240, 0, 240, surface.get_height())
+
+        # Draw main background
         background = pygame.Surface((240, surface.get_height()))
-        background.set_alpha(128)
-        background.fill((50, 50, 50))
+        background.fill((30, 30, 35))  # Darker background
+
+        # Add subtle gradient
+        gradient = pygame.Surface((240, 100))
+        gradient.fill((40, 40, 45))
+        gradient.set_alpha(128)
+        background.blit(gradient, (0, 0))
+
+        # Draw border
+        pygame.draw.line(background, (60, 60, 65), (0, 0), (0, surface.get_height()), 2)
+
         surface.blit(background, menu_rect)
 
-    def _create_door_buttons(self):
-        """Create door selection buttons"""
-        start_x = self.screen.get_width() - 220
-        start_y = 150  # Below category buttons
-        button_height = 60
-        spacing = 10
-
-        door_types = ["door_light_closed", "door_special_closed"]
-
-        for i, door_type in enumerate(door_types):
-            y_pos = start_y + (button_height + spacing) * i
-            rect = pygame.Rect(start_x, y_pos, 200, button_height)
-
-            button = Button(
-                rect=rect,
-                text=door_type.replace("_", " ").title(),
-                action=lambda dt=door_type: self.select_build_item("doors", dt),
-                image_path="assets/images/ui/build_icon.png",
-                # image_path=f"assets/images/ui/door_icons/{door_type}.png",
-            )
-            self.ui_system.add_element(button)
-
-    def _create_platform_buttons(self):
-        """Create platform selection buttons"""
+    def _create_structure_buttons(self):
+        """Create buttons for doors and other structural elements"""
         start_x = self.screen.get_width() - 220
         start_y = 150
-        button_height = 60
-        spacing = 10
+        button_height = 70  # Taller buttons to match room style
+        spacing = 15
 
-        platform_types = ["platform_left", "platform_center", "platform_right"]
+        # Door button with enhanced styling
+        rect = pygame.Rect(start_x, start_y, 200, button_height)
+        button = Button(
+            rect=rect,
+            text="Door\nStructural Connection",  # Added subtitle for more info
+            action=lambda: self.select_build_item("structures", "door_light_closed"),
+            image_path="assets/images/ui/build_icon.png",
+            tooltip="Connect rooms together",
+            font_size=20,
+        )
+        self.ui_system.add_element(button)
 
-        for i, platform_type in enumerate(platform_types):
+    def _create_platform_buttons(self):
+        """Create enhanced platform selection buttons"""
+        start_x = self.screen.get_width() - 220
+        start_y = 150
+        button_height = 70  # Taller buttons to match room style
+        spacing = 15
+
+        platform_types = [
+            ("platform_left", "Left Platform"),
+            ("platform_center", "Center Platform"),
+            ("platform_right", "Right Platform"),
+        ]
+
+        for i, (platform_type, display_name) in enumerate(platform_types):
             y_pos = start_y + (button_height + spacing) * i
             rect = pygame.Rect(start_x, y_pos, 200, button_height)
 
             button = Button(
                 rect=rect,
-                text=platform_type.replace("_", " ").title(),
+                text=f"{display_name}\nStructural Support",  # Added subtitle for consistency
                 action=lambda pt=platform_type: self.select_build_item("platforms", pt),
                 image_path="assets/images/ui/build_icon.png",
-                # image_path=f"assets/images/ui/platform_icons/{platform_type}.png",
+                tooltip="Add structural support",
+                font_size=20,
             )
             self.ui_system.add_element(button)
-
-    def _create_decoration_buttons(self):
-        """Create decoration selection buttons"""
-        # To be implemented when decorations are added
-        pass

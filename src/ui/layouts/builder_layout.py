@@ -58,7 +58,7 @@ class BuilderLayout(BaseLayout):
             grid_size = room_config["grid_size"]
             grid_x -= grid_size[0] // 2
             grid_y -= grid_size[1] // 2
-        elif self.selected_category == "doors":
+        elif self.selected_category == "structures":
             grid_x -= 1  # Center 2-tile wide door
 
         return grid_x, grid_y
@@ -67,7 +67,7 @@ class BuilderLayout(BaseLayout):
         """Create appropriate ghost surface based on category"""
         if self.selected_category == "rooms":
             return self._create_room_ghost()
-        elif self.selected_category == "doors":
+        elif self.selected_category == "structures":
             return self._create_door_ghost()
         else:
             return self._create_tile_ghost()
@@ -116,7 +116,7 @@ class BuilderLayout(BaseLayout):
             self.valid_placement = self.grid.is_valid_room_placement(
                 grid_x, grid_y, self.selected_type
             )
-        elif self.selected_category == "doors":
+        elif self.selected_category == "structures":
             self.valid_placement = self.grid.is_valid_door_placement(grid_x, grid_y)
         else:
             self.valid_placement = self.grid.is_valid_tile_placement(grid_x, grid_y)

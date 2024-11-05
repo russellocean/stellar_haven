@@ -94,17 +94,36 @@ class TilemapRenderer:
     def render_hover(self):
         """Draw hover effect for tile groups"""
         if self.hover_pos:
-            hover_config = self.helper.get_tile_config(self.hover_pos)
-            if hover_config:
-                width = hover_config.get("width", 1)
-                height = hover_config.get("height", 1)
-                x, y = self.hover_pos
+            # Find the base tile of the group by checking all configured tiles
+            base_tile = None
+            base_config = None
 
+            for pos_str, config in self.helper.tile_configs.items():
+                try:
+                    x, y = eval(pos_str)
+                    width = config.get("width", 1)
+                    height = config.get("height", 1)
+
+                    # Check if hover_pos is within this tile group's bounds
+                    if (
+                        x <= self.hover_pos[0] < x + width
+                        and y <= self.hover_pos[1] < y + height
+                    ):
+                        base_tile = (x, y)
+                        base_config = config
+                        break
+                except (ValueError, SyntaxError):
+                    continue
+
+            if base_tile and base_config:
+                # Draw rectangle around the entire group
                 rect = pygame.Rect(
-                    self.helper.image_pos[0] + x * self.helper.scaled_tile_size,
-                    self.helper.image_pos[1] + y * self.helper.scaled_tile_size,
-                    self.helper.scaled_tile_size * width,
-                    self.helper.scaled_tile_size * height,
+                    self.helper.image_pos[0]
+                    + base_tile[0] * self.helper.scaled_tile_size,
+                    self.helper.image_pos[1]
+                    + base_tile[1] * self.helper.scaled_tile_size,
+                    self.helper.scaled_tile_size * base_config.get("width", 1),
+                    self.helper.scaled_tile_size * base_config.get("height", 1),
                 )
                 pygame.draw.rect(self.screen, (100, 200, 255, 128), rect, 2)
 

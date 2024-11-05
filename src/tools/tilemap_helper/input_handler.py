@@ -80,11 +80,7 @@ class InputHandler:
     def handle_keydown(self, event):
         """Handle keyboard events"""
         if event.key == pygame.K_g:
-            self.helper.grid_visible = not self.helper.grid_visible
-        elif event.key == pygame.K_s and event.mod & pygame.KMOD_CTRL:
-            self.helper.save_config("tilemap_config.json")
-        elif event.key == pygame.K_l and event.mod & pygame.KMOD_CTRL:
-            self.helper.load_config("tilemap_config.json")
+            self.helper.ui.toggle_grid()
 
     def handle_selection(self, pos: Tuple[int, int]):
         """Handle tile selection with multi-tile support"""

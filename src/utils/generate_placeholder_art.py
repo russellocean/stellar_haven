@@ -30,7 +30,7 @@ def create_tile(size, color, text="", border_color=(100, 100, 100)):
 
 
 def main():
-    TILE_SIZE = 32
+    TILE_SIZE = 16
 
     # Create directory structure
     ensure_directory_exists("assets/rooms/framework")

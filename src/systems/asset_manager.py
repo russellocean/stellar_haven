@@ -93,3 +93,75 @@ class AssetManager:
         self.images.clear()
         self.fonts.clear()
         self.configs.clear()
+
+    def get_tilemap_group(self, group_name: str) -> Optional[pygame.Surface]:
+        """Load and extract a specific tile group from a tilemap based on the config.
+
+        The function automatically finds the correct tilemap containing the group.
+        Group names must be unique across all tilemaps.
+
+        Config file structure:
+        {
+            "global": {
+                "tile_types": [...] # List of valid tile types
+            },
+            "tilemaps/example.png": {
+                "tile_size": 16,
+                "groups": [
+                    {
+                        "tiles": [{"x": 0, "y": 0}, ...],
+                        "metadata": {
+                            "name": "unique_group_name",  # Must be unique across all tilemaps
+                            "type": "tile_type",
+                            "properties": {},
+                            "width": 1,
+                            "height": 1
+                        }
+                    }
+                ]
+            }
+        }
+
+        Args:
+            group_name (str): Unique name of the tile group to extract
+
+        Returns:
+            Optional[pygame.Surface]: The extracted tile group as a surface, or None if not found
+        """
+        # Load the tilemap config
+        config = self.get_config("tilemap_config")
+
+        # Search through all tilemaps for the group
+        for tilemap_path, tilemap_data in config.items():
+            if tilemap_path == "global":
+                continue
+
+            # Search for group in this tilemap
+            for group in tilemap_data["groups"]:
+                if group["metadata"]["name"] == group_name:
+                    # Load the tilemap image
+                    tilemap = self.get_image(tilemap_path)
+                    if not tilemap:
+                        return None
+
+                    tile_size = tilemap_data["tile_size"]
+                    width = group["metadata"]["width"] * tile_size
+                    height = group["metadata"]["height"] * tile_size
+
+                    # Create a surface for the group
+                    surface = pygame.Surface((width, height), pygame.SRCALPHA)
+
+                    # Copy each tile to the new surface
+                    for tile in group["tiles"]:
+                        x, y = tile["x"], tile["y"]
+                        tile_rect = pygame.Rect(
+                            x * tile_size, y * tile_size, tile_size, tile_size
+                        )
+                        dest_x = (tile["x"] - group["tiles"][0]["x"]) * tile_size
+                        dest_y = (tile["y"] - group["tiles"][0]["y"]) * tile_size
+                        surface.blit(tilemap, (dest_x, dest_y), tile_rect)
+
+                    return surface
+
+        print(f"Group {group_name} not found in any tilemap")
+        return None

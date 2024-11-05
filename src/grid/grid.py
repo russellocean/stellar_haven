@@ -87,15 +87,17 @@ class Grid:
             if self._are_rooms_adjacent(nx, ny, nw, nh, ox, oy, ow, oh):
                 self._add_door_between_rooms(nx, ny, nw, nh, ox, oy, ow, oh)
 
-    def _are_rooms_adjacent(self, nx, ny, nw, nh, ox, oy, ow, oh) -> bool:
-        """Check if rooms share a wall (one tile overlap)"""
-        # For vertical walls (side by side rooms)
-        if nx + nw - 1 == ox or nx == ox + ow - 1:  # One tile overlap
+    def _are_rooms_adjacent(
+        self, nx: int, ny: int, nw: int, nh: int, ox: int, oy: int, ow: int, oh: int
+    ) -> bool:
+        """Check if rooms are adjacent (sharing a side, not overlapping)"""
+        # For vertical adjacency (side by side rooms)
+        if nx + nw == ox or nx == ox + ow:  # Rooms touch but don't overlap
             # Check if they overlap vertically (excluding corners)
             return not (ny + nh <= oy or ny >= oy + oh)
 
-        # For horizontal walls (stacked rooms)
-        if ny + nh - 1 == oy or ny == oy + oh - 1:  # One tile overlap
+        # For horizontal adjacency (stacked rooms)
+        if ny + nh == oy or ny == oy + oh:  # Rooms touch but don't overlap
             # Check if they overlap horizontally (excluding corners)
             return not (nx + nw <= ox or nx >= ox + ow)
 
@@ -218,60 +220,15 @@ class Grid:
     def _has_valid_connection(
         self, grid_x: int, grid_y: int, width: int, height: int
     ) -> bool:
-        """Check if a room can connect properly by comparing corner positions and ensuring wall connection"""
-        # Get corner positions for the ghost room
-        ghost_corners = [
-            (grid_x, grid_y),  # Top-left
-            (grid_x + width - 1, grid_y),  # Top-right
-            (grid_x, grid_y + height - 1),  # Bottom-left
-            (grid_x + width - 1, grid_y + height - 1),  # Bottom-right
-        ]
+        """Check if a room can connect properly to existing rooms"""
+        # Check each existing room for adjacency
+        for room_id, room in self.rooms.items():
+            rx, ry = room["grid_pos"]
+            rw, rh = room["grid_size"]
 
-        # Helper function to get wall positions for a corner
-        def get_corner_walls(x: int, y: int, is_ghost: bool) -> List[Tuple[int, int]]:
-            walls = []
-            if is_ghost:
-                # For ghost room, determine where walls would be based on corner position
-                if x == grid_x:  # Left side
-                    walls.append((x, y + 1))  # Vertical wall below
-                    walls.append((x + 1, y))  # Horizontal wall right
-                if x == grid_x + width - 1:  # Right side
-                    walls.append((x, y + 1))  # Vertical wall below
-                    walls.append((x - 1, y))  # Horizontal wall left
-                if y == grid_y:  # Top side
-                    walls.append((x, y + 1))  # Vertical wall below
-                    walls.append((x, y + 1))  # Horizontal wall below
-                if y == grid_y + height - 1:  # Bottom side
-                    walls.append((x, y - 1))  # Vertical wall above
-                    walls.append((x, y - 1))  # Horizontal wall above
-            else:
-                # For existing room, just get adjacent tiles
-                adjacent = self.get_adjacent_tiles(x, y)
-                for i, tile in enumerate(adjacent):
-                    if tile == TileType.WALL:
-                        # Convert adjacent index to position
-                        if i == 0:  # Left
-                            walls.append((x - 1, y))
-                        elif i == 1:  # Right
-                            walls.append((x + 1, y))
-                        elif i == 2:  # Up
-                            walls.append((x, y - 1))
-                        elif i == 3:  # Down
-                            walls.append((x, y + 1))
-            return walls
-
-        for corner_x, corner_y in ghost_corners:
-            # First check if this corner overlaps with an existing corner
-            if self.get_tile(corner_x, corner_y) == TileType.CORNER:
-                # Get wall positions for both ghost and existing room
-                ghost_walls = get_corner_walls(corner_x, corner_y, True)
-                existing_walls = get_corner_walls(corner_x, corner_y, False)
-
-                # Check if any walls match between ghost and existing
-                for ghost_wall in ghost_walls:
-                    for existing_wall in existing_walls:
-                        if ghost_wall == existing_wall:
-                            return True
+            # If rooms would be adjacent, it's a valid connection
+            if self._are_rooms_adjacent(grid_x, grid_y, width, height, rx, ry, rw, rh):
+                return True
 
         return False
 
@@ -305,60 +262,39 @@ class Grid:
             return floor_positions[center_idx]
         return positions[len(positions) // 2]  # Fallback to center of line
 
-    def _add_door_between_rooms(self, nx, ny, nw, nh, ox, oy, ow, oh) -> None:
-        """Add door between rooms, handling both side-by-side and stacked configurations"""
+    def _add_door_between_rooms(
+        self, nx: int, ny: int, nw: int, nh: int, ox: int, oy: int, ow: int, oh: int
+    ) -> None:
+        """Add door between adjacent rooms"""
         # For side-by-side rooms
-        if nx + nw - 1 == ox or nx == ox + ow - 1:  # One tile overlap
+        if nx + nw == ox or nx == ox + ow:
             floor_y = ny + nh - 2  # Floor is always 1 tile above bottom wall
 
-            # For side-by-side rooms
-            if nx + nw - 1 == ox:  # New room is left of other room
-                door_x = nx + nw - 1
+            # Determine door position
+            if nx + nw == ox:  # New room is left of other room
+                door_x = nx + nw  # Place door in gap
             else:  # New room is right of other room
-                door_x = nx
+                door_x = nx - 1  # Place door in gap
 
-            # Check if door position is within bounds of both rooms
-            door_positions = [
-                (door_x, floor_y - i) for i in range(3)
-            ]  # Floor and 2 door tiles
-
-            # Check bounds for new room
-            for x, y in door_positions:
-                if not (nx <= x < nx + nw and ny <= y < ny + nh):
-                    return  # Door would be outside new room bounds
-
-            # Check bounds for other room
-            for x, y in door_positions:
-                if not (ox <= x < ox + ow and oy <= y < oy + oh):
-                    return  # Door would be outside other room bounds
-
-            # Place floor and door
-            self.set_tile(door_x, floor_y, TileType.FLOOR)  # Floor level
+            # Place door (2 tiles high)
             self.set_tile(door_x, floor_y - 1, TileType.DOOR)  # Door bottom
             self.set_tile(door_x, floor_y - 2, TileType.DOOR)  # Door top
+            self.set_tile(door_x, floor_y, TileType.FLOOR)  # Floor under door
 
         # For stacked rooms
-        elif ny + nh - 1 == oy or ny == oy + oh - 1:  # One tile overlap
-            # Find the overlapping wall line
+        elif ny + nh == oy or ny == oy + oh:
+            # Find the center position for the door
             start_x = max(nx + 1, ox + 1)  # Skip corners
             end_x = min(nx + nw - 1, ox + ow - 1)  # Skip corners
-
-            # Determine which wall we're connecting
-            if ny + nh - 1 == oy:  # New room is above other room
-                wall_y = ny + nh - 1
-            else:  # New room is below other room
-                wall_y = ny
-
-            # Get all positions along the wall
-            wall_positions = self._get_wall_line(start_x, wall_y, end_x, wall_y)
-
-            # Replace walls with background except corners
-            for x, y in wall_positions:
-                if self.get_tile(x, y) == TileType.WALL:
-                    self.set_tile(x, y, TileType.BACKGROUND)
-
-            # Find center and add door
             center_x = (start_x + end_x) // 2
-            self.set_tile(center_x, wall_y - 1, TileType.DOOR)
-            self.set_tile(center_x - 1, wall_y - 1, TileType.DOOR)
-            self.set_tile(center_x + 1, wall_y - 1, TileType.DOOR)
+
+            # Determine door position
+            if ny + nh == oy:  # New room is above other room
+                door_y = ny + nh  # Place door in gap
+            else:  # New room is below other room
+                door_y = ny - 1  # Place door in gap
+
+            # Place horizontal door (3 tiles wide)
+            self.set_tile(center_x - 1, door_y, TileType.DOOR)  # Left
+            self.set_tile(center_x, door_y, TileType.DOOR)  # Center
+            self.set_tile(center_x + 1, door_y, TileType.DOOR)  # Right

@@ -2,7 +2,7 @@
   "room_types": {
     "starting_quarters": {
       "name": "Starting Quarters",
-      "grid_size": [10, 8],
+      "grid_size": [16, 8],
       "resource_consumption": {
         "power": 0.05,
         "oxygen": 0.05

@@ -71,11 +71,13 @@ class Grid:
         self.set_tile(x + width - 1, y + height - 1, TileType.CORNER)  # Bottom-right
 
     def _process_connections(self, room_id: str) -> None:
-        """Process connections and add doors between rooms"""
+        """Verify room has valid connections to existing rooms"""
         new_room = self.rooms[room_id]
         nx, ny = new_room["grid_pos"]
         nw, nh = new_room["grid_size"]
 
+        # Check if room has at least one valid connection
+        has_connection = False
         for other_id, other in self.rooms.items():
             if other_id == room_id:
                 continue
@@ -83,9 +85,12 @@ class Grid:
             ox, oy = other["grid_pos"]
             ow, oh = other["grid_size"]
 
-            # Check for adjacent walls and add doors
             if self._are_rooms_adjacent(nx, ny, nw, nh, ox, oy, ow, oh):
-                self._add_door_between_rooms(nx, ny, nw, nh, ox, oy, ow, oh)
+                has_connection = True
+                break
+
+        if not has_connection and len(self.rooms) > 1:
+            raise ValueError("Room must connect to at least one existing room")
 
     def _are_rooms_adjacent(
         self, nx: int, ny: int, nw: int, nh: int, ox: int, oy: int, ow: int, oh: int
@@ -221,6 +226,10 @@ class Grid:
         self, grid_x: int, grid_y: int, width: int, height: int
     ) -> bool:
         """Check if a room can connect properly to existing rooms"""
+        # Skip connection check for first room
+        if not self.rooms:
+            return True
+
         # Check each existing room for adjacency
         for room_id, room in self.rooms.items():
             rx, ry = room["grid_pos"]
@@ -261,40 +270,3 @@ class Grid:
             center_idx = len(floor_positions) // 2
             return floor_positions[center_idx]
         return positions[len(positions) // 2]  # Fallback to center of line
-
-    def _add_door_between_rooms(
-        self, nx: int, ny: int, nw: int, nh: int, ox: int, oy: int, ow: int, oh: int
-    ) -> None:
-        """Add door between adjacent rooms"""
-        # For side-by-side rooms
-        if nx + nw == ox or nx == ox + ow:
-            floor_y = ny + nh - 2  # Floor is always 1 tile above bottom wall
-
-            # Determine door position
-            if nx + nw == ox:  # New room is left of other room
-                door_x = nx + nw  # Place door in gap
-            else:  # New room is right of other room
-                door_x = nx - 1  # Place door in gap
-
-            # Place door (2 tiles high)
-            self.set_tile(door_x, floor_y - 1, TileType.DOOR)  # Door bottom
-            self.set_tile(door_x, floor_y - 2, TileType.DOOR)  # Door top
-            self.set_tile(door_x, floor_y, TileType.FLOOR)  # Floor under door
-
-        # For stacked rooms
-        elif ny + nh == oy or ny == oy + oh:
-            # Find the center position for the door
-            start_x = max(nx + 1, ox + 1)  # Skip corners
-            end_x = min(nx + nw - 1, ox + ow - 1)  # Skip corners
-            center_x = (start_x + end_x) // 2
-
-            # Determine door position
-            if ny + nh == oy:  # New room is above other room
-                door_y = ny + nh  # Place door in gap
-            else:  # New room is below other room
-                door_y = ny - 1  # Place door in gap
-
-            # Place horizontal door (3 tiles wide)
-            self.set_tile(center_x - 1, door_y, TileType.DOOR)  # Left
-            self.set_tile(center_x, door_y, TileType.DOOR)  # Center
-            self.set_tile(center_x + 1, door_y, TileType.DOOR)  # Right

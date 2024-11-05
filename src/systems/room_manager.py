@@ -7,10 +7,11 @@ from systems.debug_system import DebugSystem
 
 
 class RoomManager:
-    def __init__(self, center_x: int, center_y: int):
+    def __init__(self, center_x: int, center_y: int, resource_manager=None):
         self.grid = Grid(cell_size=16)
         self.rooms: Dict[str, Room] = {}
         self.collision_system = CollisionSystem(self.grid)
+        self.resource_manager = resource_manager
         self.starting_room = None  # Reference to starting room
 
         # Initialize debug system
@@ -67,6 +68,11 @@ class RoomManager:
                 cell_size=self.grid.cell_size,
             )
             self.rooms[room_id] = room
+
+            # Register room with resource manager if available
+            if self.resource_manager:
+                self.resource_manager.register_room(room)
+
             print(f"Added room {room_id} at grid pos ({grid_x}, {grid_y})")
             return room
         return None

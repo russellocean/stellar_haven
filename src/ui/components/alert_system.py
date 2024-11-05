@@ -1,5 +1,5 @@
 from collections import deque
-from typing import Tuple
+from typing import Optional, Tuple
 
 import pygame
 
@@ -54,25 +54,31 @@ class AlertSystem:
         duration: int = 3000,
         priority: int = 0,
         position: str = "center",
+        unique_id: Optional[str] = None,
     ):
-        """Add a new alert message"""
-        # If it's a unique alert type, remove the old one first
-        if alert_type in self.active_alerts:
-            self.alerts.remove(self.active_alerts[alert_type])
+        """Add a new alert with optional unique ID"""
+        alert = Alert(
+            message=message,
+            alert_type=alert_type,
+            duration=duration,
+            priority=priority,
+            position=position,
+        )
 
-        alert = Alert(message, alert_type, duration, priority, position)
+        # If this is a unique alert, remove any existing alerts with the same ID
+        if unique_id:
+            self.remove_alert_type(unique_id)
+            self.active_alerts[unique_id] = alert
+
         self.alerts.append(alert)
+        return alert
 
-        # Track unique alerts
-        if alert_type:
-            self.active_alerts[alert_type] = alert
-
-    def remove_alert_type(self, alert_type: str):
-        """Remove an alert type"""
-        if alert_type in self.active_alerts:
-            if self.active_alerts[alert_type] in self.alerts:
-                self.alerts.remove(self.active_alerts[alert_type])
-            del self.active_alerts[alert_type]
+    def remove_alert_type(self, unique_id: str):
+        """Remove an alert by its unique ID"""
+        if unique_id in self.active_alerts:
+            if self.active_alerts[unique_id] in self.alerts:
+                self.alerts.remove(self.active_alerts[unique_id])
+            del self.active_alerts[unique_id]
 
     def update(self):
         """Update alert states"""

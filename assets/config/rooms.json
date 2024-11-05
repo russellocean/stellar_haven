@@ -4,10 +4,13 @@
       "name": "Starting Quarters",
       "grid_size": [16, 8],
       "resource_consumption": {
-        "power": 0.05,
-        "oxygen": 0.05
+        "power": 3.0,
+        "oxygen": 2.0
       },
       "resource_generation": {},
+      "build_costs": {
+        "power": 50
+      },
       "description": "The core of your ship where you begin",
       "color_theme": {
         "floor": [220, 220, 220],
@@ -35,11 +38,14 @@
       "name": "Bridge",
       "grid_size": [12, 8],
       "resource_consumption": {
-        "power": 0.1,
-        "oxygen": 0.1
+        "power": 3.0,
+        "oxygen": 2.0
       },
       "resource_generation": {},
-      "description": "Ship's command center",
+      "build_costs": {
+        "power": 100
+      },
+      "description": "Ship's command center with basic power generation",
       "color_theme": {
         "floor": [200, 220, 255],
         "wall": [180, 200, 235]
@@ -65,12 +71,16 @@
       "name": "Engine Room",
       "grid_size": [14, 14],
       "resource_consumption": {
-        "oxygen": 0.2
+        "oxygen": 3.0
       },
       "resource_generation": {
-        "power": 0.5
+        "power": 10.0
       },
-      "description": "Powers the ship's systems",
+      "build_costs": {
+        "power": 150,
+        "oxygen": 50
+      },
+      "description": "Main power generator for the ship",
       "color_theme": {
         "floor": [255, 220, 200],
         "wall": [235, 200, 180]
@@ -103,10 +113,14 @@
       "name": "Life Support",
       "grid_size": [8, 8],
       "resource_consumption": {
-        "power": 0.1
+        "power": 8.0
       },
       "resource_generation": {
-        "oxygen": 0.3
+        "oxygen": 3.0
+      },
+      "build_costs": {
+        "power": 100,
+        "oxygen": 25
       },
       "description": "Generates oxygen for the ship",
       "color_theme": {

@@ -13,6 +13,7 @@ class ResourceBar:
         color: Tuple[int, int, int] = (255, 255, 255),
         icon_path: Optional[str] = None,
         animation_speed: float = 0.1,
+        show_rate: bool = False,
     ):
         self.name = name
         self.x, self.y = position
@@ -22,6 +23,10 @@ class ResourceBar:
         self.current_width = 0  # For animation
         self.target_width = 0
         self.animation_speed = animation_speed
+        self.show_rate = show_rate
+        self.current_rate = 0
+        self.target_rate = 0
+        self.rate_font = pygame.font.Font(None, height - 8)
 
         # Setup font
         self.font = pygame.font.Font(None, height - 4)
@@ -77,6 +82,13 @@ class ResourceBar:
         """Trigger a flash effect"""
         self.flash_timer = self.flash_duration
         self.flash_alpha = 255
+
+    def update_rate(self, rate: float):
+        """Update the resource change rate"""
+        self.target_rate = rate
+        # Smooth rate changes
+        rate_diff = self.target_rate - self.current_rate
+        self.current_rate += rate_diff * self.animation_speed
 
     def draw(self, surface: pygame.Surface, current: float, maximum: float):
         """Draw the resource bar with all effects"""
@@ -139,3 +151,15 @@ class ResourceBar:
                 border_radius=3,
             )
             surface.blit(flash_surface, (self.x, self.y))
+
+        # Draw rate if enabled
+        if self.show_rate:
+            rate_text = f"{self.current_rate:+.1f}/s"
+            rate_color = (0, 255, 0) if self.current_rate > 0 else (255, 100, 100)
+            if abs(self.current_rate) < 0.01:  # If rate is very close to 0
+                rate_color = (200, 200, 200)  # Gray for stable
+            rate_surface = self.rate_font.render(rate_text, True, rate_color)
+            rate_rect = rate_surface.get_rect(
+                midright=(self.x + self.width - 5, self.y + self.height // 2)
+            )
+            surface.blit(rate_surface, rate_rect)

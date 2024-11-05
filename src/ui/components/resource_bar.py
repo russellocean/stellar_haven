@@ -1,42 +1,141 @@
+from typing import Optional, Tuple
+
 import pygame
 
 
 class ResourceBar:
-    def __init__(self, resource_name: str, position: tuple, size: tuple = (200, 20)):
-        self.resource_name = resource_name
-        self.position = position
-        self.size = size
-        self.font = pygame.font.Font(None, 24)
+    def __init__(
+        self,
+        name: str,
+        position: Tuple[int, int],
+        width: int = 200,
+        height: int = 25,
+        color: Tuple[int, int, int] = (255, 255, 255),
+        icon_path: Optional[str] = None,
+        animation_speed: float = 0.1,
+    ):
+        self.name = name
+        self.x, self.y = position
+        self.width = width
+        self.height = height
+        self.color = color
+        self.current_width = 0  # For animation
+        self.target_width = 0
+        self.animation_speed = animation_speed
 
-        # Color schemes for different resources
-        self.colors = {
-            "power": {"fill": (255, 215, 0), "bg": (64, 54, 0)},  # Gold
-            "oxygen": {"fill": (0, 191, 255), "bg": (0, 48, 64)},  # Deep Sky Blue
-            "health": {"fill": (50, 205, 50), "bg": (13, 51, 13)},  # Lime Green
-        }
+        # Setup font
+        self.font = pygame.font.Font(None, height - 4)
+
+        # Load and scale icon if provided
+        self.icon = None
+        self.icon_size = height
+        self.icon_padding = 5
+        if icon_path:
+            try:
+                self.icon = pygame.image.load(icon_path).convert_alpha()
+                self.icon = pygame.transform.scale(
+                    self.icon, (self.icon_size, self.icon_size)
+                )
+            except pygame.error:
+                print(f"Warning: Could not load icon {icon_path}")
+
+        # Calculate bar offset if we have an icon
+        self.bar_x_offset = self.icon_size + self.icon_padding if self.icon else 0
+
+        # Visual effects
+        self.glow_color = self._lighten_color(color, 50)
+        self.dark_color = self._darken_color(color, 50)
+        self.flash_alpha = 0
+        self.flash_duration = 255
+        self.flash_timer = 0
+
+    def _lighten_color(
+        self, color: Tuple[int, int, int], amount: int
+    ) -> Tuple[int, int, int]:
+        """Lighten a color by the specified amount"""
+        return tuple(min(255, c + amount) for c in color)
+
+    def _darken_color(
+        self, color: Tuple[int, int, int], amount: int
+    ) -> Tuple[int, int, int]:
+        """Darken a color by the specified amount"""
+        return tuple(max(0, c - amount) for c in color)
+
+    def update(self):
+        """Update animations"""
+        # Smooth bar width animation
+        if self.current_width != self.target_width:
+            diff = self.target_width - self.current_width
+            self.current_width += diff * self.animation_speed
+
+        # Update flash effect
+        if self.flash_timer > 0:
+            self.flash_timer -= 1
+            self.flash_alpha = int((self.flash_timer / self.flash_duration) * 255)
+
+    def trigger_flash(self):
+        """Trigger a flash effect"""
+        self.flash_timer = self.flash_duration
+        self.flash_alpha = 255
 
     def draw(self, surface: pygame.Surface, current: float, maximum: float):
-        # Draw background
-        bg_color = self.colors.get(self.resource_name, {"bg": (50, 50, 50)})["bg"]
-        pygame.draw.rect(surface, bg_color, (*self.position, *self.size))
+        """Draw the resource bar with all effects"""
+        # Calculate the target width based on current value
+        self.target_width = (current / maximum) * (self.width - self.bar_x_offset)
 
-        # Draw fill
-        fill_width = int((current / maximum) * self.size[0])
-        fill_color = self.colors.get(self.resource_name, {"fill": (200, 200, 200)})[
-            "fill"
-        ]
+        # Draw background (darker version of bar color)
         pygame.draw.rect(
-            surface, fill_color, (*self.position, fill_width, self.size[1])
+            surface,
+            self.dark_color,
+            (
+                self.x + self.bar_x_offset,
+                self.y,
+                self.width - self.bar_x_offset,
+                self.height,
+            ),
+            border_radius=3,
         )
 
-        # Draw border
-        pygame.draw.rect(surface, (200, 200, 200), (*self.position, *self.size), 1)
+        # Draw the main bar
+        if self.current_width > 0:
+            pygame.draw.rect(
+                surface,
+                self.color,
+                (self.x + self.bar_x_offset, self.y, self.current_width, self.height),
+                border_radius=3,
+            )
+
+            # Draw glow effect
+            glow_surface = pygame.Surface(
+                (self.current_width, self.height), pygame.SRCALPHA
+            )
+            pygame.draw.rect(
+                glow_surface,
+                (*self.glow_color, 100),
+                (0, 0, self.current_width, self.height // 2),
+                border_radius=3,
+            )
+            surface.blit(glow_surface, (self.x + self.bar_x_offset, self.y))
+
+        # Draw icon if available
+        if self.icon:
+            surface.blit(self.icon, (self.x, self.y))
 
         # Draw text
-        text = f"{self.resource_name.title()}: {int(current)}/{int(maximum)}"
+        text = f"{self.name.title()}: {int(current)}/{int(maximum)}"
         text_surface = self.font.render(text, True, (255, 255, 255))
-        text_pos = (
-            self.position[0] + 5,
-            self.position[1] + (self.size[1] - text_surface.get_height()) // 2,
+        text_rect = text_surface.get_rect(
+            centery=self.y + self.height // 2, x=self.x + self.bar_x_offset + 5
         )
-        surface.blit(text_surface, text_pos)
+        surface.blit(text_surface, text_rect)
+
+        # Draw flash effect if active
+        if self.flash_alpha > 0:
+            flash_surface = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
+            pygame.draw.rect(
+                flash_surface,
+                (*self.glow_color, self.flash_alpha),
+                (0, 0, self.width, self.height),
+                border_radius=3,
+            )
+            surface.blit(flash_surface, (self.x, self.y))

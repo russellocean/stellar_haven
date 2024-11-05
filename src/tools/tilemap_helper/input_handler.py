@@ -54,6 +54,28 @@ class InputHandler:
         """Handle mouse motion events"""
         if self.helper.dragging:
             self.handle_drag(event.pos)
+        else:
+            # Update hover position
+            if self.helper.current_tilemap:
+                # Convert screen position to tile position
+                rel_x = event.pos[0] - self.helper.image_pos[0]
+                rel_y = event.pos[1] - self.helper.image_pos[1]
+
+                tile_x = int(rel_x / self.helper.scaled_tile_size)
+                tile_y = int(rel_y / self.helper.scaled_tile_size)
+
+                # Check if position is within tilemap bounds
+                max_tiles_x = (
+                    self.helper.current_tilemap.get_width() // self.helper.tile_size
+                )
+                max_tiles_y = (
+                    self.helper.current_tilemap.get_height() // self.helper.tile_size
+                )
+
+                if 0 <= tile_x < max_tiles_x and 0 <= tile_y < max_tiles_y:
+                    self.helper.renderer.hover_pos = (tile_x, tile_y)
+                else:
+                    self.helper.renderer.hover_pos = None
 
     def handle_keydown(self, event):
         """Handle keyboard events"""

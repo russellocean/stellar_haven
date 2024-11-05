@@ -1,6 +1,6 @@
 import json
 import os
-from typing import Tuple
+from typing import Optional, Tuple
 
 import pygame
 from PyQt5.QtWidgets import QMessageBox
@@ -165,3 +165,7 @@ class TilemapHelper:
         # Cleanup
         pygame.quit()
         self.ui.close()
+
+    def get_tile_config(self, pos: Tuple[int, int]) -> Optional[dict]:
+        """Get configuration for a tile position"""
+        return self.tile_configs.get(str(pos))

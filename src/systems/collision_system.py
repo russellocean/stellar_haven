@@ -17,7 +17,7 @@ class CollisionSystem:
             TileType.WALL: (255, 0, 0, 100),
             TileType.DOOR: (0, 0, 255, 100),
             TileType.CORNER: (255, 0, 255, 100),
-            TileType.BACKGROUND: (128, 128, 128, 100),
+            TileType.INTERIOR_BACKGROUND: (128, 128, 128, 100),
         }
 
     def is_position_valid(self, rect: pygame.Rect) -> bool:

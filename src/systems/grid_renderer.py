@@ -1,4 +1,4 @@
-from typing import Optional, Tuple
+from typing import Optional
 
 import pygame
 
@@ -13,185 +13,101 @@ class GridRenderer:
         self.asset_manager = AssetManager()
         self.camera = None
 
-        # Initialize texture mappings with more specific contexts
         self.textures = {
-            TileType.WALL: {
-                "exterior": {
-                    "top": self.asset_manager.get_tilemap_group(
-                        "exterior_top_center_1"
-                    )["surface"],
-                    "bottom": self.asset_manager.get_tilemap_group(
-                        "exterior_bottom_center_1"
-                    )["surface"],
-                    "left": self.asset_manager.get_tilemap_group("exterior_left_1")[
-                        "surface"
-                    ],
-                    "right": self.asset_manager.get_tilemap_group("exterior_right_1")[
-                        "surface"
-                    ],
-                    "center": self.asset_manager.get_tilemap_group(
-                        "exterior_connected"
-                    )["surface"],
-                },
-                "interior": {
-                    "light": {
-                        "top_center": self.asset_manager.get_tilemap_group(
-                            "light_top_center"
-                        )["surface"],
-                        "center": self.asset_manager.get_tilemap_group("light_center")[
-                            "surface"
-                        ],
-                        "left": self.asset_manager.get_tilemap_group("light_left")[
-                            "surface"
-                        ],
-                        "right": self.asset_manager.get_tilemap_group("light_right")[
-                            "surface"
-                        ],
-                    },
-                    "dark": {
-                        "center": self.asset_manager.get_tilemap_group("dark_center")[
-                            "surface"
-                        ],
-                        "left": self.asset_manager.get_tilemap_group("dark_left")[
-                            "surface"
-                        ],
-                        "right": self.asset_manager.get_tilemap_group("dark_right")[
-                            "surface"
-                        ],
-                        "bottom_center": self.asset_manager.get_tilemap_group(
-                            "dark_bottom_center"
-                        )["surface"],
-                    },
-                },
-            },
-            TileType.CORNER: {
-                "exterior": {
-                    "top_left": self.asset_manager.get_tilemap_group(
-                        "exterior_top_left"
-                    )["surface"],
-                    "top_right": self.asset_manager.get_tilemap_group(
-                        "exterior_top_right"
-                    )["surface"],
-                    "bottom_left": self.asset_manager.get_tilemap_group(
-                        "exterior_bottom_left"
-                    )["surface"],
-                    "bottom_right": self.asset_manager.get_tilemap_group(
-                        "exterior_bottom_right"
-                    )["surface"],
-                },
-                "interior": {
-                    "light": {
-                        "top_left": self.asset_manager.get_tilemap_group(
-                            "light_top_left"
-                        )["surface"],
-                        "top_right": self.asset_manager.get_tilemap_group(
-                            "light_top_right"
-                        )["surface"],
-                    },
-                    "dark": {
-                        "bottom_left": self.asset_manager.get_tilemap_group(
-                            "dark_bottom_left"
-                        )["surface"],
-                        "bottom_right": self.asset_manager.get_tilemap_group(
-                            "dark_bottom_right"
-                        )["surface"],
-                    },
-                },
-            },
-            TileType.FLOOR: {
-                "left": self.asset_manager.get_tilemap_group("platform_left")[
-                    "surface"
-                ],
-                "center": self.asset_manager.get_tilemap_group("platform_center")[
-                    "surface"
-                ],
-                "right": self.asset_manager.get_tilemap_group("platform_right")[
-                    "surface"
-                ],
-            },
-            TileType.DOOR: {
-                "light": {
-                    "closed": self.asset_manager.get_tilemap_group("door_light_closed")[
-                        "surface"
-                    ],
-                    "open": self.asset_manager.get_tilemap_group("door_light_open")[
-                        "surface"
-                    ],
-                },
-                "special": {
-                    "closed": self.asset_manager.get_tilemap_group(
-                        "door_special_closed"
-                    )["surface"],
-                    "open": self.asset_manager.get_tilemap_group("door_special_open")[
-                        "surface"
-                    ],
-                },
-            },
-            TileType.INTERIOR_BACKGROUND: {
-                "light": {
-                    "top_left": self.asset_manager.get_tilemap_group("light_top_left")[
-                        "surface"
-                    ],
-                    "top_center": self.asset_manager.get_tilemap_group(
-                        "light_top_center"
-                    )["surface"],
-                    "top_right": self.asset_manager.get_tilemap_group(
-                        "light_top_right"
-                    )["surface"],
-                    "left": self.asset_manager.get_tilemap_group("light_left")[
-                        "surface"
-                    ],
-                    "center": self.asset_manager.get_tilemap_group("light_center")[
-                        "surface"
-                    ],
-                    "right": self.asset_manager.get_tilemap_group("light_right")[
-                        "surface"
-                    ],
-                },
-                "dark": {
-                    "bottom_left": self.asset_manager.get_tilemap_group(
-                        "dark_bottom_left"
-                    )["surface"],
-                    "center": self.asset_manager.get_tilemap_group("dark_center")[
-                        "surface"
-                    ],
-                    "bottom_right": self.asset_manager.get_tilemap_group(
-                        "dark_bottom_right"
-                    )["surface"],
-                    "bottom_center": self.asset_manager.get_tilemap_group(
-                        "dark_bottom_center"
-                    )["surface"],
-                    "left": self.asset_manager.get_tilemap_group("dark_left")[
-                        "surface"
-                    ],
-                    "right": self.asset_manager.get_tilemap_group("dark_right")[
-                        "surface"
-                    ],
-                },
-            },
+            TileType.WALL: self._init_wall_textures(),
+            TileType.CORNER: self._init_corner_textures(),
+            TileType.DOOR: self._init_door_textures(),
+            TileType.INTERIOR_BACKGROUND: self._init_interior_background_textures(),
         }
 
-        # Store metadata for multi-tile textures
-        self.texture_metadata = {
-            "door_light_closed": self.asset_manager.get_tilemap_group(
-                "door_light_closed"
-            ),
-            "door_light_open": self.asset_manager.get_tilemap_group("door_light_open"),
-            "door_special_closed": self.asset_manager.get_tilemap_group(
-                "door_special_closed"
-            ),
-            "door_special_open": self.asset_manager.get_tilemap_group(
-                "door_special_open"
-            ),
-        }
+        self.tile_cache = {}
+        self.rendered_groups = set()
 
-        # Add cache for rendered tiles
-        self.tile_cache = {}  # (x, y) -> rendered surface
-
-        # Register for tile changes to invalidate cache
         self.grid.add_tile_change_callback(self._on_tiles_changed)
 
-        self.rendered_groups = set()  # Track rendered groups
+    def _init_wall_textures(self):
+        """Initialize wall textures"""
+        return {
+            "exterior": {
+                "top": self.asset_manager.get_tilemap_group("exterior_top_center_1")[
+                    "surface"
+                ],
+                "bottom": self.asset_manager.get_tilemap_group(
+                    "exterior_bottom_center_1"
+                )["surface"],
+                "left": self.asset_manager.get_tilemap_group("exterior_left_1")[
+                    "surface"
+                ],
+                "right": self.asset_manager.get_tilemap_group("exterior_right_1")[
+                    "surface"
+                ],
+                "center": self.asset_manager.get_tilemap_group("exterior_connected")[
+                    "surface"
+                ],
+            },
+        }
+
+    def _init_corner_textures(self):
+        """Initialize corner textures"""
+        return {
+            "exterior": {
+                "top_left": self.asset_manager.get_tilemap_group("exterior_top_left")[
+                    "surface"
+                ],
+                "top_right": self.asset_manager.get_tilemap_group("exterior_top_right")[
+                    "surface"
+                ],
+                "bottom_left": self.asset_manager.get_tilemap_group(
+                    "exterior_bottom_left"
+                )["surface"],
+                "bottom_right": self.asset_manager.get_tilemap_group(
+                    "exterior_bottom_right"
+                )["surface"],
+            },
+        }
+
+    def _init_door_textures(self):
+        """Initialize door textures"""
+        return {
+            "light_closed": self.asset_manager.get_tilemap_group("door_light_closed")[
+                "surface"
+            ],
+            "light_open": self.asset_manager.get_tilemap_group("door_light_open")[
+                "surface"
+            ],
+        }
+
+    def _init_interior_background_textures(self):
+        """Initialize interior background textures"""
+        return {
+            "light": self._load_textures(
+                {
+                    "top_left": "light_top_left",
+                    "top_center": "light_top_center",
+                    "top_right": "light_top_right",
+                    "left": "light_left",
+                    "center": "light_center",
+                    "right": "light_right",
+                }
+            ),
+            "dark": self._load_textures(
+                {
+                    "bottom_left": "dark_bottom_left",
+                    "bottom_center": "dark_bottom_center",
+                    "bottom_right": "dark_bottom_right",
+                    "left": "dark_left",
+                    "center": "dark_center",
+                    "right": "dark_right",
+                }
+            ),
+        }
+
+    def _load_textures(self, texture_map):
+        """Helper to load multiple textures"""
+        return {
+            key: self.asset_manager.get_tilemap_group(group_name)["surface"]
+            for key, group_name in texture_map.items()
+        }
 
     def _is_exterior_wall(self, x: int, y: int) -> bool:
         """Determine if a wall is on the exterior of the structure"""
@@ -367,49 +283,16 @@ class GridRenderer:
                 (self.tile_size, self.tile_size), pygame.SRCALPHA
             )
 
-            texture = None
             if tile_type == TileType.DOOR:
-                # Get door metadata
-                door_data = self.texture_metadata["door_light_closed"]
-                if door_data:
-                    texture = door_data["surface"]
-                    tile_surface.blit(texture, (0, 0))  # Blit to (0,0) of tile_surface
-
+                self._render_door_tile(tile_surface)
             elif tile_type == TileType.WALL:
-                context = self._get_wall_context(x, y)
-                if context["type"] == "exterior":
-                    texture = self.textures[TileType.WALL]["exterior"][
-                        context["position"]
-                    ]
-                else:
-                    texture = self.textures[TileType.WALL]["interior"][
-                        context["lighting"]
-                    ][context["position"]]
-                tile_surface.blit(texture, (0, 0))  # Blit to (0,0) of tile_surface
-
+                self._render_wall_tile(tile_surface, x, y)
             elif tile_type == TileType.CORNER:
-                context = self._get_corner_context(x, y)
-                if context["type"] == "exterior":
-                    texture = self.textures[TileType.CORNER]["exterior"][
-                        context["position"]
-                    ]
-                else:
-                    texture = self.textures[TileType.CORNER]["interior"][
-                        context["lighting"]
-                    ][context["position"]]
-                tile_surface.blit(texture, (0, 0))  # Blit to (0,0) of tile_surface
-
+                self._render_corner_tile(tile_surface, x, y)
             elif tile_type == TileType.FLOOR:
-                position = self._get_floor_context(x, y)
-                texture = self.textures[TileType.FLOOR][position]
-                tile_surface.blit(texture, (0, 0))  # Blit to (0,0) of tile_surface
-
+                self._render_floor_tile(tile_surface, x, y)
             elif tile_type == TileType.INTERIOR_BACKGROUND:
-                context = self._get_background_context(x, y)
-                texture = self.textures[TileType.INTERIOR_BACKGROUND][
-                    context["lighting"]
-                ][context["position"]]
-                tile_surface.blit(texture, (0, 0))
+                self._render_background_tile(tile_surface, x, y)
 
             # Store in cache
             self.tile_cache[pos] = tile_surface
@@ -453,8 +336,6 @@ class GridRenderer:
         group = self.grid.tile_groups[group_name]
         screen_pos = camera.world_to_screen(x * self.tile_size, y * self.tile_size)
 
-        print(f"Rendering group {group_name} at {x}, {y}")
-
         # Get group texture
         group_data = self.asset_manager.get_tilemap_group(group_name)
         if group_data and "surface" in group_data:
@@ -465,45 +346,64 @@ class GridRenderer:
             for dy in range(group["height"]):
                 self.rendered_groups.add((x + dx, y + dy))
 
-    def _find_door_top_left(self, x: int, y: int) -> Optional[Tuple[int, int]]:
-        """Find the top-left coordinates of a door given any door tile position"""
-        # Check if this is already the top-left
-        if all(
-            self.grid.cells.get((x + dx, y + dy)) == TileType.DOOR
-            for dx, dy in [(0, 0), (1, 0), (0, 1), (1, 1), (0, 2), (1, 2)]
-        ):
-            return (x, y)
+    def _render_door_tile(self, tile_surface):
+        """Render a single door tile"""
+        texture = self.textures[TileType.DOOR]["light_closed"]
+        tile_surface.blit(texture, (0, 0))
 
-        # Check if we're in the right column
-        if x > 0 and all(
-            self.grid.cells.get((x - 1, y + dy)) == TileType.DOOR for dy in range(3)
-        ):
-            return (x - 1, y)
-
-        # Check if we're in a lower row
-        if y > 0 and all(
-            self.grid.cells.get((x + dx, y - 1)) == TileType.DOOR for dx in range(2)
-        ):
-            return self._find_door_top_left(x, y - 1)
-
-        return None
-
-    def _render_door(self, surface: pygame.Surface, x: int, y: int, camera):
-        """Render a complete door at the specified position"""
-        screen_pos = camera.world_to_screen(x * self.tile_size, y * self.tile_size)
-
-        # Determine door type and state (default to light/closed for now)
-        door_type = "door_light_closed"
-
-        # Get door texture
-        door_data = self.texture_metadata[door_type]
-        if door_data and "surface" in door_data:
-            # Create a surface for the entire door
-            door_surface = door_data["surface"].copy()
-            surface.blit(door_surface, screen_pos)
+    def _render_wall_tile(self, tile_surface, x, y):
+        """Render a single wall tile"""
+        context = self._get_wall_context(x, y)
+        if context["type"] == "exterior":
+            texture = self.textures[TileType.WALL]["exterior"][context["position"]]
         else:
-            print(f"Warning: Door texture not found for {door_type}")
+            texture = self.textures[TileType.WALL]["interior"][context["lighting"]][
+                context["position"]
+            ]
+        tile_surface.blit(texture, (0, 0))
+
+    def _render_corner_tile(self, tile_surface, x, y):
+        """Render a single corner tile"""
+        context = self._get_corner_context(x, y)
+        if context["type"] == "exterior":
+            texture = self.textures[TileType.CORNER]["exterior"][context["position"]]
+        else:
+            texture = self.textures[TileType.CORNER]["interior"][context["lighting"]][
+                context["position"]
+            ]
+        tile_surface.blit(texture, (0, 0))
+
+    def _render_floor_tile(self, tile_surface, x, y):
+        """Render a single floor tile"""
+        position = self._get_floor_context(x, y)
+        texture = self.textures[TileType.FLOOR][position]
+        tile_surface.blit(texture, (0, 0))
+
+    def _render_background_tile(self, tile_surface, x, y):
+        """Render a single background tile"""
+        context = self._get_background_context(x, y)
+        texture = self.textures[TileType.INTERIOR_BACKGROUND][context["lighting"]][
+            context["position"]
+        ]
+        tile_surface.blit(texture, (0, 0))
 
     def set_camera(self, camera):
         """Set camera reference"""
         self.camera = camera
+
+    def _get_lighting_context(self, x: int, y: int) -> str:
+        """Determine if position is in light or dark area"""
+        return "light" if self._is_in_top_half(x, y) else "dark"
+
+    def _get_adjacent_walls(self, x: int, y: int) -> dict:
+        """Get adjacent wall information"""
+        return {
+            "up": (x, y - 1) in self.grid.cells
+            and self.grid.cells[(x, y - 1)] == TileType.WALL,
+            "down": (x, y + 1) in self.grid.cells
+            and self.grid.cells[(x, y + 1)] == TileType.WALL,
+            "left": (x - 1, y) in self.grid.cells
+            and self.grid.cells[(x - 1, y)] == TileType.WALL,
+            "right": (x + 1, y) in self.grid.cells
+            and self.grid.cells[(x + 1, y)] == TileType.WALL,
+        }

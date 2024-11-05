@@ -5,6 +5,7 @@ class TilemapRenderer:
     def __init__(self, helper):
         self.helper = helper
         self.screen = helper.screen
+        self.hover_pos = None  # Add hover position tracking
 
     def render(self):
         """Main render method"""
@@ -15,7 +16,10 @@ class TilemapRenderer:
             self.render_tilemap()
             if self.helper.grid_visible:
                 self.render_grid()
+            self.render_configured_tiles()  # New method for configured tiles
             self.render_selections()
+            self.render_hover()  # New method for hover effects
+            self.render_tooltip()  # New method for property display
         else:
             self.render_empty_state()
 
@@ -37,7 +41,7 @@ class TilemapRenderer:
                 x + self.helper.image_pos[0],
                 self.helper.image_pos[1] + self.helper.scaled_size[1],
             )
-            pygame.draw.line(self.screen, (255, 255, 255, 128), start_pos, end_pos, 1)
+            pygame.draw.line(self.screen, (255, 255, 255, 64), start_pos, end_pos, 1)
 
         # Draw horizontal lines
         for y in range(0, self.helper.scaled_size[1] + 1, self.helper.scaled_tile_size):
@@ -46,7 +50,7 @@ class TilemapRenderer:
                 self.helper.image_pos[0] + self.helper.scaled_size[0],
                 y + self.helper.image_pos[1],
             )
-            pygame.draw.line(self.screen, (255, 255, 255, 128), start_pos, end_pos, 1)
+            pygame.draw.line(self.screen, (255, 255, 255, 64), start_pos, end_pos, 1)
 
     def render_selections(self):
         """Draw selected tiles"""
@@ -67,3 +71,93 @@ class TilemapRenderer:
             center=(self.helper.window_size[0] / 2, self.helper.window_size[1] / 2)
         )
         self.screen.blit(text, text_rect)
+
+    def render_configured_tiles(self):
+        """Draw green grid lines for configured tiles"""
+        for pos_str, config in self.helper.tile_configs.items():
+            try:
+                x, y = eval(pos_str)  # Convert string position back to tuple
+                width = config.get("width", 1)
+                height = config.get("height", 1)
+
+                # Draw green rectangle around configured tiles
+                rect = pygame.Rect(
+                    self.helper.image_pos[0] + x * self.helper.scaled_tile_size,
+                    self.helper.image_pos[1] + y * self.helper.scaled_tile_size,
+                    self.helper.scaled_tile_size * width,
+                    self.helper.scaled_tile_size * height,
+                )
+                pygame.draw.rect(self.screen, (0, 255, 0, 128), rect, 2)
+            except (ValueError, SyntaxError):
+                continue
+
+    def render_hover(self):
+        """Draw hover effect for tile groups"""
+        if self.hover_pos:
+            hover_config = self.helper.get_tile_config(self.hover_pos)
+            if hover_config:
+                width = hover_config.get("width", 1)
+                height = hover_config.get("height", 1)
+                x, y = self.hover_pos
+
+                rect = pygame.Rect(
+                    self.helper.image_pos[0] + x * self.helper.scaled_tile_size,
+                    self.helper.image_pos[1] + y * self.helper.scaled_tile_size,
+                    self.helper.scaled_tile_size * width,
+                    self.helper.scaled_tile_size * height,
+                )
+                pygame.draw.rect(self.screen, (100, 200, 255, 128), rect, 2)
+
+    def render_tooltip(self):
+        """Display tile properties on hover"""
+        if self.hover_pos:
+            hover_config = self.helper.get_tile_config(self.hover_pos)
+            if hover_config:
+                # Create tooltip text
+                lines = [
+                    f"Name: {hover_config.get('name', 'Unnamed')}",
+                    f"Type: {hover_config.get('type', 'Unknown')}",
+                    f"Size: {hover_config.get('width', 1)}x{hover_config.get('height', 1)}",
+                ]
+
+                # Add custom properties
+                props = hover_config.get("properties", {})
+                if props:
+                    lines.append("Properties:")
+                    for key, value in props.items():
+                        lines.append(f"  {key}: {value}")
+
+                # Render tooltip
+                font = pygame.font.Font(None, 24)
+                line_height = 25
+                padding = 5
+
+                # Calculate tooltip size
+                max_width = max(font.size(line)[0] for line in lines)
+                height = line_height * len(lines)
+
+                # Create tooltip background
+                tooltip_surf = pygame.Surface(
+                    (max_width + padding * 2, height + padding * 2)
+                )
+                tooltip_surf.fill((40, 44, 52))
+                pygame.draw.rect(
+                    tooltip_surf, (100, 100, 100), tooltip_surf.get_rect(), 1
+                )
+
+                # Add text
+                for i, line in enumerate(lines):
+                    text_surf = font.render(line, True, (255, 255, 255))
+                    tooltip_surf.blit(text_surf, (padding, padding + i * line_height))
+
+                # Position tooltip near mouse but ensure it stays on screen
+                mouse_pos = pygame.mouse.get_pos()
+                tooltip_x = min(
+                    mouse_pos[0] + 20,
+                    self.helper.window_size[0] - max_width - padding * 2,
+                )
+                tooltip_y = min(
+                    mouse_pos[1] + 20, self.helper.window_size[1] - height - padding * 2
+                )
+
+                self.screen.blit(tooltip_surf, (tooltip_x, tooltip_y))

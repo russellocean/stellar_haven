@@ -8,7 +8,7 @@ from systems.debug_system import DebugSystem
 
 class RoomManager:
     def __init__(self, center_x: int, center_y: int):
-        self.grid = Grid(cell_size=32)
+        self.grid = Grid(cell_size=16)
         self.rooms: Dict[str, Room] = {}
         self.collision_system = CollisionSystem(self.grid)
         self.starting_room = None  # Reference to starting room

@@ -8,7 +8,7 @@ class Entity(pygame.sprite.Sprite):
             self.image = pygame.image.load(image_path).convert_alpha()
         else:
             # Create an empty surface if no image path is provided
-            self.image = pygame.Surface((32, 32), pygame.SRCALPHA)
+            self.image = pygame.Surface((16, 16), pygame.SRCALPHA)
         self.rect = self.image.get_rect(center=(x, y))
 
     def update(self, *args, **kwargs):

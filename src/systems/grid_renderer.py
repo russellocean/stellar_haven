@@ -5,70 +5,33 @@ from systems.asset_manager import AssetManager
 
 
 class GridRenderer:
-    def __init__(self, grid, tile_size=32):
+    def __init__(self, grid, tile_size=16):
         self.grid = grid
         self.tile_size = tile_size
         self.asset_manager = AssetManager()
         self.camera = None
 
-        # Load the industrial tileset
-        tileset = self.asset_manager.get_image("1_Industrial_Tileset_1.png")
-        tile_width = 32  # Assuming each tile is 32x32
-
-        # Extract tiles from the tileset
+        # Initialize texture mappings
         self.textures = {
             TileType.WALL: {
-                "horizontal": tileset.subsurface(
-                    (tile_width * 1, tile_width * 1, tile_width, tile_width)
-                ),  # top wall
-                "vertical": tileset.subsurface(
-                    (tile_width * 3, tile_width * 2, tile_width, tile_width)
-                ),  # side wall
+                "horizontal": self.asset_manager.get_tilemap_group("light_top_center"),
+                "vertical": self.asset_manager.get_tilemap_group("dark_left"),
             },
             TileType.CORNER: {
-                "top_left": tileset.subsurface(
-                    (0, tile_width * 1, tile_width, tile_width)
-                ),
-                "top_right": tileset.subsurface(
-                    (tile_width * 2, tile_width * 1, tile_width, tile_width)
-                ),
-                "bottom_left": tileset.subsurface(
-                    (0, tile_width * 3, tile_width, tile_width)
-                ),
-                "bottom_right": tileset.subsurface(
-                    (tile_width * 2, tile_width * 3, tile_width, tile_width)
+                "top_left": self.asset_manager.get_tilemap_group("light_top_left"),
+                "top_right": self.asset_manager.get_tilemap_group("light_top_right"),
+                "bottom_left": self.asset_manager.get_tilemap_group("dark_bottom_left"),
+                "bottom_right": self.asset_manager.get_tilemap_group(
+                    "dark_bottom_right"
                 ),
             },
-            TileType.FLOOR: tileset.subsurface(
-                (tile_width * 3, 0, tile_width, tile_width)
-            ),
+            TileType.FLOOR: self.asset_manager.get_tilemap_group("platform_center"),
             TileType.DOOR: {
-                "horizontal_left": self.asset_manager.get_image(
-                    "rooms/framework/door_horizontal_left.png"
-                ),
-                "horizontal_right": self.asset_manager.get_image(
-                    "rooms/framework/door_horizontal_right.png"
-                ),
-                "vertical_top": self.asset_manager.get_image(
-                    "rooms/framework/door_vertical_top.png"
-                ),
-                "vertical_bottom": self.asset_manager.get_image(
-                    "rooms/framework/door_vertical_bottom.png"
-                ),
+                "horizontal": self.asset_manager.get_tilemap_group("door_light_closed"),
+                "vertical": self.asset_manager.get_tilemap_group("door_light_closed"),
             },
             TileType.BACKGROUND: {
-                "top_left": tileset.subsurface(
-                    (4 * tile_width, 0, tile_width, tile_width)
-                ),
-                "top_right": tileset.subsurface(
-                    (5 * tile_width, 0, tile_width, tile_width)
-                ),
-                "bottom_left": tileset.subsurface(
-                    (4 * tile_width, tile_width, tile_width, tile_width)
-                ),
-                "bottom_right": tileset.subsurface(
-                    (5 * tile_width, tile_width, tile_width, tile_width)
-                ),
+                "default": self.asset_manager.get_tilemap_group("dark_center"),
             },
             TileType.EMPTY: None,
         }
@@ -162,26 +125,42 @@ class GridRenderer:
         return "top_right" if is_right else "top_left"
 
     def render(self, surface: pygame.Surface, camera):
-        """Render the grid based on actual tile types"""
+        """Render the grid using tilemap assets"""
         for pos, tile_type in self.grid.cells.items():
             x, y = pos
             screen_pos = camera.world_to_screen(x * self.tile_size, y * self.tile_size)
 
-            # Update background rendering
+            texture = None
             if tile_type == TileType.BACKGROUND:
-                bg_type = self._get_background_type(x, y)
-                surface.blit(self.textures[TileType.BACKGROUND][bg_type], screen_pos)
+                texture = self.textures[TileType.BACKGROUND]["default"]
             elif tile_type == TileType.WALL:
                 wall_type = self._get_wall_type(x, y)
-                surface.blit(self.textures[TileType.WALL][wall_type], screen_pos)
+                texture = self.textures[TileType.WALL][wall_type]
             elif tile_type == TileType.CORNER:
                 corner_type = self._get_corner_type(x, y)
-                surface.blit(self.textures[TileType.CORNER][corner_type], screen_pos)
+                texture = self.textures[TileType.CORNER][corner_type]
             elif tile_type == TileType.DOOR:
-                door_type = self._get_door_type(x, y)
-                surface.blit(self.textures[TileType.DOOR][door_type], screen_pos)
+                door_type = (
+                    "horizontal" if self._is_horizontal_door(x, y) else "vertical"
+                )
+                texture = self.textures[TileType.DOOR][door_type]
             elif tile_type == TileType.FLOOR:
-                surface.blit(self.textures[TileType.FLOOR], screen_pos)
+                texture = self.textures[TileType.FLOOR]
+
+            if texture:
+                surface.blit(texture, screen_pos)
+
+    def _is_horizontal_door(self, x: int, y: int) -> bool:
+        """Helper to determine if a door is horizontal"""
+        left = (x - 1, y) in self.grid.cells and self.grid.cells[(x - 1, y)] in [
+            TileType.WALL,
+            TileType.DOOR,
+        ]
+        right = (x + 1, y) in self.grid.cells and self.grid.cells[(x + 1, y)] in [
+            TileType.WALL,
+            TileType.DOOR,
+        ]
+        return left or right
 
     def set_camera(self, camera):
         """Set camera reference"""

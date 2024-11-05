@@ -7,7 +7,7 @@ from systems.asset_manager import AssetManager
 
 
 class Grid:
-    def __init__(self, cell_size: int = 32):
+    def __init__(self, cell_size: int = 16):
         self.cell_size = cell_size
         self.cells: Dict[Tuple[int, int], TileType] = {}
         self.rooms: Dict[str, dict] = {}  # Keep room data for door connections

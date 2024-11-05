@@ -30,9 +30,9 @@ class GridRenderer:
                 },
                 "interior": {
                     "light": {
-                        "top": self.asset_manager.get_tilemap_group("light_top_center")[
-                            "surface"
-                        ],
+                        "top_center": self.asset_manager.get_tilemap_group(
+                            "light_top_center"
+                        )["surface"],
                         "center": self.asset_manager.get_tilemap_group("light_center")[
                             "surface"
                         ],
@@ -53,7 +53,7 @@ class GridRenderer:
                         "right": self.asset_manager.get_tilemap_group("dark_right")[
                             "surface"
                         ],
-                        "bottom": self.asset_manager.get_tilemap_group(
+                        "bottom_center": self.asset_manager.get_tilemap_group(
                             "dark_bottom_center"
                         )["surface"],
                     },
@@ -147,12 +147,26 @@ class GridRenderer:
         adjacent = [(x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)]
         return any(pos not in self.grid.cells for pos in adjacent)
 
+    def _is_in_top_half(self, x: int, y: int) -> bool:
+        """Determine if a position is in the top half of its room"""
+        for room_id, room in self.grid.rooms.items():
+            room_x, room_y = room["grid_pos"]
+            width, height = room["grid_size"]
+
+            # Check if position is within this room's bounds
+            if room_x <= x < room_x + width and room_y <= y < room_y + height:
+                # Calculate if we're in the top half of the room
+                room_mid_y = room_y + (height // 2)
+                return y < room_mid_y
+
+        return False  # Default to bottom half if not in any room
+
     def _get_wall_context(self, x: int, y: int) -> dict:
         """Get detailed wall context including position and lighting"""
         is_exterior = self._is_exterior_wall(x, y)
 
         if is_exterior:
-            # Determine exterior wall position
+            # Exterior wall logic remains the same
             up = (x, y - 1) not in self.grid.cells
             down = (x, y + 1) not in self.grid.cells
             left = (x - 1, y) not in self.grid.cells
@@ -167,15 +181,35 @@ class GridRenderer:
             if right:
                 return {"type": "exterior", "position": "right"}
 
-        # Interior wall context
-        is_top = (x, y - 1) in self.grid.cells and self.grid.cells[
+        is_top_half = self._is_in_top_half(x, y)
+        context = {"type": "interior", "lighting": "light" if is_top_half else "dark"}
+
+        # Determine position based on adjacent backgrounds
+        has_background_up = (x, y - 1) in self.grid.cells and self.grid.cells[
             (x, y - 1)
         ] == TileType.BACKGROUND
-        return {
-            "type": "interior",
-            "lighting": "light" if is_top else "dark",
-            "position": "top" if is_top else "center",
-        }
+        has_background_down = (x, y + 1) in self.grid.cells and self.grid.cells[
+            (x, y + 1)
+        ] == TileType.BACKGROUND
+        has_background_left = (x - 1, y) in self.grid.cells and self.grid.cells[
+            (x - 1, y)
+        ] == TileType.BACKGROUND
+        has_background_right = (x + 1, y) in self.grid.cells and self.grid.cells[
+            (x + 1, y)
+        ] == TileType.BACKGROUND
+
+        if has_background_left:
+            context["position"] = "right"
+        elif has_background_right:
+            context["position"] = "left"
+        elif has_background_up:
+            context["position"] = "bottom_center" if not is_top_half else "center"
+        elif has_background_down:
+            context["position"] = "top_center" if is_top_half else "center"
+        else:
+            context["position"] = "center"
+
+        return context
 
     def _get_corner_context(self, x: int, y: int) -> dict:
         """Get detailed corner context including position and if it's exterior"""
@@ -275,7 +309,11 @@ class GridRenderer:
                 texture = self.textures[TileType.FLOOR][position]
 
             elif tile_type == TileType.BACKGROUND:
-                texture = self.textures[TileType.BACKGROUND]
+                # Use light/dark center based on position in room
+                is_top_half = self._is_in_top_half(x, y)
+                texture = self.asset_manager.get_tilemap_group(
+                    "light_center" if is_top_half else "dark_center"
+                )["surface"]
 
             if texture:
                 if isinstance(texture, dict):  # If it's a multi-tile texture

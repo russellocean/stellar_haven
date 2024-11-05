@@ -56,7 +56,7 @@ class Player(Entity):
                 grid_y,
             ) not in room_manager.grid.cells or room_manager.grid.cells[
                 (grid_x, grid_y)
-            ] != TileType.FLOOR:
+            ] != TileType.WALL:
                 self.on_ground = False
 
         # Handle dropping through platforms

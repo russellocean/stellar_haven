@@ -11,7 +11,8 @@
       "furniture",
       "background",
       "interior_background",
-      "exterior"
+      "exterior",
+      "platform"
     ]
   },
   "tilemaps/background_space.png": {
@@ -621,56 +622,6 @@
       }
     ]
   },
-  "tilemaps/platforms_and_ladders.png": {
-    "tile_size": 16,
-    "groups": [
-      {
-        "tiles": [
-          {
-            "x": 1,
-            "y": 6
-          }
-        ],
-        "metadata": {
-          "name": "platform_left",
-          "type": "floor",
-          "properties": {},
-          "width": 1,
-          "height": 1
-        }
-      },
-      {
-        "tiles": [
-          {
-            "x": 2,
-            "y": 6
-          }
-        ],
-        "metadata": {
-          "name": "platform_center",
-          "type": "floor",
-          "properties": {},
-          "width": 1,
-          "height": 1
-        }
-      },
-      {
-        "tiles": [
-          {
-            "x": 3,
-            "y": 6
-          }
-        ],
-        "metadata": {
-          "name": "platform_right",
-          "type": "floor",
-          "properties": {},
-          "width": 1,
-          "height": 1
-        }
-      }
-    ]
-  },
   "tilemaps/spaceship_exterior.png": {
     "tile_size": 16,
     "groups": [
@@ -889,6 +840,34 @@
           "type": "exterior",
           "properties": {},
           "width": 1,
+          "height": 1
+        }
+      }
+    ]
+  },
+  "tilemaps/platforms_and_ladders.png": {
+    "tile_size": 16,
+    "groups": [
+      {
+        "tiles": [
+          {
+            "x": 1,
+            "y": 6
+          },
+          {
+            "x": 2,
+            "y": 6
+          },
+          {
+            "x": 3,
+            "y": 6
+          }
+        ],
+        "metadata": {
+          "name": "platform",
+          "type": "platform",
+          "properties": {},
+          "width": 3,
           "height": 1
         }
       }

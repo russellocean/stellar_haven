@@ -365,3 +365,30 @@ class Grid:
             for dy in range(group["height"]):
                 self.set_tile(grid_x + dx, grid_y + dy, group["tile_type"])
         return True
+
+    def is_valid_platform_placement(self, grid_x: int, grid_y: int) -> bool:
+        """
+        Check if a platform (3x2) can be placed at grid coordinates.
+        Platform must be placed on wall tiles, replacing the top row with platform
+        and bottom row with interior background.
+        """
+        # Check if all positions are currently walls
+        for dx in range(3):
+            for dy in range(2):
+                if self.get_tile(grid_x + dx, grid_y + dy) != TileType.WALL:
+                    return False
+
+        return True
+
+    def place_platform(self, grid_x: int, grid_y: int) -> bool:
+        """Place a platform group, converting walls to platform and background"""
+        if not self.is_valid_platform_placement(grid_x, grid_y):
+            return False
+
+        # Place platform tiles on top row
+        for dx in range(3):
+            self.set_tile(grid_x + dx, grid_y, TileType.PLATFORM)
+            # Place background tiles on bottom row
+            self.set_tile(grid_x + dx, grid_y + 1, TileType.INTERIOR_BACKGROUND)
+
+        return True

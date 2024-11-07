@@ -4,8 +4,8 @@
       "name": "Starting Quarters",
       "grid_size": [16, 8],
       "resource_consumption": {
-        "power": 3.0,
-        "oxygen": 2.0
+        "power": 0.2,
+        "oxygen": 0.2
       },
       "resource_generation": {},
       "build_costs": {
@@ -38,8 +38,8 @@
       "name": "Bridge",
       "grid_size": [12, 8],
       "resource_consumption": {
-        "power": 3.0,
-        "oxygen": 2.0
+        "power": 0.3,
+        "oxygen": 0.3
       },
       "resource_generation": {},
       "build_costs": {
@@ -71,10 +71,10 @@
       "name": "Engine Room",
       "grid_size": [14, 14],
       "resource_consumption": {
-        "oxygen": 3.0
+        "oxygen": 0.5
       },
       "resource_generation": {
-        "power": 10.0
+        "power": 2.0
       },
       "build_costs": {
         "power": 150,
@@ -113,10 +113,10 @@
       "name": "Life Support",
       "grid_size": [8, 8],
       "resource_consumption": {
-        "power": 8.0
+        "power": 0.8
       },
       "resource_generation": {
-        "oxygen": 3.0
+        "oxygen": 1.5
       },
       "build_costs": {
         "power": 100,

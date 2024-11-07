@@ -141,7 +141,7 @@ class GridRenderer:
 
         if tile_type:
             return {
-                dir: exists and self.grid.cells[(x + dx, y + dy)] == tile_type
+                dir: exists and self.grid.get_tile(x + dx, y + dy) == tile_type
                 for dir, exists, (dx, dy) in [
                     ("up", adjacent["up"], (0, -1)),
                     ("down", adjacent["down"], (0, 1)),

@@ -205,17 +205,38 @@ class BuildingSystem:
         screen.blit(ghost, screen_pos)
 
     def _draw_item_ghost(self, screen: pygame.Surface):
-        """Draw ghost for single-tile items"""
-        ghost = pygame.Surface(
-            (self.grid.cell_size, self.grid.cell_size), pygame.SRCALPHA
-        )
-
-        # Set color based on validity
-        color = (0, 255, 0, 128) if self.valid_placement else (255, 0, 0, 128)
-        pygame.draw.rect(ghost, color, ghost.get_rect())
-
+        """Draw ghost for items (including platforms)"""
         world_x = self.ghost_position[0] * self.grid.cell_size
         world_y = self.ghost_position[1] * self.grid.cell_size
+
+        if self.selected_category == "platforms":
+            # Get platform texture from asset manager
+            platform_data = self.asset_manager.get_tilemap_group("platform")
+            if platform_data:
+                ghost = platform_data["surface"].copy()
+                if not self.valid_placement:
+                    # Add red tint for invalid placement
+                    tint = pygame.Surface(ghost.get_size(), pygame.SRCALPHA)
+                    pygame.draw.rect(tint, (255, 0, 0, 128), tint.get_rect())
+                    ghost.blit(tint, (0, 0))
+            else:
+                # Fallback if texture not found
+                ghost = pygame.Surface(
+                    (self.grid.cell_size * 3, self.grid.cell_size * 2), pygame.SRCALPHA
+                )
+                color = (100, 100, 100, 128)
+                pygame.draw.rect(ghost, color, ghost.get_rect())
+                if not self.valid_placement:
+                    pygame.draw.rect(ghost, (255, 0, 0, 64), ghost.get_rect())
+
+        else:
+            # Original single-tile ghost drawing
+            ghost = pygame.Surface(
+                (self.grid.cell_size, self.grid.cell_size), pygame.SRCALPHA
+            )
+            color = (0, 255, 0, 128) if self.valid_placement else (255, 0, 0, 128)
+            pygame.draw.rect(ghost, color, ghost.get_rect())
+
         screen_pos = self.camera.world_to_screen(world_x, world_y)
         screen.blit(ghost, screen_pos)
 

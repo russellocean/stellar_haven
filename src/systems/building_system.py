@@ -84,8 +84,12 @@ class BuildingSystem:
             self.valid_placement = self.grid.is_valid_room_placement(
                 grid_x, grid_y, self.selected_type
             )
+        elif self.selected_category == "platforms":
+            # Center the platform horizontally
+            grid_x -= 1  # Center 3-tile wide platform
+            self.valid_placement = self.grid.is_valid_platform_placement(grid_x, grid_y)
         else:
-            # Handle tile groups
+            # Handle other tile groups
             group_name = self.selected_type
             if group_name in self.grid.tile_groups:
                 group = self.grid.tile_groups[group_name]
@@ -125,6 +129,11 @@ class BuildingSystem:
 
     def _place_item(self) -> bool:
         """Place a non-room item at the ghost position"""
+        if self.selected_category == "platforms":
+            return self.grid.place_platform(
+                self.ghost_position[0], self.ghost_position[1]
+            )
+
         group_name = self.selected_type
         if group_name in self.grid.tile_groups:
             return self.grid.place_tile_group(

@@ -186,28 +186,19 @@ class BuildMenu(BaseLayout):
         self.ui_system.add_element(button)
 
     def _create_platform_buttons(self):
-        """Create enhanced platform selection buttons"""
+        """Create platform selection button"""
         start_x = self.screen.get_width() - 220
         start_y = 150
         button_height = 70  # Taller buttons to match room style
         spacing = 15
 
-        platform_types = [
-            ("platform_left", "Left Platform"),
-            ("platform_center", "Center Platform"),
-            ("platform_right", "Right Platform"),
-        ]
-
-        for i, (platform_type, display_name) in enumerate(platform_types):
-            y_pos = start_y + (button_height + spacing) * i
-            rect = pygame.Rect(start_x, y_pos, 200, button_height)
-
-            button = Button(
-                rect=rect,
-                text=f"{display_name}\nStructural Support",  # Added subtitle for consistency
-                action=lambda pt=platform_type: self.select_build_item("platforms", pt),
-                image_path="assets/images/ui/build_icon.png",
-                tooltip="Add structural support",
-                font_size=20,
-            )
-            self.ui_system.add_element(button)
+        rect = pygame.Rect(start_x, start_y, 200, button_height)
+        button = Button(
+            rect=rect,
+            text="Platform\nStructural Support",
+            action=lambda: self.select_build_item("platforms", "platform"),
+            image_path="assets/images/ui/build_icon.png",
+            tooltip="Add structural support",
+            font_size=20,
+        )
+        self.ui_system.add_element(button)

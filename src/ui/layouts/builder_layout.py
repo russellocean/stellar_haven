@@ -74,6 +74,8 @@ class BuilderLayout(BaseLayout):
             self.valid_placement = self.grid.is_valid_room_placement(
                 grid_x, grid_y, self.selected_type
             )
+        elif self.selected_category == "platforms":
+            self.valid_placement = self.grid.is_valid_platform_placement(grid_x, grid_y)
         elif self.selected_category == "structures":
             self.valid_placement = self.grid.is_valid_door_placement(grid_x, grid_y)
         else:

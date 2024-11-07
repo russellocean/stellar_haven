@@ -7,7 +7,7 @@ from systems.asset_manager import AssetManager
 class Grid:
     def __init__(self, cell_size: int = 16):
         self.cell_size = cell_size
-        self.cells: Dict[Tuple[int, int], TileType] = {}
+        self.cells: Dict[Tuple[int, int], List[TileType]] = {}
         self.rooms: Dict[str, dict] = {}
         self.asset_manager = AssetManager()
         self.room_config = self.asset_manager.get_config("rooms")
@@ -188,19 +188,50 @@ class Grid:
         return (grid_x * self.cell_size, grid_y * self.cell_size)
 
     def set_tile(self, x: int, y: int, tile_type: TileType) -> None:
-        """Set a tile with validation to prevent multiple types"""
-        if (x, y) in self.cells:
-            current_type = self.cells[(x, y)]
-            if current_type != tile_type:
-                print(
-                    f"WARNING: Changing tile at ({x}, {y}) from {current_type} to {tile_type}"
-                )
-        self.cells[(x, y)] = tile_type
-        self._notify_tile_changes()  # Notify observers when a tile changes
+        """Set a tile, replacing any existing tile of the same category"""
+        if (x, y) not in self.cells:
+            self.cells[(x, y)] = []
+
+        # Remove any existing tiles of the same category
+        # Background tiles are in one category, solid tiles (walls, platforms) in another
+        if tile_type in [TileType.INTERIOR_BACKGROUND, TileType.BACKGROUND]:
+            self.cells[(x, y)] = [
+                t
+                for t in self.cells[(x, y)]
+                if t not in [TileType.INTERIOR_BACKGROUND, TileType.BACKGROUND]
+            ]
+        else:
+            self.cells[(x, y)] = [
+                t
+                for t in self.cells[(x, y)]
+                if t in [TileType.INTERIOR_BACKGROUND, TileType.BACKGROUND]
+            ]
+
+        self.cells[(x, y)].append(tile_type)
+        self._notify_tile_changes()
 
     def get_tile(self, x: int, y: int) -> TileType:
-        """Get the tile at a specific position"""
-        return self.cells.get((x, y), TileType.EMPTY)
+        """Get the primary (non-background) tile at a specific position"""
+        if (x, y) not in self.cells:
+            return TileType.EMPTY
+
+        # Return the first non-background tile, or the last tile if all are background
+        tiles = self.cells[(x, y)]
+        for tile in tiles:
+            if tile not in [TileType.INTERIOR_BACKGROUND, TileType.BACKGROUND]:
+                return tile
+        return tiles[-1] if tiles else TileType.EMPTY
+
+    def get_background_tile(self, x: int, y: int) -> Optional[TileType]:
+        """Get the background tile at a specific position"""
+        if (x, y) not in self.cells:
+            return None
+
+        # Return the first background tile found
+        for tile in self.cells[(x, y)]:
+            if tile in [TileType.INTERIOR_BACKGROUND, TileType.BACKGROUND]:
+                return tile
+        return None
 
     def get_adjacent_tiles(self, x: int, y: int) -> List[TileType]:
         """Get the tiles directly adjacent (left, right, up, down) to a specific position"""
@@ -385,8 +416,11 @@ class Grid:
         if not self.is_valid_platform_placement(grid_x, grid_y):
             return False
 
-        # Place platform tiles on top row
+        # Place platform tiles and backgrounds on top row
         for dx in range(3):
+            # First set the background
+            self.set_tile(grid_x + dx, grid_y, TileType.INTERIOR_BACKGROUND)
+            # Then place platform on top of it
             self.set_tile(grid_x + dx, grid_y, TileType.PLATFORM)
             # Place background tiles on bottom row
             self.set_tile(grid_x + dx, grid_y + 1, TileType.INTERIOR_BACKGROUND)

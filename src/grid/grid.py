@@ -187,25 +187,35 @@ class Grid:
     def grid_to_world(self, grid_x: int, grid_y: int) -> Tuple[int, int]:
         return (grid_x * self.cell_size, grid_y * self.cell_size)
 
-    def set_tile(self, x: int, y: int, tile_type: TileType) -> None:
-        """Set a tile, replacing any existing tile of the same category"""
+    def set_tile(
+        self, x: int, y: int, tile_type: TileType, replace: bool = False
+    ) -> None:
+        """
+        Set a tile, optionally replacing all existing tiles.
+        If replace=False, follows layering rules (background behind foreground).
+        If replace=True, removes all existing tiles first.
+        """
         if (x, y) not in self.cells:
             self.cells[(x, y)] = []
 
-        # Remove any existing tiles of the same category
-        # Background tiles are in one category, solid tiles (walls, platforms) in another
-        if tile_type in [TileType.INTERIOR_BACKGROUND, TileType.BACKGROUND]:
-            self.cells[(x, y)] = [
-                t
-                for t in self.cells[(x, y)]
-                if t not in [TileType.INTERIOR_BACKGROUND, TileType.BACKGROUND]
-            ]
+        if replace:
+            # Clear all existing tiles if replace is True
+            self.cells[(x, y)] = []
         else:
-            self.cells[(x, y)] = [
-                t
-                for t in self.cells[(x, y)]
-                if t in [TileType.INTERIOR_BACKGROUND, TileType.BACKGROUND]
-            ]
+            # Remove any existing tiles of the same category
+            # Background tiles are in one category, solid tiles (walls, platforms) in another
+            if tile_type in [TileType.INTERIOR_BACKGROUND, TileType.BACKGROUND]:
+                self.cells[(x, y)] = [
+                    t
+                    for t in self.cells[(x, y)]
+                    if t not in [TileType.INTERIOR_BACKGROUND, TileType.BACKGROUND]
+                ]
+            else:
+                self.cells[(x, y)] = [
+                    t
+                    for t in self.cells[(x, y)]
+                    if t in [TileType.INTERIOR_BACKGROUND, TileType.BACKGROUND]
+                ]
 
         self.cells[(x, y)].append(tile_type)
         self._notify_tile_changes()
@@ -404,9 +414,13 @@ class Grid:
         and bottom row with interior background.
         """
         # Check if all positions are currently walls
-        for dx in range(3):
-            for dy in range(2):
-                if self.get_tile(grid_x + dx, grid_y + dy) != TileType.WALL:
+        for dx in range(3):  # Platform width is 3
+            for dy in range(2):  # Check both rows
+                check_pos = (grid_x + dx, grid_y + dy)
+                if check_pos not in self.cells:
+                    return False
+                tile = self.get_tile(*check_pos)
+                if tile != TileType.WALL:
                     return False
 
         return True
@@ -416,13 +430,16 @@ class Grid:
         if not self.is_valid_platform_placement(grid_x, grid_y):
             return False
 
-        # Place platform tiles and backgrounds on top row
+        # First replace all walls with interior background (3x2 area)
+        for dx in range(3):  # Platform width is 3
+            for dy in range(2):  # Both rows
+                # Replace walls with interior background
+                self.set_tile(
+                    grid_x + dx, grid_y + dy, TileType.INTERIOR_BACKGROUND, replace=True
+                )
+
+        # Then place platform tiles on top row only
         for dx in range(3):
-            # First set the background
-            self.set_tile(grid_x + dx, grid_y, TileType.INTERIOR_BACKGROUND)
-            # Then place platform on top of it
             self.set_tile(grid_x + dx, grid_y, TileType.PLATFORM)
-            # Place background tiles on bottom row
-            self.set_tile(grid_x + dx, grid_y + 1, TileType.INTERIOR_BACKGROUND)
 
         return True

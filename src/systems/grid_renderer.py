@@ -227,53 +227,104 @@ class GridRenderer:
 
         self.rendered_groups.clear()
 
-        # Only process tiles within camera bounds
-        for pos, tile_type in self.grid.cells.items():
+        # First render all background tiles
+        for pos, tiles in self.grid.cells.items():
             x, y = pos
-
             if not (min_x <= x <= max_x and min_y <= y <= max_y):
                 continue
 
-            if pos in self.rendered_groups:
+            background_tile = self.grid.get_background_tile(x, y)
+            if background_tile:
+                screen_pos = camera.world_to_screen(
+                    x * self.tile_size, y * self.tile_size
+                )
+                if pos in self.tile_cache:
+                    surface.blit(self.tile_cache[pos + ("bg",)], screen_pos)
+                else:
+                    tile_surface = pygame.Surface(
+                        (self.tile_size, self.tile_size), pygame.SRCALPHA
+                    )
+                    if background_tile == TileType.INTERIOR_BACKGROUND:
+                        self._render_background_tile(tile_surface, x, y)
+                    self.tile_cache[pos + ("bg",)] = tile_surface
+                    surface.blit(tile_surface, screen_pos)
+
+        # Then render all foreground tiles
+        for pos, tiles in self.grid.cells.items():
+            x, y = pos
+            if not (min_x <= x <= max_x and min_y <= y <= max_y):
                 continue
 
-            # Check if this is part of a tile group
-            group_info = self._find_group_at_position(x, y, tile_type)
-            if group_info:
-                self._render_tile_group(surface, *group_info, camera)
+            # Skip if already rendered as part of a group
+            if (x, y) in self.rendered_groups:
                 continue
 
-            screen_pos = camera.world_to_screen(x * self.tile_size, y * self.tile_size)
+            primary_tile = self.grid.get_tile(x, y)
+            if primary_tile in [TileType.PLATFORM, TileType.DOOR]:
+                # Check cache first
+                cache_key = (x, y, "group")
+                if cache_key in self.tile_cache:
+                    group_name, group_x, group_y = self.tile_cache[cache_key]
+                    self._render_tile_group(
+                        surface, group_name, group_x, group_y, camera
+                    )
+                else:
+                    # Only check for groups if not in cache
+                    group_info = self._find_group_at_position(x, y, primary_tile)
+                    if group_info:
+                        group_name, group_x, group_y = group_info
+                        # Cache for all tiles in the group
+                        group = self.grid.tile_groups[group_name]
+                        for dx in range(group["width"]):
+                            for dy in range(group["height"]):
+                                group_cache_key = (group_x + dx, group_y + dy, "group")
+                                self.tile_cache[group_cache_key] = (
+                                    group_name,
+                                    group_x,
+                                    group_y,
+                                )
 
-            # Check cache first
-            if pos in self.tile_cache:
-                surface.blit(self.tile_cache[pos], screen_pos)
-                continue
+                        self._render_tile_group(
+                            surface, group_name, group_x, group_y, camera
+                        )
 
-            # Create a new surface for this tile
-            tile_surface = pygame.Surface(
-                (self.tile_size, self.tile_size), pygame.SRCALPHA
-            )
+            elif primary_tile not in [
+                TileType.INTERIOR_BACKGROUND,
+                TileType.BACKGROUND,
+            ]:
+                # Handle other foreground tiles
+                screen_pos = camera.world_to_screen(
+                    x * self.tile_size, y * self.tile_size
+                )
+                if pos in self.tile_cache:
+                    surface.blit(self.tile_cache[pos], screen_pos)
+                    continue
 
-            if tile_type == TileType.DOOR:
-                self._render_door_tile(tile_surface)
-            elif tile_type == TileType.WALL:
-                self._render_wall_tile(tile_surface, x, y)
-            elif tile_type == TileType.CORNER:
-                self._render_corner_tile(tile_surface, x, y)
-            elif tile_type == TileType.INTERIOR_BACKGROUND:
-                self._render_background_tile(tile_surface, x, y)
+                # Create a new surface for this tile
+                tile_surface = pygame.Surface(
+                    (self.tile_size, self.tile_size), pygame.SRCALPHA
+                )
 
-            # Store in cache
-            self.tile_cache[pos] = tile_surface
-            # Render to main surface
-            surface.blit(tile_surface, screen_pos)
+                if primary_tile == TileType.WALL:
+                    self._render_wall_tile(tile_surface, x, y)
+                elif primary_tile == TileType.CORNER:
+                    self._render_corner_tile(tile_surface, x, y)
+
+                # Store in cache and render
+                self.tile_cache[pos] = tile_surface
+                surface.blit(tile_surface, screen_pos)
 
     def _find_group_at_position(
         self, x: int, y: int, tile_type: TileType
     ) -> Optional[tuple]:
         """Find if position is part of a tile group"""
+        # Add debug output
+        print(f"Checking for group at {x}, {y} with type {tile_type}")
+
         for group_name, group in self.grid.tile_groups.items():
+            # Debug output for each group being checked
+            print(f"Checking group: {group_name}, type: {group['tile_type']}")
+
             # Skip single-tile groups
             if group["width"] == 1 and group["height"] == 1:
                 continue
@@ -288,14 +339,15 @@ class GridRenderer:
                     check_pos = (x + dx, y + dy)
                     if (
                         check_pos not in self.grid.cells
-                        or self.grid.cells[check_pos] != tile_type
-                    ):
+                        or self.grid.get_tile(*check_pos) != tile_type
+                    ):  # Use get_tile instead of direct access
                         is_group = False
                         break
                 if not is_group:
                     break
 
             if is_group:
+                print(f"Found group: {group_name} at {x}, {y}")
                 return (group_name, x, y)
         return None
 
@@ -303,15 +355,25 @@ class GridRenderer:
         self, surface: pygame.Surface, group_name: str, x: int, y: int, camera
     ):
         """Render a complete tile group"""
-        group = self.grid.tile_groups[group_name]
+        # Skip if already rendered this frame
+        if (x, y) in self.rendered_groups:
+            return
+
         screen_pos = camera.world_to_screen(x * self.tile_size, y * self.tile_size)
+        group = self.grid.tile_groups[group_name]
 
-        # Get group texture
-        group_data = self.asset_manager.get_tilemap_group(group_name)
-        if group_data and "surface" in group_data:
-            surface.blit(group_data["surface"], screen_pos)
+        # Get group texture from cache or create it
+        cache_key = (group_name, "texture")
+        if cache_key in self.tile_cache:
+            surface.blit(self.tile_cache[cache_key], screen_pos)
+        else:
+            # Get group texture
+            group_data = self.asset_manager.get_tilemap_group(group_name)
+            if group_data and "surface" in group_data:
+                self.tile_cache[cache_key] = group_data["surface"]
+                surface.blit(group_data["surface"], screen_pos)
 
-        # Mark all tiles in group as rendered
+        # Mark all tiles in group as rendered for this frame
         for dx in range(group["width"]):
             for dy in range(group["height"]):
                 self.rendered_groups.add((x + dx, y + dy))

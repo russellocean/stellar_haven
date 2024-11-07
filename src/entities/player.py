@@ -70,7 +70,7 @@ class Player(Entity):
         )
 
         if (grid_x, grid_y) in room_manager.grid.cells:
-            tile = room_manager.grid.cells[(grid_x, grid_y)]
+            tile = room_manager.grid.get_tile(grid_x, grid_y)
             if tile.is_walkable and not tile.blocks_movement:
                 self.on_ground = False
                 self.velocity.y = 1
@@ -131,7 +131,7 @@ class Player(Entity):
         )
 
         if (grid_x, grid_y) in room_manager.grid.cells:
-            tile = room_manager.grid.cells[(grid_x, grid_y)]
+            tile = room_manager.grid.get_tile(grid_x, grid_y)
 
             # Handle floor collision
             if self.velocity.y >= 0:

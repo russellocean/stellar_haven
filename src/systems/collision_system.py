@@ -29,7 +29,7 @@ class CollisionSystem:
         # Check each grid cell the rect overlaps
         for x in range(grid_left, grid_right + 1):
             for y in range(grid_top, grid_bottom + 1):
-                tile = self.grid.cells.get((x, y), TileType.EMPTY)
+                tile = self.grid.get_tile(x, y)
                 if tile.blocks_movement:
                     return False
         return True
@@ -55,7 +55,8 @@ class CollisionSystem:
         for x in range(grid_left, grid_right + 1):
             for y in range(grid_top, grid_bottom + 1):
                 if (x, y) in self.grid.cells:
-                    colliding_tiles.append((x, y, self.grid.cells[(x, y)]))
+                    tile = self.grid.get_tile(x, y)
+                    colliding_tiles.append((x, y, tile))
         return colliding_tiles
 
     def get_valid_floor(self, x: int, y: int) -> int:
@@ -64,7 +65,7 @@ class CollisionSystem:
 
         while grid_y < (y + 1000) // self.grid.cell_size:  # Reasonable search limit
             if (grid_x, grid_y) in self.grid.cells:
-                tile = self.grid.cells[(grid_x, grid_y)]
+                tile = self.grid.get_tile(grid_x, grid_y)
                 if tile.blocks_movement:
                     return grid_y * self.grid.cell_size
             grid_y += 1

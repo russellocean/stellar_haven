@@ -25,6 +25,16 @@ class PrologueScene(Scene):
         # Initialize dialog system
         self.dialog_box = DialogBox(game.screen)
 
+        # Transition properties
+        self.fade_alpha = 255  # Start fully black
+        self.fade_surface = pygame.Surface(game.screen.get_size())
+        self.fade_surface.fill((0, 0, 0))
+        self.is_fading = True
+        self.fade_speed = 5
+        self.fade_in = True
+        self.transitioning = False
+        self.next_state = None
+
         # Load background images
         self.backgrounds = {
             PrologueState.BROADCAST: self.asset_manager.get_image(
@@ -135,18 +145,46 @@ class PrologueScene(Scene):
             return
 
         state, character, text = self.dialogs[self.dialog_index]
-        self.current_state = state
-        self.dialog_box.show_dialog(character, text)
+
+        # If state changed, trigger transition
+        if state != self.current_state:
+            self.transitioning = True
+            self.fade_in = False  # Start fading out
+            self.next_state = state
+            self.next_dialog = (character, text)
+        else:
+            # If same state, just show the dialog
+            self.dialog_box.show_dialog(character, text)
+
+    def update(self):
+        """Update scene state"""
+        # Handle fade transitions
+        if self.is_fading or self.transitioning:
+            if self.fade_in:
+                self.fade_alpha = max(0, self.fade_alpha - self.fade_speed)
+                if self.fade_alpha <= 0:
+                    self.is_fading = False
+                    self.transitioning = False
+            else:
+                self.fade_alpha = min(255, self.fade_alpha + self.fade_speed)
+                if self.fade_alpha >= 255 and self.transitioning:
+                    # Complete state transition
+                    self.current_state = self.next_state
+                    self.fade_in = True
+                    character, text = self.next_dialog
+                    self.dialog_box.show_dialog(character, text)
 
     def handle_event(self, event):
         """Handle input events"""
         if super().handle_event(event):
             return True
 
-        if event.type == pygame.MOUSEBUTTONDOWN or event.type == pygame.KEYDOWN:
-            self.dialog_index += 1
-            self._show_next_dialog()
-            return True
+        # Only allow progression if not transitioning
+        if not self.transitioning and not self.is_fading:
+            if event.type == pygame.MOUSEBUTTONDOWN or event.type == pygame.KEYDOWN:
+                self.dialog_index += 1
+                self._show_next_dialog()
+                return True
 
         return False
 
@@ -158,3 +196,8 @@ class PrologueScene(Scene):
 
         # Draw dialog box
         self.dialog_box.draw(screen)
+
+        # Draw fade overlay
+        if self.fade_alpha > 0:
+            self.fade_surface.set_alpha(self.fade_alpha)
+            screen.blit(self.fade_surface, (0, 0))

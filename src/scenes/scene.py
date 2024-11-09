@@ -15,8 +15,16 @@ class Scene:
         self.debug_layer = []  # Debug visuals
 
     def handle_event(self, event):
+        """Handle input events"""
+        # Handle dialog system events first if dialog system exists
+        if hasattr(self, "dialog_system") and self.dialog_system.is_active():
+            if self.dialog_system.handle_event(event):
+                return True
+
+        # Handle UI events
         if self.ui_system.handle_event(event):
             return True
+
         return False
 
     def update(self):

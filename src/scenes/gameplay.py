@@ -7,7 +7,7 @@ from systems.asset_manager import AssetManager
 from systems.building_system import BuildingSystem
 from systems.camera import Camera
 from systems.debug_system import DebugSystem
-from systems.dialog_system import DialogEntry, DialogSystem
+from systems.dialog_system import DialogEntry, DialogState, DialogSystem
 from systems.game_state_manager import GameState, GameStateManager
 from systems.grid_renderer import GridRenderer
 from systems.resource_manager import ResourceManager
@@ -238,4 +238,11 @@ class GameplayScene(Scene):
                 text="Please note, our current materials are limited. Choose wisely—or don't. I'm merely an AI with a vested interest in not floating aimlessly through space.",
             ),
         ]
-        self.dialog_system.start_dialog_sequence(tutorial_dialog)
+
+        def on_tutorial_complete():
+            """Callback when tutorial dialog is complete"""
+            self.dialog_system.state = DialogState.INACTIVE
+
+        self.dialog_system.start_dialog_sequence(
+            tutorial_dialog, on_complete=on_tutorial_complete
+        )

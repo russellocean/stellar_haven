@@ -3,6 +3,7 @@ import pygame
 from scenes.gameplay import GameplayScene
 from scenes.menu_scene import MenuScene
 from scenes.pause_scene import PauseScene
+from scenes.prologue_scene import PrologueScene
 from systems.scene_manager import SceneManager, SceneType
 
 
@@ -13,8 +14,9 @@ class Game:
         self.scene_manager = SceneManager()
 
         # Initialize scenes
-        self.scene_manager.add_scene(SceneType.GAMEPLAY, GameplayScene(self))
         self.scene_manager.add_scene(SceneType.MAIN_MENU, MenuScene(self))
+        self.scene_manager.add_scene(SceneType.PROLOGUE, PrologueScene(self))
+        self.scene_manager.add_scene(SceneType.GAMEPLAY, GameplayScene(self))
         self.scene_manager.add_scene(SceneType.PAUSE, PauseScene(self))
 
         # Start with main menu

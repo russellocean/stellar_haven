@@ -10,6 +10,7 @@ from systems.debug_system import DebugSystem
 
 class SceneType(Enum):
     MAIN_MENU = auto()
+    PROLOGUE = auto()
     GAMEPLAY = auto()
     PAUSE = auto()
     OPTIONS = auto()

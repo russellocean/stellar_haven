@@ -32,7 +32,11 @@ class Game:
     def _on_game_state_changed(self, event_data):
         """Handle game state changes"""
         new_state = event_data.data.get("new_state")
-        if new_state:
+        if new_state == "RESET":
+            # Recreate the gameplay and prologue scenes
+            self.scene_manager.add_scene(SceneType.PROLOGUE, PrologueScene(self))
+            self.scene_manager.add_scene(SceneType.GAMEPLAY, GameplayScene(self))
+        elif new_state:
             try:
                 # Convert string to SceneType enum
                 scene_type = SceneType[new_state]

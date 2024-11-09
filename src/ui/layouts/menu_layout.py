@@ -1,7 +1,7 @@
 import pygame
 
 from systems.asset_manager import AssetManager
-from systems.event_system import EventSystem
+from systems.event_system import EventSystem, GameEvent
 from systems.scene_manager import SceneManager, SceneType
 from ui.components.button import Button
 from ui.layouts.base_layout import BaseLayout
@@ -102,7 +102,9 @@ class MenuLayout(BaseLayout):
 
     def _on_start_game(self):
         """Handle start game button click"""
-        # Change to prologue scene instead of gameplay
+        # Emit event to reset game state before starting new game
+        self.event_system.emit(GameEvent.GAME_STATE_CHANGED, new_state="RESET")
+        # Change to prologue scene
         self.scene_manager.set_scene(SceneType.PROLOGUE)
 
     def _on_options(self):

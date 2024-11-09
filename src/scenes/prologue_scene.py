@@ -6,6 +6,7 @@ from scenes.scene import Scene
 from systems.asset_manager import AssetManager
 from systems.dialog_system import DialogEntry, DialogSystem
 from systems.event_system import EventSystem, GameEvent
+from ui.components.button import Button
 
 
 class PrologueState(Enum):
@@ -65,6 +66,21 @@ class PrologueScene(Scene):
         # Start the dialog sequence
         self.dialog_system.start_dialog_sequence(
             self.dialog_sequence, on_complete=self._on_prologue_complete
+        )
+
+        # Add skip button
+        button_width = 100
+        button_height = 40
+        self.skip_button = Button(
+            rect=pygame.Rect(
+                game.screen.get_width() - button_width - 20,  # 20px from right edge
+                20,  # 20px from top
+                button_width,
+                button_height,
+            ),
+            text="Skip",
+            action=self._skip_prologue,
+            tooltip="Skip the prologue",
         )
 
     def _init_dialog_sequence(self):
@@ -149,6 +165,11 @@ class PrologueScene(Scene):
                     self.fade_in = False
                     self.next_state = new_state
 
+    def _skip_prologue(self):
+        """Skip to the end of the prologue"""
+        self.event_system.emit(GameEvent.PROLOGUE_COMPLETED)
+        self.event_system.emit(GameEvent.GAME_STATE_CHANGED, new_state="GAMEPLAY")
+
     def update(self):
         """Update scene state"""
         super().update()
@@ -171,6 +192,10 @@ class PrologueScene(Scene):
 
     def handle_event(self, event):
         """Handle input events"""
+        # Handle skip button first
+        if self.skip_button.handle_event(event):
+            return True
+
         if super().handle_event(event):
             return True
         return self.dialog_system.handle_event(event)
@@ -183,6 +208,9 @@ class PrologueScene(Scene):
 
         # Draw dialog
         self.dialog_system.draw(screen)
+
+        # Draw skip button
+        self.skip_button.draw(screen)
 
         # Draw fade overlay
         if self.fade_alpha > 0:

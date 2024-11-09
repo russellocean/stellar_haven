@@ -31,6 +31,11 @@ class GameEvent(Enum):
     RESOURCE_WARNING = auto()
     RESOURCE_LOW = auto()
 
+    # Dialog Events
+    DIALOG_STARTED = auto()
+    DIALOG_ENDED = auto()
+    PROLOGUE_COMPLETED = auto()
+
 
 @dataclass
 class EventData:

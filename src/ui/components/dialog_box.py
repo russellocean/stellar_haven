@@ -46,15 +46,55 @@ class DialogBox:
             ),
         }
 
+        # Text animation properties
+        self.text_speed = 2  # Characters per frame
+        self.text_progress = 0  # How many characters to show
+        self.is_animating = False
+        self.full_text = ""
+        self.display_text = ""
+        self.last_update = pygame.time.get_ticks()
+
     def show_dialog(self, character: str, text: str):
         """Show a dialog with the specified character and text"""
-        self.current_text = text
+        self.full_text = text
+        self.text_progress = 0
+        self.display_text = ""
         self.current_portrait = self.portraits.get(character.upper())
         self.is_visible = True
+        self.is_animating = True
 
     def hide_dialog(self):
         """Hide the dialog box"""
         self.is_visible = False
+        self.is_animating = False
+
+    def update(self):
+        """Update text animation"""
+        if not self.is_animating:
+            return
+
+        current_time = pygame.time.get_ticks()
+        elapsed = current_time - self.last_update
+
+        if elapsed > 20:  # Control text speed (lower = faster)
+            # Update text progress
+            self.text_progress += self.text_speed
+            if self.text_progress >= len(self.full_text):
+                self.text_progress = len(self.full_text)
+                self.is_animating = False
+
+            self.display_text = self.full_text[: self.text_progress]
+            self.last_update = current_time
+
+    def skip_animation(self):
+        """Skip to the end of the current text animation"""
+        self.text_progress = len(self.full_text)
+        self.display_text = self.full_text
+        self.is_animating = False
+
+    def is_text_complete(self):
+        """Check if the text animation is complete"""
+        return not self.is_animating
 
     def draw(self, surface: pygame.Surface):
         """Draw the dialog box if visible"""
@@ -81,8 +121,8 @@ class DialogBox:
         text_x = self.portrait_rect.right + 20
         text_y = self.box_rect.top + 25
 
-        # Word wrap the text
-        words = self.current_text.split()
+        # Word wrap the animated text
+        words = self.display_text.split()
         lines = []
         current_line = []
 
@@ -102,3 +142,11 @@ class DialogBox:
         for i, line in enumerate(lines):
             text_surface = self.font.render(line, True, self.text_color)
             surface.blit(text_surface, (text_x, text_y + i * self.line_spacing))
+
+        # Draw continue indicator when text is complete
+        if not self.is_animating:
+            continue_text = self.font.render("Continue", True, self.text_color)
+            continue_rect = continue_text.get_rect(
+                bottom=self.box_rect.bottom - 10, right=self.box_rect.right - 10
+            )
+            surface.blit(continue_text, continue_rect)

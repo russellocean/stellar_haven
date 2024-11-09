@@ -174,6 +174,9 @@ class PrologueScene(Scene):
                     character, text = self.next_dialog
                     self.dialog_box.show_dialog(character, text)
 
+        # Update dialog box text animation
+        self.dialog_box.update()
+
     def handle_event(self, event):
         """Handle input events"""
         if super().handle_event(event):
@@ -182,8 +185,13 @@ class PrologueScene(Scene):
         # Only allow progression if not transitioning
         if not self.transitioning and not self.is_fading:
             if event.type == pygame.MOUSEBUTTONDOWN or event.type == pygame.KEYDOWN:
-                self.dialog_index += 1
-                self._show_next_dialog()
+                if self.dialog_box.is_animating:
+                    # Skip to end of current text if still animating
+                    self.dialog_box.skip_animation()
+                else:
+                    # Move to next dialog if text is complete
+                    self.dialog_index += 1
+                    self._show_next_dialog()
                 return True
 
         return False

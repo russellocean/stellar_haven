@@ -192,9 +192,8 @@ class PrologueScene(Scene):
         if self.skip_button.handle_event(event):
             return True
 
-        if super().handle_event(event):
-            return True
-        return self.dialog_system.handle_event(event)
+        # Let Scene base class handle dialog and UI events
+        return super().handle_event(event)
 
     def draw(self, screen):
         """Draw the current scene"""

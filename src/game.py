@@ -15,34 +15,37 @@ class Game:
         self.scene_manager = SceneManager()
         self.event_system = EventSystem()
 
-        # Subscribe to game state changes
+        # Subscribe to game state changes and prologue completion
         self.event_system.subscribe(
             GameEvent.GAME_STATE_CHANGED, self._on_game_state_changed
         )
+        self.event_system.subscribe(
+            GameEvent.PROLOGUE_COMPLETED, self._on_prologue_completed
+        )
 
-        # Initialize scenes
+        # Initialize only the necessary starting scenes
         self.scene_manager.add_scene(SceneType.MAIN_MENU, MenuScene(self))
         self.scene_manager.add_scene(SceneType.PROLOGUE, PrologueScene(self))
-        self.scene_manager.add_scene(SceneType.GAMEPLAY, GameplayScene(self))
-        self.scene_manager.add_scene(SceneType.PAUSE, PauseScene(self))
 
         # Start with main menu
         self.scene_manager.set_scene(SceneType.MAIN_MENU)
+
+    def _on_prologue_completed(self, event_data):
+        """Handle prologue completion by creating and switching to gameplay scene"""
+        # Create gameplay scene only when needed
+        self.scene_manager.add_scene(SceneType.GAMEPLAY, GameplayScene(self))
+        self.scene_manager.set_scene(SceneType.GAMEPLAY)
 
     def _on_game_state_changed(self, event_data):
         """Handle game state changes"""
         new_state = event_data.data.get("new_state")
         if new_state == "RESET":
-            # Recreate the gameplay and prologue scenes
+            # Clear existing scenes and recreate necessary ones
+            self.scene_manager.clear_scene(SceneType.GAMEPLAY)
+            self.scene_manager.clear_scene(SceneType.PROLOGUE)
+            # Recreate prologue scene
             self.scene_manager.add_scene(SceneType.PROLOGUE, PrologueScene(self))
-            self.scene_manager.add_scene(SceneType.GAMEPLAY, GameplayScene(self))
-        elif new_state:
-            try:
-                # Convert string to SceneType enum
-                scene_type = SceneType[new_state]
-                self.scene_manager.set_scene(scene_type)
-            except KeyError:
-                print(f"Warning: Invalid scene type {new_state}")
+            self.scene_manager.set_scene(SceneType.PROLOGUE)
 
     def handle_events(self):
         for event in pygame.event.get():

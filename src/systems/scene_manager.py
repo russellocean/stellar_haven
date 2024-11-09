@@ -102,3 +102,10 @@ class SceneManager:
         """Draw current scene"""
         if self.current_scene:
             self.current_scene.draw(screen)
+
+    def clear_scene(self, scene_type: SceneType):
+        """Remove a scene from the manager"""
+        if scene_type in self.scenes:
+            del self.scenes[scene_type]
+            if self.current_scene == self.scenes.get(scene_type):
+                self.current_scene = None

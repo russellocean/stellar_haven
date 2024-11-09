@@ -7,6 +7,7 @@ from systems.asset_manager import AssetManager
 from systems.building_system import BuildingSystem
 from systems.camera import Camera
 from systems.debug_system import DebugSystem
+from systems.dialog_system import DialogEntry, DialogSystem
 from systems.game_state_manager import GameState, GameStateManager
 from systems.grid_renderer import GridRenderer
 from systems.resource_manager import ResourceManager
@@ -24,6 +25,11 @@ class GameplayScene(Scene):
         self._init_ui()
         self._setup_debug()
         self._setup_layers()
+
+        # Initialize dialog system for tutorial
+        self.dialog_system = DialogSystem()
+        self.dialog_system.initialize(game.screen)
+        self._start_tutorial_sequence()
 
     def _init_managers(self):
         """Initialize all manager systems"""
@@ -183,7 +189,53 @@ class GameplayScene(Scene):
 
         super().update()
         self.debug_system.clock.tick()
+        self.dialog_system.update()
 
     def draw(self, screen):
         # Use the parent Scene's draw method which will handle all layers
         super().draw(screen)
+        # Draw dialog on top of everything
+        self.dialog_system.draw(screen)
+
+    def _start_tutorial_sequence(self):
+        """Start the tutorial dialog sequence (Scenes 5-9)"""
+        tutorial_dialog = [
+            # Scene 5: Boarding Your Ship
+            DialogEntry(
+                character="MAX",
+                text="There she is—the 'Starbreeze'! Isn't she a beauty? Sleek, efficient, and... compact. Perfect for someone who values simplicity. And hey, less space means fewer places for things to go wrong, right?",
+            ),
+            DialogEntry(
+                character="MAX",
+                text="Now, I know what you're thinking: 'Didn't he promise me a state-of-the-art vessel?' Think of this as... a hands-on opportunity. After all, what's a journey without a few challenges? You'll be fine! Probably.",
+            ),
+            # Scene 6: Stepping Inside
+            DialogEntry(
+                character="EVA",
+                text="Greetings, Overseer. Welcome aboard the 'Starbreeze'—NovaForge's finest example of minimalism in space travel.",
+            ),
+            DialogEntry(
+                character="EVA",
+                text="Current status report: Battery reserves at 20% and depleting. Oxygen levels are sufficient for approximately... 2 hours and 47 minutes. Recommend immediate attention to life support systems—unless, of course, you're practicing for a record in breath-holding.",
+            ),
+            # Scene 7: Assessing the Situation
+            DialogEntry(
+                character="EVA",
+                text="You'll notice the battery unit is flashing red—a universally recognized sign of 'bad.' Perhaps you might consider recharging it? There's a hand-crank generator stored under your cot. Manual labor builds character, or so I've been told.",
+            ),
+            # Scene 8: Max's Message
+            DialogEntry(
+                character="MAX",
+                text="Hey there, just wanted to check in! How's the 'Starbreeze' treating you? I imagine you're settling in nicely. Now, I won't keep you long—I know you're eager to get started. Just remember: the journey of a thousand light-years begins with a single step... or in your case, a single room. Cheers!",
+            ),
+            # Scene 9: The First Build
+            DialogEntry(
+                character="EVA",
+                text="Overseer, while the 'Starbreeze' offers the charm of compact living, expanding the ship might increase our survival prospects. I recommend constructing a generator room to stabilize power or an oxygen garden for sustainable air supply.",
+            ),
+            DialogEntry(
+                character="EVA",
+                text="Please note, our current materials are limited. Choose wisely—or don't. I'm merely an AI with a vested interest in not floating aimlessly through space.",
+            ),
+        ]
+        self.dialog_system.start_dialog_sequence(tutorial_dialog)

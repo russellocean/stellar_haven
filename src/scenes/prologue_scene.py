@@ -84,8 +84,9 @@ class PrologueScene(Scene):
         )
 
     def _init_dialog_sequence(self):
-        """Initialize the dialog sequence for the prologue"""
+        """Initialize the dialog sequence for the prologue (Scenes 1-4)"""
         return [
+            # Scene 1: The Broadcast
             DialogEntry(
                 character="MAX",
                 text="Ladies and gentlemen, visionaries and adventurers, welcome! I'm Maxwell Remington, CEO of NovaForge Industries—the fine folks turning the impossible into yesterday's news.",
@@ -98,6 +99,7 @@ class PrologueScene(Scene):
                 character="MAX",
                 text="Yes, you there! Don't look so surprised. Pack your bags, say your goodbyes, and prepare for the adventure of several lifetimes. Trust me; it's gonna be a blast!",
             ),
+            # Scene 2: The Briefing
             DialogEntry(
                 character="EVA",
                 text="Greetings, Overseer. I am E.V.A., your Enhanced Virtual Associate. I'll be assisting you on this... 'adventure' mandated by Mr. Remington.",
@@ -110,6 +112,7 @@ class PrologueScene(Scene):
                 character="EVA",
                 text="But don't worry; I'm programmed to increase your odds by approximately 2.7%.",
             ),
+            # Scene 3: Departure
             DialogEntry(
                 character="MAX",
                 text="Ah, there's my favorite Overseer! Ready to make history—or at least a decent footnote? Remember, the universe is your oyster, and we've supplied you with the knife. Well, maybe a spoon. Budget cuts, you understand.",
@@ -118,6 +121,7 @@ class PrologueScene(Scene):
                 character="MAX",
                 text="Anyway, safe travels! And if you stumble upon any priceless artifacts or groundbreaking discoveries, you know who to call!",
             ),
+            # Scene 4: Journey Through Space
             DialogEntry(
                 character="EVA",
                 text="Calculating fastest route to designated coordinates.",
@@ -129,14 +133,6 @@ class PrologueScene(Scene):
             DialogEntry(
                 character="EVA",
                 text="Entering the Haven Sector. Scans indicate minimal activity—a perfect place for a fresh start or an unmarked grave.",
-            ),
-            DialogEntry(
-                character="MAX",
-                text="There she is—the 'Starbreeze'! Isn't she a beauty? Sleek, efficient, and... compact. Perfect for someone who values simplicity. And hey, less space means fewer places for things to go wrong, right?",
-            ),
-            DialogEntry(
-                character="MAX",
-                text="Now, I know what you're thinking: 'Didn't he promise me a state-of-the-art vessel?' Think of this as... a hands-on opportunity. After all, what's a journey without a few challenges? You'll be fine! Probably.",
             ),
         ]
 
@@ -151,11 +147,11 @@ class PrologueScene(Scene):
         if dialog:
             # Determine which background to show based on dialog progress
             if self.dialog_system.dialog_queue:
-                if len(self.dialog_system.dialog_queue) > 10:
+                if len(self.dialog_system.dialog_queue) > 8:
                     new_state = PrologueState.BROADCAST
-                elif len(self.dialog_system.dialog_queue) > 7:
+                elif len(self.dialog_system.dialog_queue) > 5:
                     new_state = PrologueState.BRIEFING
-                elif len(self.dialog_system.dialog_queue) > 4:
+                elif len(self.dialog_system.dialog_queue) > 2:
                     new_state = PrologueState.DEPARTURE
                 else:
                     new_state = PrologueState.JOURNEY

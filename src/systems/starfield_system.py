@@ -191,7 +191,10 @@ class StarfieldSystem:
         self.last_camera_x = camera_x
         self.last_camera_y = camera_y
 
-        # More efficient shooting star timing
+        # Update shooting stars
+        # self.update_shooting_stars()
+
+    def update_shooting_stars(self):
         current_time = pygame.time.get_ticks()
         dt = (current_time - self.last_update_time) / 1000.0
         self.last_update_time = current_time
@@ -204,17 +207,7 @@ class StarfieldSystem:
             self.shooting_star_timer <= 0
             and len(self.shooting_stars) < self.max_shooting_stars
         ):
-            # Reduced chance for bursts
-            if random.random() < 0.05:  # 5% chance
-                num_stars = min(
-                    random.randint(2, 3),
-                    self.max_shooting_stars - len(self.shooting_stars),
-                )
-                for _ in range(num_stars):
-                    self.shooting_stars.append(ShootingStar(*self.screen_size))
-            else:
-                self.shooting_stars.append(ShootingStar(*self.screen_size))
-
+            self.spawn_shooting_stars()
             # Reset timer with slightly longer delay
             self.shooting_star_timer = random.uniform(1.5, 4.0)
 
@@ -222,6 +215,18 @@ class StarfieldSystem:
         self.shooting_stars = [star for star in self.shooting_stars if star.alive]
         for star in self.shooting_stars:
             star.update()
+
+    def spawn_shooting_stars(self):
+        # Reduced chance for bursts
+        if random.random() < 0.05:  # 5% chance
+            num_stars = min(
+                random.randint(2, 3),
+                self.max_shooting_stars - len(self.shooting_stars),
+            )
+            for _ in range(num_stars):
+                self.shooting_stars.append(ShootingStar(*self.screen_size))
+        else:
+            self.shooting_stars.append(ShootingStar(*self.screen_size))
 
     def draw(self, screen):
         # Draw regular background first

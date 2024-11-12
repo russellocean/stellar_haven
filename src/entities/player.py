@@ -79,6 +79,7 @@ class Player(Entity):
         if not room_manager or not input_manager:
             return
 
+        self._check_ground_state(room_manager)
         self._handle_movement(input_manager)
         self._handle_platform_drop(input_manager, room_manager)
         self._apply_physics()
@@ -107,16 +108,35 @@ class Player(Entity):
         if not (input_manager.is_action_pressed("move_down") and self.on_ground):
             return
 
-        grid_x, grid_y = room_manager.grid.world_to_grid(
-            self.rect.centerx, self.rect.bottom
-        )
+        # Check multiple points along the bottom of the player's collision box
+        left_x = self.rect.left
+        right_x = self.rect.right - 1
+        bottom_y = self.rect.bottom
 
-        if (grid_x, grid_y) in room_manager.grid.cells:
-            tile = room_manager.grid.get_tile(grid_x, grid_y)
-            if tile.is_walkable and not tile.blocks_movement:
-                self.on_ground = False
-                self.velocity.y = 1
-                self.rect.y += 1
+        # Convert all check points to grid coordinates
+        left_grid_x, grid_y = room_manager.grid.world_to_grid(left_x, bottom_y)
+        right_grid_x, _ = room_manager.grid.world_to_grid(right_x, bottom_y)
+
+        # Check if ALL points are safe to drop through
+        can_drop = True
+        for check_x in range(left_grid_x, right_grid_x + 1):
+            if (check_x, grid_y) in room_manager.grid.cells:
+                tile = room_manager.grid.get_tile(check_x, grid_y)
+                # Only allow dropping if the tile is a platform
+                if tile != TileType.PLATFORM:
+                    can_drop = False
+                    break
+
+                # Check the tile below to make sure we're not dropping into a wall
+                below_tile = room_manager.grid.get_tile(check_x, grid_y + 1)
+                if below_tile and below_tile.blocks_movement:
+                    can_drop = False
+                    break
+
+        if can_drop:
+            self.on_ground = False
+            self.velocity.y = 1  # Small initial downward velocity
+            self.rect.y += 1  # Small position adjustment to clear the platform
 
     def _apply_physics(self):
         """Apply gravity and other physics"""
@@ -285,3 +305,30 @@ class Player(Entity):
         pygame.draw.rect(debug_surface, (255, 0, 0), debug_rect, 1)
 
         screen.blit(debug_surface, (0, 0))
+
+    def _check_ground_state(self, room_manager):
+        """Check if player is actually on ground"""
+        if not self.on_ground:
+            return
+
+        # Check multiple points along the bottom of the player's collision box
+        left_x = self.rect.left
+        right_x = self.rect.right - 1
+        bottom_y = self.rect.bottom + 1  # Check one pixel below
+
+        # Convert all check points to grid coordinates
+        left_grid_x, grid_y = room_manager.grid.world_to_grid(left_x, bottom_y)
+        right_grid_x, _ = room_manager.grid.world_to_grid(right_x, bottom_y)
+
+        # Check if ANY point has valid ground beneath
+        has_ground = False
+        for check_x in range(left_grid_x, right_grid_x + 1):
+            if (check_x, grid_y) in room_manager.grid.cells:
+                tile = room_manager.grid.get_tile(check_x, grid_y)
+                if tile.blocks_movement or tile == TileType.PLATFORM:
+                    has_ground = True
+                    break
+
+        # Only fall if there's no ground at all beneath us
+        if not has_ground:
+            self.on_ground = False

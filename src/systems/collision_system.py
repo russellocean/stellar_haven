@@ -27,8 +27,30 @@ class CollisionSystem:
             TileType.EXTERIOR: (192, 192, 192, 100),
         }
 
-    def is_position_valid(self, rect: pygame.Rect) -> bool:
-        """Check if a position is valid (not blocked by walls or other obstacles)"""
+    def is_position_valid(
+        self, rect: pygame.Rect, velocity: pygame.Vector2 = None
+    ) -> bool:
+        """
+        Check if a position is valid, accounting for high velocities
+        to prevent tunneling through tiles
+        """
+        if velocity is None:
+            # Original single-point check for static collisions
+            return self._check_rect_collision(rect)
+
+        # For high-speed movement, check multiple points along the path
+        num_steps = max(1, int(abs(velocity.y) / self.grid.cell_size))
+        step_size = velocity.y / num_steps if num_steps > 0 else 0
+
+        test_rect = rect.copy()
+        for _ in range(num_steps):
+            test_rect.y += step_size
+            if not self._check_rect_collision(test_rect):
+                return False
+        return True
+
+    def _check_rect_collision(self, rect: pygame.Rect) -> bool:
+        """Helper method for basic rectangle collision check"""
         grid_left, grid_top = self.grid.world_to_grid(rect.left, rect.top)
         grid_right, grid_bottom = self.grid.world_to_grid(
             rect.right - 1, rect.bottom - 1
@@ -38,7 +60,7 @@ class CollisionSystem:
         for x in range(grid_left, grid_right + 1):
             for y in range(grid_top, grid_bottom + 1):
                 tile = self.grid.get_tile(x, y)
-                if tile.blocks_movement:
+                if tile and tile.blocks_movement:
                     return False
         return True
 

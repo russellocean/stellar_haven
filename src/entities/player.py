@@ -9,7 +9,7 @@ from systems.event_system import EventSystem, GameEvent
 
 class Player(Entity):
     # Physics constants
-    GRAVITY = 0.5
+    GRAVITY = 0.3
     JUMP_POWER = -15
     DEFAULT_SPEED = 5
 
@@ -182,9 +182,26 @@ class Player(Entity):
         if not room_manager.collision_system.is_position_valid(self.rect):
             self.rect.topleft = previous_pos
 
-        # Move vertically
-        self.rect.y += self.velocity.y
-        self._handle_vertical_collision(room_manager, input_manager, previous_pos)
+        # Move vertically with continuous collision detection
+        if not room_manager.collision_system.is_position_valid(
+            self.rect, self.velocity
+        ):
+            # Find the exact point of collision
+            test_rect = self.rect.copy()
+            step = 1 if self.velocity.y > 0 else -1
+
+            while abs(test_rect.y - previous_pos[1]) < abs(self.velocity.y):
+                test_rect.y += step
+                if not room_manager.collision_system.is_position_valid(test_rect):
+                    test_rect.y -= step
+                    break
+
+            self.rect.y = test_rect.y
+            self.velocity.y = 0
+            if step > 0:  # Moving down
+                self.on_ground = True
+        else:
+            self.rect.y += self.velocity.y
 
     def _handle_vertical_collision(self, room_manager, input_manager, previous_pos):
         """Handle vertical movement collisions"""

@@ -91,6 +91,8 @@ class GameplayScene(Scene):
         player_x, player_y = self.room_manager.get_starting_position()
         self.player = Player(player_x, player_y)
         self.character_sprites = pygame.sprite.Group(self.player)
+        # Set camera reference for player debug visualization
+        self.player.camera = self.camera
 
     def _init_ui(self):
         # Initialize GameHUD with resource manager
@@ -143,6 +145,10 @@ class GameplayScene(Scene):
         # Setup debug visualization
         self.room_manager.collision_system.set_camera(self.camera)
         self.debug_layer.append(self.room_manager.collision_system)
+
+        # Add player to both game and debug layers
+        # self.game_layer.append(self.player)
+        self.debug_layer.append(self.player)
 
     def handle_event(self, event):
         # Scene's UI system handles events first

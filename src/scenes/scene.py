@@ -41,7 +41,9 @@ class Scene:
             for element in self.game_layer:
                 if hasattr(element, "sprites"):  # If it's a sprite group
                     for s in element.sprites():
-                        screen_rect = self.camera.apply(s.rect)
+                        # Use image_rect if available, otherwise fall back to regular rect
+                        source_rect = getattr(s, "image_rect", s.rect)
+                        screen_rect = self.camera.apply(source_rect)
                         screen.blit(s.image, screen_rect)
                 elif hasattr(element, "render"):  # For tile-based renderers
                     element.render(screen, self.camera)

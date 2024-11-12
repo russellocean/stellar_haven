@@ -50,6 +50,18 @@ class Player(Entity):
         }
         self.current_animation = "idle"
 
+        # Collision rect setup
+        self.rect.width = 20  # Collision box size
+        self.rect.height = 30
+
+        # Sprite offset from collision rect
+        self.sprite_offset_x = -7  # Adjust these values to center the sprite
+        self.sprite_offset_y = -2  # Negative values move the sprite up/left
+
+        # Center the collision rect on the sprite
+        self.rect.centerx = x + self.image.get_width() // 2
+        self.rect.bottom = y + self.image.get_height()
+
         self._setup_debug()
 
     def _setup_debug(self):
@@ -240,7 +252,36 @@ class Player(Entity):
         elif self.velocity.x < 0:
             self.facing_right = False
 
+        # Update sprite image
         current_frame = self.animations[self.current_animation][self.animation_frame]
         if not self.facing_right:
             current_frame = pygame.transform.flip(current_frame, True, False)
         self.image = current_frame
+
+        # Position the sprite relative to the collision rect
+        self.image_rect = self.image.get_rect()
+        self.image_rect.centerx = self.rect.centerx + self.sprite_offset_x
+        self.image_rect.bottom = self.rect.bottom + self.sprite_offset_y
+
+    def draw_debug(self, screen):
+        """Draw debug visualization for player"""
+        if not self.debug.enabled or not hasattr(self, "camera"):
+            return
+
+        # Create a debug surface
+        debug_surface = pygame.Surface(screen.get_size(), pygame.SRCALPHA)
+
+        # Draw collision rect in red with partial transparency
+        collision_color = (255, 0, 0, 100)  # Red with alpha
+
+        # Convert world coordinates to screen coordinates
+        screen_x, screen_y = self.camera.world_to_screen(self.rect.x, self.rect.y)
+        debug_rect = pygame.Rect(screen_x, screen_y, self.rect.width, self.rect.height)
+
+        # Draw the collision rectangle
+        pygame.draw.rect(debug_surface, collision_color, debug_rect)
+
+        # Draw the rect outline in solid red
+        pygame.draw.rect(debug_surface, (255, 0, 0), debug_rect, 1)
+
+        screen.blit(debug_surface, (0, 0))

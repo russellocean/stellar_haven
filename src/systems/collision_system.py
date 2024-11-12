@@ -17,6 +17,14 @@ class CollisionSystem:
             TileType.DOOR: (0, 0, 255, 100),
             TileType.CORNER: (255, 0, 255, 100),
             TileType.INTERIOR_BACKGROUND: (128, 128, 128, 100),
+            TileType.PLATFORM: (0, 255, 0, 100),
+            TileType.DECORATION: (255, 255, 0, 100),
+            TileType.PLANET: (0, 255, 255, 100),
+            TileType.STAR: (255, 255, 255, 100),
+            TileType.WINDOW: (0, 128, 255, 100),
+            TileType.FURNITURE: (128, 64, 0, 100),
+            TileType.BACKGROUND: (64, 64, 64, 100),
+            TileType.EXTERIOR: (192, 192, 192, 100),
         }
 
     def is_position_valid(self, rect: pygame.Rect) -> bool:
@@ -85,11 +93,18 @@ class CollisionSystem:
             world_y = y * self.grid.cell_size
             screen_x, screen_y = self.camera.world_to_screen(world_x, world_y)
 
-            tile_type = self.grid.cells[(x, y)]
+            # Get the primary (non-background) tile at this position
+            tile_type = self.grid.get_tile(
+                x, y
+            )  # Use get_tile instead of direct access
+
             rect = pygame.Rect(
                 screen_x, screen_y, self.grid.cell_size, self.grid.cell_size
             )
-            pygame.draw.rect(debug_surface, self.TILE_COLORS[tile_type], rect)
+
+            # Draw the tile color if we have one defined
+            if tile_type in self.TILE_COLORS:
+                pygame.draw.rect(debug_surface, self.TILE_COLORS[tile_type], rect)
 
         screen.blit(debug_surface, (0, 0))
 

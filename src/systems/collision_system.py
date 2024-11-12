@@ -45,11 +45,13 @@ class CollisionSystem:
         test_rect = rect.copy()
         for _ in range(num_steps):
             test_rect.y += step_size
-            if not self._check_rect_collision(test_rect):
-                return False
-        return True
+            if self._check_rect_collision(test_rect, velocity):
+                return True
+        return False
 
-    def _check_rect_collision(self, rect: pygame.Rect) -> bool:
+    def _check_rect_collision(
+        self, rect: pygame.Rect, velocity: pygame.Vector2 = None
+    ) -> bool:
         """Helper method for basic rectangle collision check"""
         grid_left, grid_top = self.grid.world_to_grid(rect.left, rect.top)
         grid_right, grid_bottom = self.grid.world_to_grid(
@@ -60,9 +62,16 @@ class CollisionSystem:
         for x in range(grid_left, grid_right + 1):
             for y in range(grid_top, grid_bottom + 1):
                 tile = self.grid.get_tile(x, y)
-                if tile and tile.blocks_movement:
-                    return False
-        return True
+                if tile:
+                    if tile.blocks_movement:
+                        return True
+                    # Only collide with platforms if we're falling onto them from above
+                    if tile == TileType.PLATFORM and velocity and velocity.y > 0:
+                        # Check if the bottom of the rect is near the top of the platform
+                        platform_top = y * self.grid.cell_size
+                        if abs(rect.bottom - platform_top) < abs(velocity.y):
+                            return True
+        return False
 
     def check_collision_with_tile(self, rect: pygame.Rect, tile_pos: tuple) -> bool:
         """Check if a rect collides with a specific tile"""

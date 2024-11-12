@@ -179,20 +179,18 @@ class Player(Entity):
 
         # Move horizontally
         self.rect.x += self.velocity.x
-        if not room_manager.collision_system.is_position_valid(self.rect):
+        if room_manager.collision_system.is_position_valid(self.rect):
             self.rect.topleft = previous_pos
 
         # Move vertically with continuous collision detection
-        if not room_manager.collision_system.is_position_valid(
-            self.rect, self.velocity
-        ):
+        if room_manager.collision_system.is_position_valid(self.rect, self.velocity):
             # Find the exact point of collision
             test_rect = self.rect.copy()
             step = 1 if self.velocity.y > 0 else -1
 
             while abs(test_rect.y - previous_pos[1]) < abs(self.velocity.y):
                 test_rect.y += step
-                if not room_manager.collision_system.is_position_valid(test_rect):
+                if room_manager.collision_system.is_position_valid(test_rect):
                     test_rect.y -= step
                     break
 

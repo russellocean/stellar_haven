@@ -4,7 +4,6 @@ import pygame
 
 from entities.entity import Entity
 from systems.camera import Camera
-from systems.game_state_manager import GameState
 
 
 class InteractionSystem:
@@ -13,6 +12,7 @@ class InteractionSystem:
         self.state_manager = state_manager
         self.interactables: List[Entity] = []
         self.hovered_entity = None  # Track currently hovered entity
+        self.font = pygame.font.Font(None, 24)
 
     def add_interactable(self, entity: Entity):
         """Register an interactable entity"""
@@ -43,28 +43,91 @@ class InteractionSystem:
 
     def handle_event(self, event: pygame.event.Event) -> bool:
         """Handle interaction input"""
-        if self.state_manager.current_state != GameState.PLAYING:
-            return False
-
-        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:  # Left click
+            # Check each interactable
             for entity in self.interactables:
                 if entity.is_hovered:
-                    entity.interact()
-                    return True
+                    if hasattr(entity, "interaction_callback"):
+                        entity.interaction_callback()
+                        return True
         return False
 
     def render(self, surface: pygame.Surface, camera):
-        """Render all interactable entities"""
+        """Render all interactable entities and their tooltips"""
         for entity in self.interactables:
             if hasattr(entity, "render"):
                 entity.render(surface, camera)
-            elif hasattr(entity, "rect"):
-                screen_pos = camera.world_to_screen(entity.rect.x, entity.rect.y)
-                surface.blit(entity.image, screen_pos)
 
-                # Draw hover effect
-                if getattr(entity, "is_hovered", False):
-                    highlight_rect = pygame.Rect(
-                        *screen_pos, entity.rect.width, entity.rect.height
-                    )
-                    pygame.draw.rect(surface, (255, 255, 0), highlight_rect, 2)
+                if entity.is_hovered:
+                    # Get screen position
+                    screen_pos = camera.world_to_screen(entity.rect.x, entity.rect.y)
+
+                    # Draw tooltip
+                    if hasattr(entity, "name") and hasattr(entity, "description"):
+                        # Create tooltip text surfaces with anti-aliasing
+                        name_surface = self.font.render(
+                            entity.name, True, (255, 255, 255)
+                        )
+                        desc_surface = self.font.render(
+                            entity.description, True, (200, 200, 200)
+                        )  # Slightly dimmer for description
+
+                        # Calculate tooltip dimensions
+                        padding = 8  # Increased padding
+                        margin = 4  # Internal margin between texts
+                        tooltip_width = max(
+                            name_surface.get_width(), desc_surface.get_width()
+                        ) + (padding * 2)
+                        tooltip_height = (
+                            name_surface.get_height()
+                            + desc_surface.get_height()
+                            + (padding * 2)
+                            + margin
+                        )
+
+                        # Create background with alpha
+                        tooltip_bg = pygame.Surface(
+                            (tooltip_width, tooltip_height), pygame.SRCALPHA
+                        )
+                        background_color = (40, 40, 40, 230)  # Dark gray with alpha
+                        pygame.draw.rect(
+                            tooltip_bg,
+                            background_color,
+                            tooltip_bg.get_rect(),
+                            border_radius=4,
+                        )
+
+                        # Add a subtle border
+                        border_color = (100, 100, 100, 255)  # Light gray border
+                        pygame.draw.rect(
+                            tooltip_bg,
+                            border_color,
+                            tooltip_bg.get_rect(),
+                            width=1,
+                            border_radius=4,
+                        )
+
+                        # Position tooltip above entity
+                        tooltip_x = (
+                            screen_pos[0]
+                            + (entity.rect.width // 2)
+                            - (tooltip_width // 2)
+                        )
+                        tooltip_y = screen_pos[1] - tooltip_height - 8
+                        # Draw background
+                        surface.blit(tooltip_bg, (tooltip_x, tooltip_y))
+
+                        # Draw name and description
+                        surface.blit(
+                            name_surface, (tooltip_x + padding, tooltip_y + padding)
+                        )
+                        surface.blit(
+                            desc_surface,
+                            (
+                                tooltip_x + padding,
+                                tooltip_y
+                                + padding
+                                + name_surface.get_height()
+                                + margin,
+                            ),
+                        )

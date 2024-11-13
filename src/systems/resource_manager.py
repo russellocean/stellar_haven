@@ -152,3 +152,23 @@ class ResourceManager:
         if resource in self.resources and resource in self.max_resources:
             return (self.resources[resource] / self.max_resources[resource]) * 100
         return 0.0
+
+    def add_resource(self, resource: str, amount: float):
+        """Add a specified amount to a resource"""
+        if resource in self.resources:
+            old_value = self.resources[resource]
+            self.resources[resource] = min(
+                self.resources[resource] + amount, self.max_resources[resource]
+            )
+
+            # Emit resource updated event
+            self.event_system.emit(
+                GameEvent.RESOURCE_UPDATED,
+                resource=resource,
+                amount=self.resources[resource],
+                previous=old_value,
+                change=amount,
+            )
+
+            # Check if we're no longer in a critical state
+            self._check_resource_status(resource)

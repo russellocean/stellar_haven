@@ -72,22 +72,21 @@ class RoomManager:
 
         # Add room to grid
         if self.grid.add_room(room_id, room_type, grid_x, grid_y):
-            # Create Room entity with resource manager and grid reference
+            # Create Room entity with all necessary references
             room = Room(
                 room_type=room_type,
                 grid_pos=(grid_x, grid_y),
                 cell_size=self.grid.cell_size,
                 resource_manager=self.resource_manager,
-                grid=self.grid,  # Pass grid reference
-                interaction_system=self.interaction_system,  # Pass interaction system
+                grid=self.grid,
+                interaction_system=self.interaction_system,
             )
             self.rooms[room_id] = room
 
-            # Register room with resource manager if available
+            # Register room with resource manager
             if self.resource_manager:
                 self.resource_manager.register_room(room)
 
-            print(f"Added room {room_id} at grid pos ({grid_x}, {grid_y})")
             return room
         return None
 

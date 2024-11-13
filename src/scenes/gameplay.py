@@ -185,6 +185,10 @@ class GameplayScene(Scene):
             if self.building_system.handle_event(event):
                 return True
 
+        # Handle interaction system events
+        if self.interaction_system.handle_event(event):
+            return True
+
         # Add debug toggle (F3 key)
         if event.type == pygame.KEYDOWN and event.key == pygame.K_F3:
             self.debug_system.toggle()
@@ -194,6 +198,14 @@ class GameplayScene(Scene):
 
     def update(self):
         """Update scene state"""
+        # Get delta time
+        dt = self.debug_system.clock.get_time() / 1000.0  # Convert to seconds
+
+        # Update all interactable entities
+        if self.interaction_system:
+            for entity in self.interaction_system.interactables:
+                entity.update(dt)  # This updates feedback timers
+
         # Get current mouse position
         mouse_pos = pygame.mouse.get_pos()
 

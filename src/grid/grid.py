@@ -443,3 +443,54 @@ class Grid:
             self.set_tile(grid_x + dx, grid_y, TileType.PLATFORM)
 
         return True
+
+    def get_interior_positions(
+        self, room_id: str, object_size: tuple[int, int] = (1, 1)
+    ) -> List[Tuple[int, int]]:
+        """Get all valid interior positions for a room based on object size"""
+        room = self.rooms[room_id]
+        x, y = room["grid_pos"]
+        width, height = room["grid_size"]
+        obj_width, obj_height = object_size
+
+        # Calculate center position
+        center_x = width // 2
+        positions = []
+
+        # Start at center and expand outward
+        dy = height - obj_height - 2  # -2 for floor and bottom wall
+
+        # Check center first
+        center_start = center_x - (obj_width // 2)
+        if self._check_space_available(x + center_start, y + dy, obj_width, obj_height):
+            positions.append((x + center_start, y + dy))
+
+        # Then expand left and right from center
+        left_x = center_start - 1
+        right_x = center_start + 1
+        while left_x >= 1 or right_x < width - obj_width - 1:
+            # Try right side
+            if right_x < width - obj_width - 1:
+                if self._check_space_available(
+                    x + right_x, y + dy, obj_width, obj_height
+                ):
+                    positions.append((x + right_x, y + dy))
+                right_x += 1
+
+            # Try left side
+            if left_x >= 1:
+                if self._check_space_available(
+                    x + left_x, y + dy, obj_width, obj_height
+                ):
+                    positions.append((x + left_x, y + dy))
+                left_x -= 1
+
+        return positions
+
+    def _check_space_available(self, x: int, y: int, width: int, height: int) -> bool:
+        """Check if there's enough space for an object at the given position"""
+        for dx in range(width):
+            for dy in range(height):
+                if self.get_tile(x + dx, y + dy) != TileType.INTERIOR_BACKGROUND:
+                    return False
+        return True

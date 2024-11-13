@@ -1,876 +1,929 @@
 {
-  "global": {
-    "tile_types": [
-      "wall",
-      "decoration",
-      "planet",
-      "star",
-      "door",
-      "floor",
-      "window",
-      "furniture",
-      "background",
-      "interior_background",
-      "exterior",
-      "platform"
-    ]
-  },
-  "tilemaps/background_space.png": {
-    "tile_size": 16,
-    "groups": [
-      {
-        "tiles": [
-          {
-            "x": 1,
-            "y": 3
-          },
-          {
-            "x": 2,
-            "y": 3
-          }
-        ],
-        "metadata": {
-          "name": "galaxy_1",
-          "type": "background",
-          "properties": {},
-          "width": 2,
-          "height": 1
-        }
-      },
-      {
-        "tiles": [
-          {
-            "x": 3,
-            "y": 3
-          },
-          {
-            "x": 4,
-            "y": 3
-          }
-        ],
-        "metadata": {
-          "name": "galaxy_2",
-          "type": "background",
-          "properties": {},
-          "width": 2,
-          "height": 1
-        }
-      },
-      {
-        "tiles": [
-          {
-            "x": 7,
-            "y": 4
-          },
-          {
-            "x": 8,
-            "y": 4
-          },
-          {
-            "x": 7,
-            "y": 5
-          },
-          {
-            "x": 8,
-            "y": 5
-          }
-        ],
-        "metadata": {
-          "name": "galaxy_3",
-          "type": "furniture",
-          "properties": {},
-          "width": 2,
-          "height": 2
-        }
-      },
-      {
-        "tiles": [
-          {
-            "x": 9,
-            "y": 4
-          },
-          {
-            "x": 10,
-            "y": 4
-          },
-          {
-            "x": 9,
-            "y": 5
-          },
-          {
-            "x": 10,
-            "y": 5
-          }
-        ],
-        "metadata": {
-          "name": "galaxy_4",
-          "type": "background",
-          "properties": {},
-          "width": 2,
-          "height": 2
-        }
-      },
-      {
-        "tiles": [
-          {
-            "x": 1,
-            "y": 4
-          }
-        ],
-        "metadata": {
-          "name": "star_1",
-          "type": "background",
-          "properties": {},
-          "width": 1,
-          "height": 1
-        }
-      },
-      {
-        "tiles": [
-          {
-            "x": 2,
-            "y": 4
-          }
-        ],
-        "metadata": {
-          "name": "star_2",
-          "type": "background",
-          "properties": {},
-          "width": 1,
-          "height": 1
-        }
-      },
-      {
-        "tiles": [
-          {
-            "x": 3,
-            "y": 4
-          }
-        ],
-        "metadata": {
-          "name": "star_3",
-          "type": "background",
-          "properties": {},
-          "width": 1,
-          "height": 1
-        }
-      },
-      {
-        "tiles": [
-          {
-            "x": 4,
-            "y": 4
-          }
-        ],
-        "metadata": {
-          "name": "star_4",
-          "type": "background",
-          "properties": {},
-          "width": 1,
-          "height": 1
-        }
-      },
-      {
-        "tiles": [
-          {
-            "x": 5,
-            "y": 4
-          }
-        ],
-        "metadata": {
-          "name": "star_5",
-          "type": "background",
-          "properties": {},
-          "width": 1,
-          "height": 1
-        }
-      },
-      {
-        "tiles": [
-          {
-            "x": 6,
-            "y": 4
-          }
-        ],
-        "metadata": {
-          "name": "star_6",
-          "type": "background",
-          "properties": {},
-          "width": 1,
-          "height": 1
-        }
-      },
-      {
-        "tiles": [
-          {
-            "x": 1,
-            "y": 5
-          }
-        ],
-        "metadata": {
-          "name": "star_7",
-          "type": "background",
-          "properties": {},
-          "width": 1,
-          "height": 1
-        }
-      },
-      {
-        "tiles": [
-          {
-            "x": 2,
-            "y": 5
-          }
-        ],
-        "metadata": {
-          "name": "star_8",
-          "type": "background",
-          "properties": {},
-          "width": 1,
-          "height": 1
-        }
-      },
-      {
-        "tiles": [
-          {
-            "x": 3,
-            "y": 5
-          }
-        ],
-        "metadata": {
-          "name": "star_9",
-          "type": "background",
-          "properties": {},
-          "width": 1,
-          "height": 1
-        }
-      },
-      {
-        "tiles": [
-          {
-            "x": 4,
-            "y": 5
-          }
-        ],
-        "metadata": {
-          "name": "star_10",
-          "type": "background",
-          "properties": {},
-          "width": 1,
-          "height": 1
-        }
-      },
-      {
-        "tiles": [
-          {
-            "x": 5,
-            "y": 5
-          }
-        ],
-        "metadata": {
-          "name": "star_11",
-          "type": "background",
-          "properties": {},
-          "width": 1,
-          "height": 1
-        }
-      },
-      {
-        "tiles": [
-          {
-            "x": 6,
-            "y": 5
-          }
-        ],
-        "metadata": {
-          "name": "star_12",
-          "type": "background",
-          "properties": {},
-          "width": 1,
-          "height": 1
-        }
-      }
-    ]
-  },
-  "tilemaps/background_walls.png": {
-    "tile_size": 16,
-    "groups": [
-      {
-        "tiles": [
-          {
-            "x": 19,
-            "y": 1
-          }
-        ],
-        "metadata": {
-          "name": "light_top_left",
-          "type": "interior_background",
-          "properties": {},
-          "width": 1,
-          "height": 1
-        }
-      },
-      {
-        "tiles": [
-          {
-            "x": 20,
-            "y": 1
-          }
-        ],
-        "metadata": {
-          "name": "light_top_center",
-          "type": "interior_background",
-          "properties": {},
-          "width": 1,
-          "height": 1
-        }
-      },
-      {
-        "tiles": [
-          {
-            "x": 26,
-            "y": 1
-          }
-        ],
-        "metadata": {
-          "name": "light_top_right",
-          "type": "interior_background",
-          "properties": {},
-          "width": 1,
-          "height": 1
-        }
-      },
-      {
-        "tiles": [
-          {
-            "x": 19,
-            "y": 3
-          }
-        ],
-        "metadata": {
-          "name": "light_left",
-          "type": "interior_background",
-          "properties": {},
-          "width": 1,
-          "height": 1
-        }
-      },
-      {
-        "tiles": [
-          {
-            "x": 20,
-            "y": 3
-          }
-        ],
-        "metadata": {
-          "name": "light_center",
-          "type": "interior_background",
-          "properties": {},
-          "width": 1,
-          "height": 1
-        }
-      },
-      {
-        "tiles": [
-          {
-            "x": 26,
-            "y": 3
-          }
-        ],
-        "metadata": {
-          "name": "light_right",
-          "type": "interior_background",
-          "properties": {},
-          "width": 1,
-          "height": 1
-        }
-      },
-      {
-        "tiles": [
-          {
-            "x": 19,
-            "y": 4
-          }
-        ],
-        "metadata": {
-          "name": "dark_left",
-          "type": "interior_background",
-          "properties": {},
-          "width": 1,
-          "height": 1
-        }
-      },
-      {
-        "tiles": [
-          {
-            "x": 20,
-            "y": 4
-          }
-        ],
-        "metadata": {
-          "name": "dark_center",
-          "type": "interior_background",
-          "properties": {},
-          "width": 1,
-          "height": 1
-        }
-      },
-      {
-        "tiles": [
-          {
-            "x": 26,
-            "y": 4
-          }
-        ],
-        "metadata": {
-          "name": "dark_right",
-          "type": "interior_background",
-          "properties": {},
-          "width": 1,
-          "height": 1
-        }
-      },
-      {
-        "tiles": [
-          {
-            "x": 19,
-            "y": 9
-          }
-        ],
-        "metadata": {
-          "name": "dark_bottom_left",
-          "type": "interior_background",
-          "properties": {},
-          "width": 1,
-          "height": 1
-        }
-      },
-      {
-        "tiles": [
-          {
-            "x": 20,
-            "y": 9
-          }
-        ],
-        "metadata": {
-          "name": "dark_bottom_center",
-          "type": "interior_background",
-          "properties": {},
-          "width": 1,
-          "height": 1
-        }
-      },
-      {
-        "tiles": [
-          {
-            "x": 26,
-            "y": 9
-          }
-        ],
-        "metadata": {
-          "name": "dark_bottom_right",
-          "type": "interior_background",
-          "properties": {},
-          "width": 1,
-          "height": 1
-        }
-      }
-    ]
-  },
-  "tilemaps/doors_and_buttons.png": {
-    "tile_size": 16,
-    "groups": [
-      {
-        "tiles": [
-          {
-            "x": 14,
-            "y": 1
-          },
-          {
-            "x": 15,
-            "y": 1
-          },
-          {
-            "x": 14,
-            "y": 2
-          },
-          {
-            "x": 15,
-            "y": 2
-          },
-          {
-            "x": 14,
-            "y": 3
-          },
-          {
-            "x": 15,
-            "y": 3
-          }
-        ],
-        "metadata": {
-          "name": "door_light_closed",
-          "type": "door",
-          "properties": {},
-          "width": 2,
-          "height": 3
-        }
-      },
-      {
-        "tiles": [
-          {
-            "x": 16,
-            "y": 1
-          },
-          {
-            "x": 17,
-            "y": 1
-          },
-          {
-            "x": 16,
-            "y": 2
-          },
-          {
-            "x": 17,
-            "y": 2
-          },
-          {
-            "x": 16,
-            "y": 3
-          },
-          {
-            "x": 17,
-            "y": 3
-          }
-        ],
-        "metadata": {
-          "name": "door_light_open",
-          "type": "door",
-          "properties": {},
-          "width": 2,
-          "height": 3
-        }
-      },
-      {
-        "tiles": [
-          {
-            "x": 14,
-            "y": 4
-          },
-          {
-            "x": 15,
-            "y": 4
-          },
-          {
-            "x": 14,
-            "y": 5
-          },
-          {
-            "x": 15,
-            "y": 5
-          },
-          {
-            "x": 14,
-            "y": 6
-          },
-          {
-            "x": 15,
-            "y": 6
-          }
-        ],
-        "metadata": {
-          "name": "door_special_closed",
-          "type": "door",
-          "properties": {},
-          "width": 2,
-          "height": 3
-        }
-      },
-      {
-        "tiles": [
-          {
-            "x": 16,
-            "y": 4
-          },
-          {
-            "x": 17,
-            "y": 4
-          },
-          {
-            "x": 16,
-            "y": 5
-          },
-          {
-            "x": 17,
-            "y": 5
-          },
-          {
-            "x": 16,
-            "y": 6
-          },
-          {
-            "x": 17,
-            "y": 6
-          }
-        ],
-        "metadata": {
-          "name": "door_special_open",
-          "type": "door",
-          "properties": {},
-          "width": 2,
-          "height": 3
-        }
-      }
-    ]
-  },
-  "tilemaps/spaceship_exterior.png": {
-    "tile_size": 16,
-    "groups": [
-      {
-        "tiles": [
-          {
-            "x": 1,
-            "y": 1
-          }
-        ],
-        "metadata": {
-          "name": "exterior_top_left",
-          "type": "exterior",
-          "properties": {},
-          "width": 1,
-          "height": 1
-        }
-      },
-      {
-        "tiles": [
-          {
-            "x": 2,
-            "y": 1
-          }
-        ],
-        "metadata": {
-          "name": "exterior_top_center_1",
-          "type": "exterior",
-          "properties": {},
-          "width": 1,
-          "height": 1
-        }
-      },
-      {
-        "tiles": [
-          {
-            "x": 6,
-            "y": 1
-          }
-        ],
-        "metadata": {
-          "name": "exterior_top_center_2",
-          "type": "exterior",
-          "properties": {},
-          "width": 1,
-          "height": 1
-        }
-      },
-      {
-        "tiles": [
-          {
-            "x": 7,
-            "y": 1
-          }
-        ],
-        "metadata": {
-          "name": "exterior_top_right",
-          "type": "exterior",
-          "properties": {},
-          "width": 1,
-          "height": 1
-        }
-      },
-      {
-        "tiles": [
-          {
-            "x": 1,
-            "y": 5
-          }
-        ],
-        "metadata": {
-          "name": "exterior_left_1",
-          "type": "exterior",
-          "properties": {},
-          "width": 1,
-          "height": 1
-        }
-      },
-      {
-        "tiles": [
-          {
-            "x": 7,
-            "y": 5
-          }
-        ],
-        "metadata": {
-          "name": "exterior_right_1",
-          "type": "exterior",
-          "properties": {},
-          "width": 1,
-          "height": 1
-        }
-      },
-      {
-        "tiles": [
-          {
-            "x": 1,
-            "y": 6
-          }
-        ],
-        "metadata": {
-          "name": "exterior_bottom_left",
-          "type": "exterior",
-          "properties": {},
-          "width": 1,
-          "height": 1
-        }
-      },
-      {
-        "tiles": [
-          {
-            "x": 7,
-            "y": 6
-          }
-        ],
-        "metadata": {
-          "name": "exterior_bottom_right",
-          "type": "exterior",
-          "properties": {},
-          "width": 1,
-          "height": 1
-        }
-      },
-      {
-        "tiles": [
-          {
-            "x": 10,
-            "y": 3
-          }
-        ],
-        "metadata": {
-          "name": "exterior_connected",
-          "type": "exterior",
-          "properties": {},
-          "width": 1,
-          "height": 1
-        }
-      },
-      {
-        "tiles": [
-          {
-            "x": 3,
-            "y": 7
-          }
-        ],
-        "metadata": {
-          "name": "engine",
-          "type": "exterior",
-          "properties": {},
-          "width": 1,
-          "height": 1
-        }
-      },
-      {
-        "tiles": [
-          {
-            "x": 8,
-            "y": 6
-          },
-          {
-            "x": 8,
-            "y": 7
-          }
-        ],
-        "metadata": {
-          "name": "engine_flame_1",
-          "type": "exterior",
-          "properties": {},
-          "width": 1,
-          "height": 2
-        }
-      },
-      {
-        "tiles": [
-          {
-            "x": 9,
-            "y": 6
-          },
-          {
-            "x": 9,
-            "y": 7
-          }
-        ],
-        "metadata": {
-          "name": "engine_flame_2",
-          "type": "exterior",
-          "properties": {},
-          "width": 1,
-          "height": 2
-        }
-      },
-      {
-        "tiles": [
-          {
-            "x": 2,
-            "y": 6
-          }
-        ],
-        "metadata": {
-          "name": "exterior_bottom_center_1",
-          "type": "exterior",
-          "properties": {},
-          "width": 1,
-          "height": 1
-        }
-      },
-      {
-        "tiles": [
-          {
-            "x": 6,
-            "y": 6
-          }
-        ],
-        "metadata": {
-          "name": "exterior_bottom_center_2",
-          "type": "exterior",
-          "properties": {},
-          "width": 1,
-          "height": 1
-        }
-      }
-    ]
-  },
-  "tilemaps/platforms_and_ladders.png": {
-    "tile_size": 16,
-    "groups": [
-      {
-        "tiles": [
-          {
-            "x": 1,
-            "y": 6
-          },
-          {
-            "x": 2,
-            "y": 6
-          },
-          {
-            "x": 3,
-            "y": 6
-          }
-        ],
-        "metadata": {
-          "name": "platform",
-          "type": "platform",
-          "properties": {},
-          "width": 3,
-          "height": 1
-        }
-      }
-    ]
-  }
+    "global": {
+        "tile_types": [
+            "wall",
+            "decoration",
+            "planet",
+            "star",
+            "door",
+            "floor",
+            "window",
+            "furniture",
+            "background",
+            "interior_background",
+            "exterior",
+            "platform",
+            "interactable"
+        ]
+    },
+    "tilemaps/background_space.png": {
+        "tile_size": 16,
+        "groups": [
+            {
+                "tiles": [
+                    {
+                        "x": 1,
+                        "y": 3
+                    },
+                    {
+                        "x": 2,
+                        "y": 3
+                    }
+                ],
+                "metadata": {
+                    "name": "galaxy_1",
+                    "type": "background",
+                    "properties": {},
+                    "width": 2,
+                    "height": 1
+                }
+            },
+            {
+                "tiles": [
+                    {
+                        "x": 3,
+                        "y": 3
+                    },
+                    {
+                        "x": 4,
+                        "y": 3
+                    }
+                ],
+                "metadata": {
+                    "name": "galaxy_2",
+                    "type": "background",
+                    "properties": {},
+                    "width": 2,
+                    "height": 1
+                }
+            },
+            {
+                "tiles": [
+                    {
+                        "x": 7,
+                        "y": 4
+                    },
+                    {
+                        "x": 8,
+                        "y": 4
+                    },
+                    {
+                        "x": 7,
+                        "y": 5
+                    },
+                    {
+                        "x": 8,
+                        "y": 5
+                    }
+                ],
+                "metadata": {
+                    "name": "galaxy_3",
+                    "type": "furniture",
+                    "properties": {},
+                    "width": 2,
+                    "height": 2
+                }
+            },
+            {
+                "tiles": [
+                    {
+                        "x": 9,
+                        "y": 4
+                    },
+                    {
+                        "x": 10,
+                        "y": 4
+                    },
+                    {
+                        "x": 9,
+                        "y": 5
+                    },
+                    {
+                        "x": 10,
+                        "y": 5
+                    }
+                ],
+                "metadata": {
+                    "name": "galaxy_4",
+                    "type": "background",
+                    "properties": {},
+                    "width": 2,
+                    "height": 2
+                }
+            },
+            {
+                "tiles": [
+                    {
+                        "x": 1,
+                        "y": 4
+                    }
+                ],
+                "metadata": {
+                    "name": "star_1",
+                    "type": "background",
+                    "properties": {},
+                    "width": 1,
+                    "height": 1
+                }
+            },
+            {
+                "tiles": [
+                    {
+                        "x": 2,
+                        "y": 4
+                    }
+                ],
+                "metadata": {
+                    "name": "star_2",
+                    "type": "background",
+                    "properties": {},
+                    "width": 1,
+                    "height": 1
+                }
+            },
+            {
+                "tiles": [
+                    {
+                        "x": 3,
+                        "y": 4
+                    }
+                ],
+                "metadata": {
+                    "name": "star_3",
+                    "type": "background",
+                    "properties": {},
+                    "width": 1,
+                    "height": 1
+                }
+            },
+            {
+                "tiles": [
+                    {
+                        "x": 4,
+                        "y": 4
+                    }
+                ],
+                "metadata": {
+                    "name": "star_4",
+                    "type": "background",
+                    "properties": {},
+                    "width": 1,
+                    "height": 1
+                }
+            },
+            {
+                "tiles": [
+                    {
+                        "x": 5,
+                        "y": 4
+                    }
+                ],
+                "metadata": {
+                    "name": "star_5",
+                    "type": "background",
+                    "properties": {},
+                    "width": 1,
+                    "height": 1
+                }
+            },
+            {
+                "tiles": [
+                    {
+                        "x": 6,
+                        "y": 4
+                    }
+                ],
+                "metadata": {
+                    "name": "star_6",
+                    "type": "background",
+                    "properties": {},
+                    "width": 1,
+                    "height": 1
+                }
+            },
+            {
+                "tiles": [
+                    {
+                        "x": 1,
+                        "y": 5
+                    }
+                ],
+                "metadata": {
+                    "name": "star_7",
+                    "type": "background",
+                    "properties": {},
+                    "width": 1,
+                    "height": 1
+                }
+            },
+            {
+                "tiles": [
+                    {
+                        "x": 2,
+                        "y": 5
+                    }
+                ],
+                "metadata": {
+                    "name": "star_8",
+                    "type": "background",
+                    "properties": {},
+                    "width": 1,
+                    "height": 1
+                }
+            },
+            {
+                "tiles": [
+                    {
+                        "x": 3,
+                        "y": 5
+                    }
+                ],
+                "metadata": {
+                    "name": "star_9",
+                    "type": "background",
+                    "properties": {},
+                    "width": 1,
+                    "height": 1
+                }
+            },
+            {
+                "tiles": [
+                    {
+                        "x": 4,
+                        "y": 5
+                    }
+                ],
+                "metadata": {
+                    "name": "star_10",
+                    "type": "background",
+                    "properties": {},
+                    "width": 1,
+                    "height": 1
+                }
+            },
+            {
+                "tiles": [
+                    {
+                        "x": 5,
+                        "y": 5
+                    }
+                ],
+                "metadata": {
+                    "name": "star_11",
+                    "type": "background",
+                    "properties": {},
+                    "width": 1,
+                    "height": 1
+                }
+            },
+            {
+                "tiles": [
+                    {
+                        "x": 6,
+                        "y": 5
+                    }
+                ],
+                "metadata": {
+                    "name": "star_12",
+                    "type": "background",
+                    "properties": {},
+                    "width": 1,
+                    "height": 1
+                }
+            }
+        ]
+    },
+    "tilemaps/background_walls.png": {
+        "tile_size": 16,
+        "groups": [
+            {
+                "tiles": [
+                    {
+                        "x": 19,
+                        "y": 1
+                    }
+                ],
+                "metadata": {
+                    "name": "light_top_left",
+                    "type": "interior_background",
+                    "properties": {},
+                    "width": 1,
+                    "height": 1
+                }
+            },
+            {
+                "tiles": [
+                    {
+                        "x": 20,
+                        "y": 1
+                    }
+                ],
+                "metadata": {
+                    "name": "light_top_center",
+                    "type": "interior_background",
+                    "properties": {},
+                    "width": 1,
+                    "height": 1
+                }
+            },
+            {
+                "tiles": [
+                    {
+                        "x": 26,
+                        "y": 1
+                    }
+                ],
+                "metadata": {
+                    "name": "light_top_right",
+                    "type": "interior_background",
+                    "properties": {},
+                    "width": 1,
+                    "height": 1
+                }
+            },
+            {
+                "tiles": [
+                    {
+                        "x": 19,
+                        "y": 3
+                    }
+                ],
+                "metadata": {
+                    "name": "light_left",
+                    "type": "interior_background",
+                    "properties": {},
+                    "width": 1,
+                    "height": 1
+                }
+            },
+            {
+                "tiles": [
+                    {
+                        "x": 20,
+                        "y": 3
+                    }
+                ],
+                "metadata": {
+                    "name": "light_center",
+                    "type": "interior_background",
+                    "properties": {},
+                    "width": 1,
+                    "height": 1
+                }
+            },
+            {
+                "tiles": [
+                    {
+                        "x": 26,
+                        "y": 3
+                    }
+                ],
+                "metadata": {
+                    "name": "light_right",
+                    "type": "interior_background",
+                    "properties": {},
+                    "width": 1,
+                    "height": 1
+                }
+            },
+            {
+                "tiles": [
+                    {
+                        "x": 19,
+                        "y": 4
+                    }
+                ],
+                "metadata": {
+                    "name": "dark_left",
+                    "type": "interior_background",
+                    "properties": {},
+                    "width": 1,
+                    "height": 1
+                }
+            },
+            {
+                "tiles": [
+                    {
+                        "x": 20,
+                        "y": 4
+                    }
+                ],
+                "metadata": {
+                    "name": "dark_center",
+                    "type": "interior_background",
+                    "properties": {},
+                    "width": 1,
+                    "height": 1
+                }
+            },
+            {
+                "tiles": [
+                    {
+                        "x": 26,
+                        "y": 4
+                    }
+                ],
+                "metadata": {
+                    "name": "dark_right",
+                    "type": "interior_background",
+                    "properties": {},
+                    "width": 1,
+                    "height": 1
+                }
+            },
+            {
+                "tiles": [
+                    {
+                        "x": 19,
+                        "y": 9
+                    }
+                ],
+                "metadata": {
+                    "name": "dark_bottom_left",
+                    "type": "interior_background",
+                    "properties": {},
+                    "width": 1,
+                    "height": 1
+                }
+            },
+            {
+                "tiles": [
+                    {
+                        "x": 20,
+                        "y": 9
+                    }
+                ],
+                "metadata": {
+                    "name": "dark_bottom_center",
+                    "type": "interior_background",
+                    "properties": {},
+                    "width": 1,
+                    "height": 1
+                }
+            },
+            {
+                "tiles": [
+                    {
+                        "x": 26,
+                        "y": 9
+                    }
+                ],
+                "metadata": {
+                    "name": "dark_bottom_right",
+                    "type": "interior_background",
+                    "properties": {},
+                    "width": 1,
+                    "height": 1
+                }
+            }
+        ]
+    },
+    "tilemaps/doors_and_buttons.png": {
+        "tile_size": 16,
+        "groups": [
+            {
+                "tiles": [
+                    {
+                        "x": 14,
+                        "y": 1
+                    },
+                    {
+                        "x": 15,
+                        "y": 1
+                    },
+                    {
+                        "x": 14,
+                        "y": 2
+                    },
+                    {
+                        "x": 15,
+                        "y": 2
+                    },
+                    {
+                        "x": 14,
+                        "y": 3
+                    },
+                    {
+                        "x": 15,
+                        "y": 3
+                    }
+                ],
+                "metadata": {
+                    "name": "door_light_closed",
+                    "type": "door",
+                    "properties": {},
+                    "width": 2,
+                    "height": 3
+                }
+            },
+            {
+                "tiles": [
+                    {
+                        "x": 16,
+                        "y": 1
+                    },
+                    {
+                        "x": 17,
+                        "y": 1
+                    },
+                    {
+                        "x": 16,
+                        "y": 2
+                    },
+                    {
+                        "x": 17,
+                        "y": 2
+                    },
+                    {
+                        "x": 16,
+                        "y": 3
+                    },
+                    {
+                        "x": 17,
+                        "y": 3
+                    }
+                ],
+                "metadata": {
+                    "name": "door_light_open",
+                    "type": "door",
+                    "properties": {},
+                    "width": 2,
+                    "height": 3
+                }
+            },
+            {
+                "tiles": [
+                    {
+                        "x": 14,
+                        "y": 4
+                    },
+                    {
+                        "x": 15,
+                        "y": 4
+                    },
+                    {
+                        "x": 14,
+                        "y": 5
+                    },
+                    {
+                        "x": 15,
+                        "y": 5
+                    },
+                    {
+                        "x": 14,
+                        "y": 6
+                    },
+                    {
+                        "x": 15,
+                        "y": 6
+                    }
+                ],
+                "metadata": {
+                    "name": "door_special_closed",
+                    "type": "door",
+                    "properties": {},
+                    "width": 2,
+                    "height": 3
+                }
+            },
+            {
+                "tiles": [
+                    {
+                        "x": 16,
+                        "y": 4
+                    },
+                    {
+                        "x": 17,
+                        "y": 4
+                    },
+                    {
+                        "x": 16,
+                        "y": 5
+                    },
+                    {
+                        "x": 17,
+                        "y": 5
+                    },
+                    {
+                        "x": 16,
+                        "y": 6
+                    },
+                    {
+                        "x": 17,
+                        "y": 6
+                    }
+                ],
+                "metadata": {
+                    "name": "door_special_open",
+                    "type": "door",
+                    "properties": {},
+                    "width": 2,
+                    "height": 3
+                }
+            }
+        ]
+    },
+    "tilemaps/spaceship_exterior.png": {
+        "tile_size": 16,
+        "groups": [
+            {
+                "tiles": [
+                    {
+                        "x": 1,
+                        "y": 1
+                    }
+                ],
+                "metadata": {
+                    "name": "exterior_top_left",
+                    "type": "exterior",
+                    "properties": {},
+                    "width": 1,
+                    "height": 1
+                }
+            },
+            {
+                "tiles": [
+                    {
+                        "x": 2,
+                        "y": 1
+                    }
+                ],
+                "metadata": {
+                    "name": "exterior_top_center_1",
+                    "type": "exterior",
+                    "properties": {},
+                    "width": 1,
+                    "height": 1
+                }
+            },
+            {
+                "tiles": [
+                    {
+                        "x": 6,
+                        "y": 1
+                    }
+                ],
+                "metadata": {
+                    "name": "exterior_top_center_2",
+                    "type": "exterior",
+                    "properties": {},
+                    "width": 1,
+                    "height": 1
+                }
+            },
+            {
+                "tiles": [
+                    {
+                        "x": 7,
+                        "y": 1
+                    }
+                ],
+                "metadata": {
+                    "name": "exterior_top_right",
+                    "type": "exterior",
+                    "properties": {},
+                    "width": 1,
+                    "height": 1
+                }
+            },
+            {
+                "tiles": [
+                    {
+                        "x": 1,
+                        "y": 5
+                    }
+                ],
+                "metadata": {
+                    "name": "exterior_left_1",
+                    "type": "exterior",
+                    "properties": {},
+                    "width": 1,
+                    "height": 1
+                }
+            },
+            {
+                "tiles": [
+                    {
+                        "x": 7,
+                        "y": 5
+                    }
+                ],
+                "metadata": {
+                    "name": "exterior_right_1",
+                    "type": "exterior",
+                    "properties": {},
+                    "width": 1,
+                    "height": 1
+                }
+            },
+            {
+                "tiles": [
+                    {
+                        "x": 1,
+                        "y": 6
+                    }
+                ],
+                "metadata": {
+                    "name": "exterior_bottom_left",
+                    "type": "exterior",
+                    "properties": {},
+                    "width": 1,
+                    "height": 1
+                }
+            },
+            {
+                "tiles": [
+                    {
+                        "x": 7,
+                        "y": 6
+                    }
+                ],
+                "metadata": {
+                    "name": "exterior_bottom_right",
+                    "type": "exterior",
+                    "properties": {},
+                    "width": 1,
+                    "height": 1
+                }
+            },
+            {
+                "tiles": [
+                    {
+                        "x": 10,
+                        "y": 3
+                    }
+                ],
+                "metadata": {
+                    "name": "exterior_connected",
+                    "type": "exterior",
+                    "properties": {},
+                    "width": 1,
+                    "height": 1
+                }
+            },
+            {
+                "tiles": [
+                    {
+                        "x": 3,
+                        "y": 7
+                    }
+                ],
+                "metadata": {
+                    "name": "engine",
+                    "type": "exterior",
+                    "properties": {},
+                    "width": 1,
+                    "height": 1
+                }
+            },
+            {
+                "tiles": [
+                    {
+                        "x": 8,
+                        "y": 6
+                    },
+                    {
+                        "x": 8,
+                        "y": 7
+                    }
+                ],
+                "metadata": {
+                    "name": "engine_flame_1",
+                    "type": "exterior",
+                    "properties": {},
+                    "width": 1,
+                    "height": 2
+                }
+            },
+            {
+                "tiles": [
+                    {
+                        "x": 9,
+                        "y": 6
+                    },
+                    {
+                        "x": 9,
+                        "y": 7
+                    }
+                ],
+                "metadata": {
+                    "name": "engine_flame_2",
+                    "type": "exterior",
+                    "properties": {},
+                    "width": 1,
+                    "height": 2
+                }
+            },
+            {
+                "tiles": [
+                    {
+                        "x": 2,
+                        "y": 6
+                    }
+                ],
+                "metadata": {
+                    "name": "exterior_bottom_center_1",
+                    "type": "exterior",
+                    "properties": {},
+                    "width": 1,
+                    "height": 1
+                }
+            },
+            {
+                "tiles": [
+                    {
+                        "x": 6,
+                        "y": 6
+                    }
+                ],
+                "metadata": {
+                    "name": "exterior_bottom_center_2",
+                    "type": "exterior",
+                    "properties": {},
+                    "width": 1,
+                    "height": 1
+                }
+            }
+        ]
+    },
+    "tilemaps/platforms_and_ladders.png": {
+        "tile_size": 16,
+        "groups": [
+            {
+                "tiles": [
+                    {
+                        "x": 1,
+                        "y": 6
+                    },
+                    {
+                        "x": 2,
+                        "y": 6
+                    },
+                    {
+                        "x": 3,
+                        "y": 6
+                    }
+                ],
+                "metadata": {
+                    "name": "platform",
+                    "type": "platform",
+                    "properties": {},
+                    "width": 3,
+                    "height": 1
+                }
+            }
+        ]
+    },
+    "tilemaps/cafeteria.png": {
+        "tile_size": 16,
+        "groups": [
+            {
+                "tiles": [
+                    {
+                        "x": 6,
+                        "y": 5
+                    },
+                    {
+                        "x": 7,
+                        "y": 5
+                    },
+                    {
+                        "x": 8,
+                        "y": 5
+                    },
+                    {
+                        "x": 7,
+                        "y": 6
+                    },
+                    {
+                        "x": 6,
+                        "y": 6
+                    },
+                    {
+                        "x": 8,
+                        "y": 6
+                    },
+                    {
+                        "x": 6,
+                        "y": 7
+                    },
+                    {
+                        "x": 7,
+                        "y": 7
+                    },
+                    {
+                        "x": 8,
+                        "y": 7
+                    }
+                ],
+                "metadata": {
+                    "name": "generator",
+                    "type": "interactable",
+                    "properties": {},
+                    "width": 3,
+                    "height": 3
+                }
+            }
+        ]
+    }
 }

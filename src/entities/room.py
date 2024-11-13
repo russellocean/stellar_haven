@@ -57,44 +57,68 @@ class Room(Entity):
         self.decorations: List[Entity] = []
         self.interactables: List[Entity] = []
 
-        # Process decorations after all initialization is complete
-        self._process_decorations(room_config.get("decorations", {}))
+        # Store interior positions
+        self.interior_positions = []
+
+        # Don't process decorations immediately
+        self.decorations_config = room_config.get("decorations", {})
+
+    def set_interior_positions(self, positions: List[Tuple[int, int]]):
+        """Set valid interior positions for the room"""
+        self.interior_positions = positions
+        print(f"Set interior positions: {len(positions)} valid spots")  # Debug
+
+        # Now process decorations after we have interior positions
+        self._process_decorations(self.decorations_config)
 
     def _process_decorations(self, decorations_config: Dict):
         """Process all decorations and interactables from config"""
-        print(f"Processing decorations: {decorations_config.keys()}")  # Debug
+        if not self.grid:
+            print("Warning: No grid system available!")
+            return
 
+        # Process each decoration
         for dec_name, config in decorations_config.items():
-            print(f"Processing {dec_name}: {config}")  # Debug
-
-            # Skip if not required and min_count is 0
             if not config.get("required", False) and config.get("min_count", 0) == 0:
-                print(f"Skipping optional decoration: {dec_name}")  # Debug
                 continue
 
-            # Determine how many to place
-            count = random.randint(config["min_count"], config["max_count"])
-            print(f"Will place {count} {dec_name}")  # Debug
+            # Get object size from tilemap config
+            object_size = (1, 1)  # Default size
+            if config.get("type") == "interactable":
+                tilemap_data = self.asset_manager.get_tilemap_group(dec_name)
+                if tilemap_data and "metadata" in tilemap_data:
+                    object_size = (
+                        tilemap_data["metadata"]["width"],
+                        tilemap_data["metadata"]["height"],
+                    )
 
-            for i in range(count):
-                # Get valid positions based on config
-                valid_positions = self._get_valid_positions(config["valid_positions"])
-                if not valid_positions:
-                    print(f"No valid positions for {dec_name}")  # Debug
-                    continue
+            # Get valid positions for this specific object size
+            available_positions = self.grid.get_interior_positions(
+                room_id=next(
+                    id
+                    for id, r in self.grid.rooms.items()
+                    if r["grid_pos"] == self.grid_pos
+                ),
+                object_size=object_size,
+            )
 
-                # Choose position
-                pos = random.choice(valid_positions)
-                world_x, world_y = self._grid_to_world(pos[0], pos[1])
+            if not available_positions:
                 print(
-                    f"Placing {dec_name} at {pos} (world: {world_x}, {world_y})"
-                )  # Debug
+                    f"Warning: No valid positions for {dec_name} (size: {object_size})"
+                )
+                continue
 
-                # Handle different decoration types
+            # Place the decorations
+            count = random.randint(config["min_count"], config["max_count"])
+            for i in range(count):
                 if config.get("type") == "interactable":
-                    self._place_interactable(dec_name, config, world_x, world_y)
-                else:
-                    self._place_visual_decoration(dec_name, config, world_x, world_y)
+                    if available_positions:
+                        # Use first available position (center-most) instead of random
+                        pos = available_positions[0]
+                        world_x, world_y = self._grid_to_world(pos[0], pos[1])
+                        self._place_interactable(dec_name, config, world_x, world_y)
+                        # Remove used position
+                        available_positions.remove(pos)
 
     def _place_interactable(self, name: str, config: Dict, x: int, y: int):
         """Place an interactable entity"""

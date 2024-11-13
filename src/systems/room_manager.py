@@ -81,6 +81,13 @@ class RoomManager:
                 grid=self.grid,
                 interaction_system=self.interaction_system,
             )
+
+            # Get valid interior positions for interactables
+            interior_positions = self.grid.get_interior_positions(room_id)
+            if interior_positions:
+                # Pass interior positions to room for interactable placement
+                room.set_interior_positions(interior_positions)
+
             self.rooms[room_id] = room
 
             # Register room with resource manager

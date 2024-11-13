@@ -10,6 +10,7 @@ from systems.debug_system import DebugSystem
 from systems.dialog_system import DialogEntry, DialogState, DialogSystem
 from systems.game_state_manager import GameState, GameStateManager
 from systems.grid_renderer import GridRenderer
+from systems.interaction_system import InteractionSystem
 from systems.resource_manager import ResourceManager
 from systems.room_manager import RoomManager
 from systems.starfield_system import StarfieldSystem
@@ -63,16 +64,22 @@ class GameplayScene(Scene):
 
     def _init_systems(self):
         """Initialize core game systems"""
+        # Create camera first
         self.camera = Camera(
             self.game.screen.get_width(), self.game.screen.get_height(), tile_size=16
         )
 
-        # Pass resource manager to RoomManager
+        # Create interaction system with camera
+        self.interaction_system = InteractionSystem(self.camera, self.state_manager)
+
+        # Create room manager with interaction system
         self.room_manager = RoomManager(
             self.game.screen.get_width() // 2,
             self.game.screen.get_height() // 2,
             resource_manager=self.resource_manager,
+            interaction_system=self.interaction_system,
         )
+        self.room_manager.set_camera(self.camera)
 
         self.grid_renderer = GridRenderer(self.room_manager.grid)
         self.starfield = StarfieldSystem(self.game.screen.get_size())
@@ -127,24 +134,36 @@ class GameplayScene(Scene):
 
     def _setup_layers(self):
         """Setup rendering layers"""
+        # Background layer
         self.background_layer = [self.starfield]
-        self.game_layer = [self.grid_renderer, self.character_sprites]
+
+        # Game layer - order matters!
+        self.game_layer = [
+            self.grid_renderer,  # Draw tiles first
+            self.room_manager,  # Draw rooms and interactables
+            self.character_sprites,  # Draw player on top
+        ]
+
+        # System layer
         self.system_layer = [self.building_system]
+
+        # UI layer
         self.ui_layer = [self.game_hud]
-        self.debug_layer = [self.debug_system, self.room_manager.collision_system]
 
         # Setup camera references
         self.grid_renderer.set_camera(self.camera)
 
         # Add elements to layers in drawing order
         self.background_layer.append(self.starfield)
-        self.game_layer.extend([self.grid_renderer, self.character_sprites])
+        self.game_layer.extend(
+            [self.grid_renderer, self.room_manager, self.character_sprites]
+        )
         self.system_layer.extend([self.building_system])
         self.ui_layer.append(self.game_hud)
 
         # Setup debug visualization
         self.room_manager.collision_system.set_camera(self.camera)
-        self.debug_layer.append(self.room_manager.collision_system)
+        self.debug_layer = [self.debug_system, self.room_manager.collision_system]
 
         # Add player to both game and debug layers
         # self.game_layer.append(self.player)
@@ -175,6 +194,12 @@ class GameplayScene(Scene):
 
     def update(self):
         """Update scene state"""
+        # Get current mouse position
+        mouse_pos = pygame.mouse.get_pos()
+
+        # Update interaction system with mouse position
+        self.interaction_system.update(mouse_pos)
+
         # Update input first
         self.input_manager.update()
 

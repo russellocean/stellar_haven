@@ -15,6 +15,7 @@ class TileType(Enum):
     EXTERIOR = auto()
     CORNER = auto()
     PLATFORM = auto()
+    INTERACTABLE = auto()
 
     @property
     def is_walkable(self) -> bool:

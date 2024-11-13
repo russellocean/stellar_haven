@@ -17,19 +17,14 @@
         "wall": [200, 200, 200]
       },
       "decorations": {
-        "bed": {
+        "generator": {
           "required": true,
           "min_count": 1,
           "max_count": 1,
-          "size": [2, 1],
-          "valid_positions": ["wall"]
-        },
-        "locker": {
-          "required": true,
-          "min_count": 1,
-          "max_count": 2,
-          "size": [1, 1],
-          "valid_positions": ["wall"]
+          "size": [3, 3],
+          "valid_positions": ["floor"],
+          "type": "interactable",
+          "group_name": "generator"
         }
       },
       "is_starting_room": true

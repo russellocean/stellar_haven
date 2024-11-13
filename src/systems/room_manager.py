@@ -1,5 +1,7 @@
 from typing import Dict, List
 
+import pygame
+
 from entities.room import Room
 from grid.grid import Grid
 from systems.collision_system import CollisionSystem
@@ -7,12 +9,19 @@ from systems.debug_system import DebugSystem
 
 
 class RoomManager:
-    def __init__(self, center_x: int, center_y: int, resource_manager=None):
+    def __init__(
+        self,
+        center_x: int,
+        center_y: int,
+        resource_manager=None,
+        interaction_system=None,
+    ):
         self.grid = Grid(cell_size=16)
         self.rooms: Dict[str, Room] = {}
         self.collision_system = CollisionSystem(self.grid)
         self.resource_manager = resource_manager
         self.starting_room = None  # Reference to starting room
+        self.interaction_system = interaction_system
 
         # Initialize debug system
         self.debug = DebugSystem()
@@ -20,6 +29,8 @@ class RoomManager:
 
         # Create initial ship
         self._create_initial_ship(center_x, center_y)
+
+        self.camera = None  # Will be set by GameplayScene
 
     def _create_initial_ship(self, center_x: int, center_y: int):
         # Find the starting room type from config
@@ -61,11 +72,14 @@ class RoomManager:
 
         # Add room to grid
         if self.grid.add_room(room_id, room_type, grid_x, grid_y):
-            # Create Room entity
+            # Create Room entity with resource manager and grid reference
             room = Room(
                 room_type=room_type,
                 grid_pos=(grid_x, grid_y),
                 cell_size=self.grid.cell_size,
+                resource_manager=self.resource_manager,
+                grid=self.grid,  # Pass grid reference
+                interaction_system=self.interaction_system,  # Pass interaction system
             )
             self.rooms[room_id] = room
 
@@ -109,3 +123,19 @@ class RoomManager:
     def get_starting_position(self) -> tuple[int, int]:
         """Get the starting position of the ship in world coordinates"""
         return self.get_room_center(self.starting_room)
+
+    def set_camera(self, camera):
+        """Set camera reference"""
+        self.camera = camera
+
+    def render(self, surface: pygame.Surface, camera):
+        """Render all rooms and their interactables"""
+        self.camera = camera  # Store camera reference
+
+        # First render all rooms and their decorations
+        for room in self.rooms.values():
+            room.render(surface, camera)
+
+        # Then let interaction system render all interactables
+        if self.interaction_system:
+            self.interaction_system.render(surface, camera)

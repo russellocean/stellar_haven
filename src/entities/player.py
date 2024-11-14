@@ -9,7 +9,7 @@ from systems.event_system import EventSystem, GameEvent
 
 class Player(Entity):
     # Physics constants
-    GRAVITY = 0.3
+    GRAVITY = 0.6
     JUMP_POWER = -15
     DEFAULT_SPEED = 5
 

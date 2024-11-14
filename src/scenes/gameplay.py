@@ -7,7 +7,7 @@ from systems.asset_manager import AssetManager
 from systems.building_system import BuildingSystem
 from systems.camera import Camera
 from systems.debug_system import DebugSystem
-from systems.dialog_system import DialogEntry, DialogState, DialogSystem
+from systems.dialog_system import DialogEntry, DialogSystem
 from systems.game_state_manager import GameState, GameStateManager
 from systems.grid_renderer import GridRenderer
 from systems.interaction_system import InteractionSystem
@@ -241,8 +241,8 @@ class GameplayScene(Scene):
         self.dialog_system.draw(screen)
 
     def _start_tutorial_sequence(self):
-        """Start the tutorial dialog sequence (Scenes 5-9)"""
-        tutorial_dialog = [
+        """Start the tutorial dialog sequence (Scenes 5-7)"""
+        initial_dialog = [
             # Scene 5: Boarding Your Ship
             DialogEntry(
                 character="MAX",
@@ -266,6 +266,9 @@ class GameplayScene(Scene):
                 character="EVA",
                 text="You'll notice the battery unit is flashing red—a universally recognized sign of 'bad.' Perhaps you might consider recharging it? There's a hand-crank generator stored under your cot. Manual labor builds character, or so I've been told.",
             ),
+        ]
+
+        later_dialog = [
             # Scene 8: Max's Message
             DialogEntry(
                 character="MAX",
@@ -282,10 +285,8 @@ class GameplayScene(Scene):
             ),
         ]
 
-        def on_tutorial_complete():
-            """Callback when tutorial dialog is complete"""
-            self.dialog_system.state = DialogState.INACTIVE
+        # Start initial dialog sequence - remove the callback
+        self.dialog_system.start_dialog_sequence(initial_dialog)
 
-        self.dialog_system.start_dialog_sequence(
-            tutorial_dialog, on_complete=on_tutorial_complete
-        )
+        # Schedule the later dialog sequence to start after 60 seconds
+        self.dialog_system.schedule_dialog_sequence(later_dialog, delay=30)

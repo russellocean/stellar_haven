@@ -163,7 +163,7 @@ class GameplayScene(Scene):
 
         # Setup debug visualization
         self.room_manager.collision_system.set_camera(self.camera)
-        self.debug_layer = [self.debug_system, self.room_manager.collision_system]
+        # self.debug_layer = [self.debug_system, self.room_manager.collision_system]
 
         # Add player to both game and debug layers
         # self.game_layer.append(self.player)

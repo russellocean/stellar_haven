@@ -175,31 +175,24 @@ class Player(Entity):
 
     def _update_position(self, room_manager, input_manager):
         """Update player position with collision detection"""
-        previous_pos = self.rect.topleft
+        dropping = input_manager.is_action_pressed("move_down")
 
-        # Move horizontally
-        self.rect.x += self.velocity.x
-        if room_manager.collision_system.is_position_valid(self.rect):
-            self.rect.topleft = previous_pos
+        # Check movement with collision system
+        can_move, new_pos = room_manager.collision_system.check_movement(
+            self.rect, self.velocity, dropping
+        )
 
-        # Move vertically with continuous collision detection
-        if room_manager.collision_system.is_position_valid(self.rect, self.velocity):
-            # Find the exact point of collision
-            test_rect = self.rect.copy()
-            step = 1 if self.velocity.y > 0 else -1
+        # Update position
+        self.rect.centerx = new_pos.x
+        self.rect.bottom = new_pos.y
 
-            while abs(test_rect.y - previous_pos[1]) < abs(self.velocity.y):
-                test_rect.y += step
-                if room_manager.collision_system.is_position_valid(test_rect):
-                    test_rect.y -= step
-                    break
-
-            self.rect.y = test_rect.y
-            self.velocity.y = 0
-            if step > 0:  # Moving down
+        # Update velocity based on collisions
+        if not can_move:
+            if self.velocity.y < 0:  # Moving up and hit ceiling
+                self.velocity.y = 0
+            elif self.velocity.y > 0:  # Moving down and hit ground
+                self.velocity.y = 0
                 self.on_ground = True
-        else:
-            self.rect.y += self.velocity.y
 
     def _handle_vertical_collision(self, room_manager, input_manager, previous_pos):
         """Handle vertical movement collisions"""
@@ -323,27 +316,20 @@ class Player(Entity):
 
     def _check_ground_state(self, room_manager):
         """Check if player is actually on ground"""
-        if not self.on_ground:
+        if self.velocity.y < 0:  # If moving up, we're not on ground
+            self.on_ground = False
             return
 
-        # Check multiple points along the bottom of the player's collision box
-        left_x = self.rect.left
-        right_x = self.rect.right - 1
-        bottom_y = self.rect.bottom + 1  # Check one pixel below
+        # Check the tile directly below the player
+        grid_x, grid_y = room_manager.grid.world_to_grid(
+            self.rect.centerx, self.rect.bottom + 1
+        )
+        tile = room_manager.grid.get_tile(grid_x, grid_y)
 
-        # Convert all check points to grid coordinates
-        left_grid_x, grid_y = room_manager.grid.world_to_grid(left_x, bottom_y)
-        right_grid_x, _ = room_manager.grid.world_to_grid(right_x, bottom_y)
+        # We're on ground if there's a solid tile or platform below us
+        if tile:
+            if tile.blocks_movement or (tile == TileType.PLATFORM):
+                self.on_ground = True
+                return
 
-        # Check if ANY point has valid ground beneath
-        has_ground = False
-        for check_x in range(left_grid_x, right_grid_x + 1):
-            if (check_x, grid_y) in room_manager.grid.cells:
-                tile = room_manager.grid.get_tile(check_x, grid_y)
-                if tile.blocks_movement or tile == TileType.PLATFORM:
-                    has_ground = True
-                    break
-
-        # Only fall if there's no ground at all beneath us
-        if not has_ground:
-            self.on_ground = False
+        self.on_ground = False

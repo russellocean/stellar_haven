@@ -9,8 +9,8 @@ from systems.event_system import EventSystem, GameEvent
 
 class Player(Entity):
     # Physics constants
-    GRAVITY = 0.6
-    JUMP_POWER = -15
+    GRAVITY = 0.5
+    JUMP_POWER = -13.5
     DEFAULT_SPEED = 5
 
     def __init__(self, x, y):
@@ -55,8 +55,8 @@ class Player(Entity):
         self.rect.height = 30
 
         # Sprite offset from collision rect
-        self.sprite_offset_x = -7  # Adjust these values to center the sprite
-        self.sprite_offset_y = -2  # Negative values move the sprite up/left
+        self.sprite_offset_x = 0  # Adjust these values to center the sprite
+        self.sprite_offset_y = 0  # Negative values move the sprite up/left
 
         # Center the collision rect on the sprite
         self.rect.centerx = x + self.image.get_width() // 2

@@ -54,6 +54,12 @@ class DialogBox:
         self.display_text = ""
         self.last_update = pygame.time.get_ticks()
 
+        # Add character full names
+        self.character_names = {
+            "MAX": 'Maxwell "Max" Remington',
+            "EVA": "E.V.A. (Enhanced Virtual Associate)",
+        }
+
     def show_dialog(self, character: str, text: str):
         """Show a dialog with the specified character and text"""
         self.full_text = text
@@ -117,9 +123,22 @@ class DialogBox:
             )
             surface.blit(scaled_portrait, self.portrait_rect)
 
-        # Draw text
+            # Draw character name
+            for character_id, portrait in self.portraits.items():
+                if portrait == self.current_portrait:
+                    name_text = self.font.render(
+                        self.character_names[character_id], True, self.text_color
+                    )
+                    name_rect = name_text.get_rect(
+                        topleft=(self.portrait_rect.right + 20, self.box_rect.top + 25)
+                    )
+                    surface.blit(name_text, name_rect)
+                    # Adjust starting position of dialog text to account for name
+                    text_y = name_rect.bottom + 10
+                    break
+
+        # Draw text (adjusted y position)
         text_x = self.portrait_rect.right + 20
-        text_y = self.box_rect.top + 25
 
         # Word wrap the animated text
         words = self.display_text.split()

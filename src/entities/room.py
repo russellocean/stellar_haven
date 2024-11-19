@@ -14,6 +14,7 @@ class Room(Entity):
         room_type: str,
         grid_pos: Tuple[int, int],
         cell_size: int,
+        room_id: str,
         resource_manager=None,
         grid=None,
         interaction_system=None,
@@ -26,6 +27,7 @@ class Room(Entity):
         self.room_type = room_type
         self.grid_pos = grid_pos
         self.cell_size = cell_size
+        self.room_id = room_id
         self.resource_manager = resource_manager
         self.grid = grid
         self.interaction_system = interaction_system

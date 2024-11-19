@@ -3,6 +3,7 @@ import pygame
 from entities.player import Player
 from input_manager import InputManager
 from scenes.scene import Scene
+from systems.ai_system import AISystem
 from systems.asset_manager import AssetManager
 from systems.building_system import BuildingSystem
 from systems.camera import Camera
@@ -93,6 +94,9 @@ class GameplayScene(Scene):
         self.building_system.set_camera(self.camera)
         self.building_system.init_ui(self.game.screen)  # Initialize UI elements
 
+        self.ai_system = AISystem(self.room_manager, self.room_manager.collision_system)
+        self.ai_system.set_camera(self.camera)
+
     def _init_entities(self):
         # Get starting position from room manager
         player_x, player_y = self.room_manager.get_starting_position()
@@ -141,6 +145,7 @@ class GameplayScene(Scene):
         self.game_layer = [
             self.grid_renderer,  # Draw tiles first
             self.room_manager,  # Draw rooms and interactables
+            self.ai_system,  # Draw AI characters
             self.character_sprites,  # Draw player on top
         ]
 
@@ -163,7 +168,11 @@ class GameplayScene(Scene):
 
         # Setup debug visualization
         self.room_manager.collision_system.set_camera(self.camera)
-        self.debug_layer = [self.debug_system, self.room_manager.collision_system]
+        self.debug_layer = [
+            self.debug_system,
+            self.room_manager.collision_system,
+            self.ai_system,
+        ]
 
         # Add player to both game and debug layers
         # self.game_layer.append(self.player)
@@ -224,6 +233,7 @@ class GameplayScene(Scene):
 
         # Core game updates
         self.player.update(self.room_manager, self.input_manager)
+        self.ai_system.update(dt)
         self.starfield.update(self.camera.x, self.camera.y)
         self.game_hud.update()
 

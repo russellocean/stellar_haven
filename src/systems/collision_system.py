@@ -10,134 +10,84 @@ class CollisionSystem:
         self.debug = DebugSystem()
         self.camera = None
 
-        # Debug colors
-        self.TILE_COLORS = {
-            TileType.EMPTY: (0, 0, 0, 0),
-            TileType.WALL: (255, 0, 0, 100),
-            TileType.DOOR: (0, 0, 255, 100),
-            TileType.CORNER: (255, 0, 255, 100),
-            TileType.INTERIOR_BACKGROUND: (128, 128, 128, 100),
-            TileType.PLATFORM: (0, 255, 0, 100),
-            TileType.DECORATION: (255, 255, 0, 100),
-            TileType.PLANET: (0, 255, 255, 100),
-            TileType.STAR: (255, 255, 255, 100),
-            TileType.WINDOW: (0, 128, 255, 100),
-            TileType.FURNITURE: (128, 64, 0, 100),
-            TileType.BACKGROUND: (64, 64, 64, 100),
-            TileType.EXTERIOR: (192, 192, 192, 100),
-        }
-
-    def is_position_valid(
-        self, rect: pygame.Rect, velocity: pygame.Vector2 = None
-    ) -> bool:
+    def check_movement(
+        self, rect: pygame.Rect, velocity: pygame.Vector2, dropping: bool = False
+    ) -> tuple[bool, pygame.Vector2]:
         """
-        Check if a position is valid, accounting for high velocities
-        to prevent tunneling through tiles
+        Check if movement is valid and return (can_move, adjusted_position)
         """
-        if velocity is None:
-            # Original single-point check for static collisions
-            return self._check_rect_collision(rect)
+        # Store original position
+        original_pos = pygame.Vector2(rect.centerx, rect.bottom)
+        new_pos = original_pos.copy()
 
-        # For high-speed movement, check multiple points along the path
-        num_steps = max(1, int(abs(velocity.y) / self.grid.cell_size))
-        step_size = velocity.y / num_steps if num_steps > 0 else 0
+        # Handle horizontal movement first
+        if velocity.x != 0:
+            new_pos.x += velocity.x
+            target_grid_x, _ = self.grid.world_to_grid(new_pos.x, rect.bottom - 2)
 
-        test_rect = rect.copy()
-        for _ in range(num_steps):
-            test_rect.y += step_size
-            if self._check_rect_collision(test_rect, velocity):
-                return True
-        return False
+            # Check if we can move horizontally (check both feet and head level)
+            feet_y = self.grid.world_to_grid(rect.centerx, rect.bottom - 1)[1]
+            head_y = self.grid.world_to_grid(rect.centerx, rect.top + 1)[1]
 
-    def _check_rect_collision(
-        self, rect: pygame.Rect, velocity: pygame.Vector2 = None
+            can_move_x = True
+            for check_y in [feet_y, head_y]:
+                if not self._check_horizontal(target_grid_x, check_y):
+                    can_move_x = False
+                    new_pos.x = original_pos.x
+                    break
+
+        # Handle vertical movement
+        if velocity.y != 0:
+            new_pos.y += velocity.y
+
+            # Check ceiling collision when moving up
+            if velocity.y < 0:
+                # Get grid position of head
+                _, head_grid_y = self.grid.world_to_grid(
+                    rect.centerx, rect.top + velocity.y
+                )
+                if not self._check_vertical(
+                    self.grid.world_to_grid(rect.centerx, rect.top)[0],
+                    head_grid_y,
+                    moving_down=False,
+                    dropping=False,
+                ):
+                    # Align to grid cell bottom when hitting ceiling
+                    new_pos.y = (head_grid_y + 1) * self.grid.cell_size + rect.height
+                    return False, new_pos
+
+            # Check floor collision when moving down
+            else:
+                _, target_grid_y = self.grid.world_to_grid(rect.centerx, new_pos.y)
+                if not self._check_vertical(
+                    self.grid.world_to_grid(rect.centerx, rect.bottom)[0],
+                    target_grid_y,
+                    moving_down=True,
+                    dropping=dropping,
+                ):
+                    # Align to grid cell top when hitting floor
+                    new_pos.y = target_grid_y * self.grid.cell_size
+
+        return True, new_pos
+
+    def _check_horizontal(self, grid_x: int, grid_y: int) -> bool:
+        """Check if horizontal movement is valid at a specific grid position"""
+        tile = self.grid.get_tile(grid_x, grid_y)
+        return tile is None or (tile.is_walkable and not tile.blocks_movement)
+
+    def _check_vertical(
+        self, grid_x: int, target_y: int, moving_down: bool, dropping: bool
     ) -> bool:
-        """Helper method for basic rectangle collision check"""
-        grid_left, grid_top = self.grid.world_to_grid(rect.left, rect.top)
-        grid_right, grid_bottom = self.grid.world_to_grid(
-            rect.right - 1, rect.bottom - 1
-        )
+        """Check if vertical movement is valid"""
+        tile = self.grid.get_tile(grid_x, target_y)
 
-        # Check each grid cell the rect overlaps
-        for x in range(grid_left, grid_right + 1):
-            for y in range(grid_top, grid_bottom + 1):
-                tile = self.grid.get_tile(x, y)
-                if tile:
-                    if tile.blocks_movement:
-                        return True
-                    # Only collide with platforms if we're falling onto them from above
-                    if tile == TileType.PLATFORM and velocity and velocity.y > 0:
-                        # Check if the bottom of the rect is near the top of the platform
-                        platform_top = y * self.grid.cell_size
-                        if abs(rect.bottom - platform_top) < abs(velocity.y):
-                            return True
-        return False
+        if tile is None or tile.is_walkable:
+            if tile == TileType.PLATFORM:
+                if moving_down and not dropping:
+                    return False
+            return True
 
-    def check_collision_with_tile(self, rect: pygame.Rect, tile_pos: tuple) -> bool:
-        """Check if a rect collides with a specific tile"""
-        tile_rect = pygame.Rect(
-            tile_pos[0] * self.grid.cell_size,
-            tile_pos[1] * self.grid.cell_size,
-            self.grid.cell_size,
-            self.grid.cell_size,
-        )
-        return rect.colliderect(tile_rect)
-
-    def get_colliding_tiles(self, rect: pygame.Rect) -> list:
-        """Get all tiles that collide with a rect"""
-        grid_left, grid_top = self.grid.world_to_grid(rect.left, rect.top)
-        grid_right, grid_bottom = self.grid.world_to_grid(
-            rect.right - 1, rect.bottom - 1
-        )
-
-        colliding_tiles = []
-        for x in range(grid_left, grid_right + 1):
-            for y in range(grid_top, grid_bottom + 1):
-                if (x, y) in self.grid.cells:
-                    tile = self.grid.get_tile(x, y)
-                    colliding_tiles.append((x, y, tile))
-        return colliding_tiles
-
-    def get_valid_floor(self, x: int, y: int) -> int:
-        """Find the nearest valid floor position below a point"""
-        grid_x, grid_y = self.grid.world_to_grid(x, y)
-
-        while grid_y < (y + 1000) // self.grid.cell_size:  # Reasonable search limit
-            if (grid_x, grid_y) in self.grid.cells:
-                tile = self.grid.get_tile(grid_x, grid_y)
-                if tile.blocks_movement:
-                    return grid_y * self.grid.cell_size
-            grid_y += 1
-        return y
-
-    def draw_debug(self, screen):
-        """Draw debug visualization"""
-        if not self.debug.enabled or not self.camera:
-            return
-
-        debug_surface = pygame.Surface(screen.get_size(), pygame.SRCALPHA)
-
-        # Draw grid
-        for x, y in self.grid.cells:
-            # Convert world coordinates to screen coordinates
-            world_x = x * self.grid.cell_size
-            world_y = y * self.grid.cell_size
-            screen_x, screen_y = self.camera.world_to_screen(world_x, world_y)
-
-            # Get the primary (non-background) tile at this position
-            tile_type = self.grid.get_tile(
-                x, y
-            )  # Use get_tile instead of direct access
-
-            rect = pygame.Rect(
-                screen_x, screen_y, self.grid.cell_size, self.grid.cell_size
-            )
-
-            # Draw the tile color if we have one defined
-            if tile_type in self.TILE_COLORS:
-                pygame.draw.rect(debug_surface, self.TILE_COLORS[tile_type], rect)
-
-        screen.blit(debug_surface, (0, 0))
+        return not tile.blocks_movement
 
     def set_camera(self, camera):
         """Set camera reference for debug visualization"""

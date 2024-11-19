@@ -925,5 +925,183 @@
                 }
             }
         ]
+    },
+    "tilemaps/biotanks.png": {
+        "tile_size": 16,
+        "groups": [
+            {
+                "tiles": [
+                    {
+                        "x": 1,
+                        "y": 7
+                    },
+                    {
+                        "x": 2,
+                        "y": 7
+                    },
+                    {
+                        "x": 3,
+                        "y": 7
+                    },
+                    {
+                        "x": 4,
+                        "y": 7
+                    },
+                    {
+                        "x": 4,
+                        "y": 8
+                    },
+                    {
+                        "x": 3,
+                        "y": 8
+                    },
+                    {
+                        "x": 2,
+                        "y": 8
+                    },
+                    {
+                        "x": 1,
+                        "y": 8
+                    },
+                    {
+                        "x": 1,
+                        "y": 9
+                    },
+                    {
+                        "x": 2,
+                        "y": 9
+                    },
+                    {
+                        "x": 3,
+                        "y": 9
+                    },
+                    {
+                        "x": 4,
+                        "y": 9
+                    }
+                ],
+                "metadata": {
+                    "name": "biotank_blue",
+                    "type": "decoration",
+                    "properties": {},
+                    "width": 4,
+                    "height": 3
+                }
+            }
+        ]
+    },
+    "tilemaps/cryo_chambers.png": {
+        "tile_size": 16,
+        "groups": [
+            {
+                "tiles": [
+                    {
+                        "x": 1,
+                        "y": 2
+                    },
+                    {
+                        "x": 2,
+                        "y": 2
+                    },
+                    {
+                        "x": 1,
+                        "y": 3
+                    },
+                    {
+                        "x": 2,
+                        "y": 3
+                    },
+                    {
+                        "x": 1,
+                        "y": 4
+                    },
+                    {
+                        "x": 2,
+                        "y": 4
+                    }
+                ],
+                "metadata": {
+                    "name": "cryochamber_closed",
+                    "type": "decoration",
+                    "properties": {},
+                    "width": 2,
+                    "height": 3
+                }
+            }
+        ]
+    },
+    "tilemaps/crates.png": {
+        "tile_size": 16,
+        "groups": [
+            {
+                "tiles": [
+                    {
+                        "x": 1,
+                        "y": 2
+                    },
+                    {
+                        "x": 2,
+                        "y": 2
+                    },
+                    {
+                        "x": 3,
+                        "y": 2
+                    },
+                    {
+                        "x": 1,
+                        "y": 3
+                    },
+                    {
+                        "x": 2,
+                        "y": 3
+                    },
+                    {
+                        "x": 3,
+                        "y": 3
+                    }
+                ],
+                "metadata": {
+                    "name": "crate_large",
+                    "type": "decoration",
+                    "properties": {},
+                    "width": 3,
+                    "height": 2
+                }
+            },
+            {
+                "tiles": [
+                    {
+                        "x": 2,
+                        "y": 1
+                    },
+                    {
+                        "x": 3,
+                        "y": 1
+                    }
+                ],
+                "metadata": {
+                    "name": "crate_medium",
+                    "type": "decoration",
+                    "properties": {},
+                    "width": 2,
+                    "height": 1
+                }
+            },
+            {
+                "tiles": [
+                    {
+                        "x": 1,
+                        "y": 1
+                    }
+                ],
+                "metadata": {
+                    "name": "crate_small",
+                    "type": "decoration",
+                    "properties": {},
+                    "width": 1,
+                    "height": 1
+                }
+            }
+        ]
     }
 }

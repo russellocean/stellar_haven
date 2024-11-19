@@ -19,6 +19,7 @@ class CollisionSystem:
         # Store original position
         original_pos = pygame.Vector2(rect.centerx, rect.bottom)
         new_pos = original_pos.copy()
+        can_move = True
 
         # Handle horizontal movement first
         if velocity.x != 0:
@@ -29,10 +30,9 @@ class CollisionSystem:
             feet_y = self.grid.world_to_grid(rect.centerx, rect.bottom - 1)[1]
             head_y = self.grid.world_to_grid(rect.centerx, rect.top + 1)[1]
 
-            can_move_x = True
             for check_y in [feet_y, head_y]:
                 if not self._check_horizontal(target_grid_x, check_y):
-                    can_move_x = False
+                    can_move = False
                     new_pos.x = original_pos.x
                     break
 
@@ -42,7 +42,6 @@ class CollisionSystem:
 
             # Check ceiling collision when moving up
             if velocity.y < 0:
-                # Get grid position of head
                 _, head_grid_y = self.grid.world_to_grid(
                     rect.centerx, rect.top + velocity.y
                 )
@@ -52,9 +51,9 @@ class CollisionSystem:
                     moving_down=False,
                     dropping=False,
                 ):
+                    can_move = False
                     # Align to grid cell bottom when hitting ceiling
                     new_pos.y = (head_grid_y + 1) * self.grid.cell_size + rect.height
-                    return False, new_pos
 
             # Check floor collision when moving down
             else:
@@ -65,10 +64,15 @@ class CollisionSystem:
                     moving_down=True,
                     dropping=dropping,
                 ):
+                    can_move = False
                     # Align to grid cell top when hitting floor
                     new_pos.y = target_grid_y * self.grid.cell_size
 
-        return True, new_pos
+        # If position hasn't changed at all, we definitely can't move
+        if new_pos == original_pos:
+            can_move = False
+
+        return can_move, new_pos
 
     def _check_horizontal(self, grid_x: int, grid_y: int) -> bool:
         """Check if horizontal movement is valid at a specific grid position"""

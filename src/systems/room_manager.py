@@ -77,6 +77,7 @@ class RoomManager:
                 room_type=room_type,
                 grid_pos=(grid_x, grid_y),
                 cell_size=self.grid.cell_size,
+                room_id=room_id,
                 resource_manager=self.resource_manager,
                 grid=self.grid,
                 interaction_system=self.interaction_system,
@@ -109,7 +110,11 @@ class RoomManager:
         center_y = grid_y + (height // 2)
 
         # Convert to world coordinates
-        return (center_x * self.grid.cell_size, center_y * self.grid.cell_size)
+        world_x = center_x * self.grid.cell_size
+        world_y = center_y * self.grid.cell_size
+
+        print(f"Room center calculated for {room.room_id}: ({world_x}, {world_y})")
+        return (world_x, world_y)
 
     def get_connected_rooms(self, room: Room) -> List[Room]:
         """Get all rooms connected to the given room"""

@@ -19,6 +19,7 @@ class DialogState(Enum):
 class DialogEntry:
     character: str
     text: str
+    delay: float = 0
 
 
 class DialogSystem:
@@ -37,6 +38,8 @@ class DialogSystem:
             self.dialog_queue: List[DialogEntry] = []
             self.current_dialog: Optional[DialogEntry] = None
             self.state = DialogState.INACTIVE
+            self.delayed_dialogs: List[tuple[float, List[DialogEntry]]] = []
+            self.timer: float = 0
             self._initialized = True
             self.on_complete_callback = None
 
@@ -54,7 +57,7 @@ class DialogSystem:
     def _show_next_dialog(self):
         """Show the next dialog in the queue"""
         if not self.dialog_queue:
-            self.state = DialogState.COMPLETE
+            self.state = DialogState.INACTIVE
             self.event_system.emit(GameEvent.DIALOG_ENDED)
             if self.on_complete_callback:
                 self.on_complete_callback()
@@ -75,6 +78,15 @@ class DialogSystem:
             # Check if current dialog is complete
             if self.state == DialogState.PLAYING and not self.dialog_box.is_animating:
                 self.state = DialogState.WAITING
+
+        # Handle delayed dialog sequences
+        if self.delayed_dialogs:
+            self.timer += 1 / 60  # Assuming 60 FPS, adjust as needed
+            delay, dialogs = self.delayed_dialogs[0]
+            if self.timer >= delay:
+                self.start_dialog_sequence(dialogs)
+                self.delayed_dialogs.pop(0)
+                self.timer = 0
 
     def handle_event(self, event) -> bool:
         """Handle input events"""
@@ -102,3 +114,7 @@ class DialogSystem:
     def is_active(self) -> bool:
         """Check if dialog system is currently active"""
         return self.state != DialogState.INACTIVE
+
+    def schedule_dialog_sequence(self, dialogs: List[DialogEntry], delay: float):
+        """Schedule a dialog sequence to start after a delay (in seconds)"""
+        self.delayed_dialogs.append((delay, dialogs))

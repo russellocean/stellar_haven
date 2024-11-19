@@ -26,6 +26,7 @@ class Game:
         # Initialize only the necessary starting scenes
         self.scene_manager.add_scene(SceneType.MAIN_MENU, MenuScene(self))
         self.scene_manager.add_scene(SceneType.PROLOGUE, PrologueScene(self))
+        self.scene_manager.add_scene(SceneType.PAUSE, PauseScene(self))
 
         # Start with main menu
         self.scene_manager.set_scene(SceneType.MAIN_MENU)

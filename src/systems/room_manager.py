@@ -1,4 +1,4 @@
-from typing import Dict, List
+from typing import Dict, List, Tuple
 
 import pygame
 
@@ -98,7 +98,7 @@ class RoomManager:
             return room
         return None
 
-    def get_room_center(self, room: Room) -> tuple[int, int]:
+    def get_room_center(self, room: Room) -> Tuple[int, int]:
         """Get the center position of a room in world coordinates"""
         # Get room's grid position directly from Room object
         grid_x, grid_y = room.grid_pos
@@ -131,7 +131,7 @@ class RoomManager:
         """Get all rooms"""
         return self.rooms
 
-    def get_starting_position(self) -> tuple[int, int]:
+    def get_starting_position(self) -> Tuple[int, int]:
         """Get the starting position of the ship in world coordinates"""
         return self.get_room_center(self.starting_room)
 

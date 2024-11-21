@@ -1,3 +1,5 @@
+from typing import Tuple
+
 import pygame
 
 from grid.tile_type import TileType
@@ -313,7 +315,7 @@ class BuildingSystem:
                 if isinstance(element, Button):
                     element.active = False
 
-    def try_build_room(self, room_type: str, position: tuple[int, int]) -> bool:
+    def try_build_room(self, room_type: str, position: Tuple[int, int]) -> bool:
         """Attempt to build a room if resources are available"""
         # Get room costs from config
         room_config = self.room_manager.grid.room_config["room_types"][room_type]

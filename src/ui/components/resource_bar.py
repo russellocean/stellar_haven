@@ -57,13 +57,13 @@ class ResourceBar:
     def _lighten_color(
         self, color: Tuple[int, int, int], amount: int
     ) -> Tuple[int, int, int]:
-        """Lighten a color by the specified amount"""
+        """Lighten a color by a given amount"""
         return tuple(min(255, c + amount) for c in color)
 
     def _darken_color(
         self, color: Tuple[int, int, int], amount: int
     ) -> Tuple[int, int, int]:
-        """Darken a color by the specified amount"""
+        """Darken a color by a given amount"""
         return tuple(max(0, c - amount) for c in color)
 
     def update(self):

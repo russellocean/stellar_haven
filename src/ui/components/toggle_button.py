@@ -1,4 +1,4 @@
-from typing import Callable, Optional
+from typing import Callable, Optional, Tuple
 
 import pygame
 
@@ -39,7 +39,7 @@ class ToggleButton(UIComponent):
         """Set the toggle state externally"""
         self.is_active = is_toggled
 
-    def _get_current_color(self) -> tuple:
+    def _get_current_color(self) -> Tuple[int, int, int]:
         """Override color selection to include toggle state"""
         if self.is_toggled:
             return self.colors["active"]

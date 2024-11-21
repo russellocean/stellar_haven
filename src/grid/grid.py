@@ -445,7 +445,7 @@ class Grid:
         return True
 
     def get_interior_positions(
-        self, room_id: str, object_size: tuple[int, int] = (1, 1)
+        self, room_id: str, object_size: Tuple[int, int] = (1, 1)
     ) -> List[Tuple[int, int]]:
         """Get all valid interior positions for a room based on object size"""
         room = self.rooms[room_id]

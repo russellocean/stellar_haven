@@ -1,4 +1,4 @@
-from typing import Callable, Optional
+from typing import Callable, Optional, Tuple
 
 import pygame
 
@@ -13,7 +13,7 @@ class Button(UIComponent):
         action: Callable,
         image_path: Optional[str] = None,
         font_size: int = 24,
-        tooltip: str = None,
+        tooltip: Optional[str] = None,
         disabled: bool = False,
     ):
         super().__init__(rect, text, image_path, font_size)
@@ -87,7 +87,7 @@ class Button(UIComponent):
                 self.pulse_amount = 0.0
                 self.pulse_direction = 1
 
-    def _get_current_color(self) -> tuple:
+    def _get_current_color(self) -> Tuple[int, int, int]:
         """Get the current button color based on state"""
         if self.disabled:
             return self.colors["disabled"]
@@ -95,13 +95,13 @@ class Button(UIComponent):
             return self.colors["pressed"]
         return super()._get_current_color()
 
-    def _get_current_text_color(self) -> tuple:
+    def _get_current_text_color(self) -> Tuple[int, int, int]:
         """Get the current text color based on state"""
         if self.disabled:
             return self.colors["disabled_text"]
         return super()._get_text_color()
 
-    def _get_border_color(self) -> tuple:
+    def _get_border_color(self) -> Tuple[int, int, int]:
         """Get the current border color based on state"""
         if self.disabled:
             return self.colors["border_normal"]

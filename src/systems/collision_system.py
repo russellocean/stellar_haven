@@ -1,3 +1,5 @@
+from typing import Tuple
+
 import pygame
 
 from grid.tile_type import TileType
@@ -12,7 +14,7 @@ class CollisionSystem:
 
     def check_movement(
         self, rect: pygame.Rect, velocity: pygame.Vector2, dropping: bool = False
-    ) -> tuple[bool, pygame.Vector2]:
+    ) -> Tuple[bool, pygame.Vector2]:
         """
         Check if movement is valid and return (can_move, adjusted_position)
         """

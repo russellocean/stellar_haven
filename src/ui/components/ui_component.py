@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Tuple
 
 import pygame
 
@@ -68,13 +68,13 @@ class UIComponent:
         # Draw text
         surface.blit(self.text_surface, self.text_rect)
 
-    def _get_current_color(self) -> tuple:
+    def _get_current_color(self) -> Tuple[int, int, int]:
         """Get the current color based on state"""
         if self.is_hovered:
             return self.colors["hover"]
         return self.colors["normal"]
 
-    def _get_text_color(self) -> tuple:
+    def _get_text_color(self) -> Tuple[int, int, int]:
         """Get the current text color"""
         if self.is_hovered:
             return self.colors["text_hover"]

@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Tuple
 
 import pygame
 
@@ -316,7 +316,7 @@ class GridRenderer:
 
     def _find_group_at_position(
         self, x: int, y: int, tile_type: TileType
-    ) -> Optional[tuple]:
+    ) -> Optional[Tuple]:
         """Find if position is part of a tile group"""
         # Add debug output
         print(f"Checking for group at {x}, {y} with type {tile_type}")

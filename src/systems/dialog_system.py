@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from enum import Enum, auto
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 import pygame
 
@@ -38,7 +38,7 @@ class DialogSystem:
             self.dialog_queue: List[DialogEntry] = []
             self.current_dialog: Optional[DialogEntry] = None
             self.state = DialogState.INACTIVE
-            self.delayed_dialogs: List[tuple[float, List[DialogEntry]]] = []
+            self.delayed_dialogs: List[Tuple[float, List[DialogEntry]]] = []
             self.timer: float = 0
             self._initialized = True
             self.on_complete_callback = None

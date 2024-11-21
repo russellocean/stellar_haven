@@ -1,4 +1,4 @@
-from typing import Callable, Optional
+from typing import Callable, Optional, Tuple
 
 import pygame
 
@@ -34,7 +34,7 @@ class Entity(pygame.sprite.Sprite):
         self.interaction_callback = callback
         self.interaction_range = interaction_range
 
-    def update_hover(self, mouse_pos: tuple[int, int]):
+    def update_hover(self, mouse_pos: Tuple[int, int]):
         if self.is_interactable:
             distance = (
                 (mouse_pos[0] - self.rect.centerx) ** 2
@@ -72,7 +72,7 @@ class Entity(pygame.sprite.Sprite):
             if self.feedback_timer == 0:
                 self.feedback_text = None
 
-    def render_feedback(self, surface: pygame.Surface, screen_pos: tuple[int, int]):
+    def render_feedback(self, surface: pygame.Surface, screen_pos: Tuple[int, int]):
         """Render feedback text if active with effects"""
         if self.feedback_text and self.feedback_timer > 0:
             font = pygame.font.Font(None, 24)

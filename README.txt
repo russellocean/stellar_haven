@@ -1,17 +1,8 @@
 # Game Installation and Running Instructions
 
-1. Install required dependencies:
-```bash
-# For Python 3.x (recommended)
-python3 -m pip install -r requirements.txt
-# OR
-pip3 install -r requirements.txt
-```
+To install and run the game, use the following Makefile commands:
 
-2. Run the game:
 ```bash
-# For Python 3.x (recommended)
-python3 src/main.py
+make
+make run
 ```
-
-Note: The `pygame` package is included in requirements.txt, so there's no need for a separate installation command.

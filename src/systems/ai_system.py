@@ -24,7 +24,7 @@ class AICharacter:
 
         # State management
         self.state = "idle"
-        self.state_timer = 0
+        self.state_timer = random.uniform(2.0, 4.0)
         self.IDLE_TIME = random.uniform(2.0, 4.0)
         self.WALK_TIME = random.uniform(1.5, 3.0)
 
@@ -60,10 +60,13 @@ class AICharacter:
 
         # Dialogue system
         self.dialogue_timer = 0
-        self.dialogue_display_timer = 0  # How long to show the dialogue
-        self.DIALOGUE_DISPLAY_TIME = 4.0  # Show dialogue for 4 seconds
+        self.dialogue_display_timer = 0
+        self.DIALOGUE_DISPLAY_TIME = 4.0
         self.current_dialogue = None
         self.dialogue_surface = None
+        self.dialogue_alpha = 0  # For fade effect
+        self.name_tag_visible = True
+        self.name_tag_alpha = 255
         self.set_next_dialogue_time("idle")
 
         # Work efficiency
@@ -175,13 +178,22 @@ class AICharacter:
         self.dialogue_timer = random.uniform(freq["min_time"], freq["max_time"])
 
     def update_dialogue(self, dt: float, resource_manager):
-        """Update dialogue timer and generate new dialogue when needed"""
-        # Update display timer
+        """Update dialogue timer and handle transitions"""
+        # Update display timer and handle transitions
         if self.dialogue_display_timer > 0:
             self.dialogue_display_timer -= dt
+
+            # Fade in during first 0.3 seconds
+            if self.dialogue_display_timer > self.DIALOGUE_DISPLAY_TIME - 0.3:
+                self.dialogue_alpha = min(255, self.dialogue_alpha + (dt * 850))
+            # Fade out during last 0.3 seconds
+            elif self.dialogue_display_timer < 0.3:
+                self.dialogue_alpha = max(0, self.dialogue_alpha - (dt * 850))
+
             if self.dialogue_display_timer <= 0:
                 self.dialogue_surface = None
                 self.current_dialogue = None
+                self.dialogue_alpha = 0
 
         # Update dialogue generation timer
         if self.dialogue_timer > 0:
@@ -236,7 +248,7 @@ class AICharacter:
             self.dialogue_display_timer = self.DIALOGUE_DISPLAY_TIME
 
     def create_dialogue_surface(self, text: str):
-        """Create a surface for the dialogue bubble"""
+        """Create a surface for the dialogue bubble with alpha channel"""
         font = pygame.font.Font(None, 20)
         padding = 5
 
@@ -247,16 +259,21 @@ class AICharacter:
         width = text_surface.get_width() + padding * 2
         height = text_surface.get_height() + padding * 2
 
+        # Create main surface and temporary surface for alpha
         self.dialogue_surface = pygame.Surface((width, height), pygame.SRCALPHA)
+        temp_surface = pygame.Surface((width, height), pygame.SRCALPHA)
+
+        # Draw background on temp surface
         pygame.draw.rect(
-            self.dialogue_surface,
-            (0, 0, 0, 180),
-            (0, 0, width, height),
-            border_radius=5,
+            temp_surface, (0, 0, 0, 180), (0, 0, width, height), border_radius=5
         )
 
-        # Add text
-        self.dialogue_surface.blit(text_surface, (padding, padding))
+        # Add text to temp surface
+        temp_surface.blit(text_surface, (padding, padding))
+
+        # Start with 0 alpha
+        self.dialogue_alpha = 0
+        self.dialogue_surface = temp_surface
         self.current_dialogue = text
 
     def get_work_efficiency(self) -> float:
@@ -285,6 +302,8 @@ class AISystem:
         self.characters: List[AICharacter] = []
         self.camera = None
         self.event_system = EventSystem()
+        self.player = None  # Will store reference to player
+        self.name_tag_fade_distance = 150  # Distance at which name tags start fading
 
         # Load room config to determine AI counts
         with open("assets/config/rooms.json", "r") as f:
@@ -305,6 +324,10 @@ class AISystem:
         # Spawn AIs in existing rooms
         for room_id, room in room_manager.rooms.items():
             self.populate_room(room)
+
+    def set_player(self, player):
+        """Set the player reference for distance calculations"""
+        self.player = player
 
     def _handle_resource_low(self, event_data):
         """Handle low resource event"""
@@ -397,30 +420,34 @@ class AISystem:
         """Update all AI characters"""
         resource_manager = self.room_manager.resource_manager
 
+        if not self.player:
+            return
+
+        # First update all character states and physics
         for character in self.characters:
-            # Update state timer and handle state changes
-            character.state_timer -= delta_time
-            if character.state_timer <= 0:
-                if character.state == "idle":
-                    character.state = "walking"
-                    character.state_timer = character.WALK_TIME
-                    character.facing_right = random.choice([True, False])
-                    character.velocity.x = (
-                        character.WALK_SPEED
-                        if character.facing_right
-                        else -character.WALK_SPEED
-                    )
-                else:
-                    character.state = "idle"
-                    character.state_timer = character.IDLE_TIME
-                    character.velocity.x = 0
+            # Update character state
+            if character.state_timer > 0:
+                character.state_timer -= delta_time
+                if character.state_timer <= 0:
+                    if character.state == "idle":
+                        character.state = "walking"
+                        character.state_timer = character.WALK_TIME
+                        character.facing_right = random.choice([True, False])
+                        character.velocity.x = (
+                            character.WALK_SPEED
+                            if character.facing_right
+                            else -character.WALK_SPEED
+                        )
+                    else:
+                        character.state = "idle"
+                        character.state_timer = character.IDLE_TIME
+                        character.velocity.x = 0
 
             # Update dialogue
             character.update_dialogue(delta_time, resource_manager)
 
             # Apply character efficiency to room resources
             if character.room_type in ["engine_room", "life_support"]:
-                # Find the room this character is in by type
                 matching_rooms = [
                     room
                     for room in self.room_manager.rooms.values()
@@ -430,18 +457,15 @@ class AISystem:
                     room = matching_rooms[0]
                     efficiency = character.get_work_efficiency()
                     for resource, base_rate in room.resource_generators.items():
-                        # Store original rate if not already stored
                         if not hasattr(room, "_original_rates"):
                             room._original_rates = {}
                         if resource not in room._original_rates:
                             room._original_rates[resource] = base_rate
-
-                        # Apply efficiency to original rate
                         room.resource_generators[resource] = (
                             room._original_rates[resource] * efficiency
                         )
 
-            # Rest of the update logic...
+            # Update physics
             if not character.on_ground:
                 character.velocity.y += character.GRAVITY
 
@@ -481,6 +505,57 @@ class AISystem:
 
             self._check_ground_state(character)
             self._update_character_animation(character, delta_time)
+
+        # Then handle name tag visibility separately
+        characters_with_distance = []
+        for character in self.characters:
+            dist = (
+                (character.rect.centerx - self.player.rect.centerx) ** 2
+                + (character.rect.centery - self.player.rect.centery) ** 2
+            ) ** 0.5
+            characters_with_distance.append((character, dist))
+
+        # Sort by distance
+        characters_with_distance.sort(key=lambda x: x[1])
+
+        # Update name tag visibility based on distance and overlap
+        visible_tags = []
+        for character, dist in characters_with_distance:
+            # Calculate target alpha based on distance
+            if dist < self.name_tag_fade_distance:
+                target_alpha = 255
+            else:
+                fade_factor = min(1.0, (dist - self.name_tag_fade_distance) / 150.0)
+                target_alpha = max(0, int(255 * (1 - fade_factor)))
+
+            # Check for overlap with visible tags
+            tag_rect = pygame.Rect(
+                character.rect.centerx - character.name_tag.get_width() // 2,
+                character.rect.top - character.name_tag.get_height() - 5,
+                character.name_tag.get_width(),
+                character.name_tag.get_height(),
+            )
+
+            overlapping = False
+            for visible_tag in visible_tags:
+                if tag_rect.colliderect(visible_tag):
+                    overlapping = True
+                    break
+
+            if overlapping:
+                target_alpha = 0
+            else:
+                visible_tags.append(tag_rect)
+
+            # Smoothly transition alpha
+            if target_alpha > character.name_tag_alpha:
+                character.name_tag_alpha = min(
+                    target_alpha, character.name_tag_alpha + (delta_time * 510)
+                )
+            elif target_alpha < character.name_tag_alpha:
+                character.name_tag_alpha = max(
+                    target_alpha, character.name_tag_alpha - (delta_time * 510)
+                )
 
     def _check_ground_state(self, character: AICharacter):
         if character.velocity.y < 0:
@@ -553,15 +628,20 @@ class AISystem:
             )
             screen.blit(character.image, screen_pos)
 
-            # Draw name tag above character
-            name_tag_pos = self.camera.world_to_screen(
-                character.rect.centerx - character.name_tag.get_width() // 2,
-                character.rect.top - character.name_tag.get_height() - 5,
-            )
-            screen.blit(character.name_tag, name_tag_pos)
+            # Draw name tag with alpha
+            if character.name_tag_alpha > 0:
+                name_tag_with_alpha = character.name_tag.copy()
+                name_tag_with_alpha.set_alpha(character.name_tag_alpha)
+                name_tag_pos = self.camera.world_to_screen(
+                    character.rect.centerx - character.name_tag.get_width() // 2,
+                    character.rect.top - character.name_tag.get_height() - 5,
+                )
+                screen.blit(name_tag_with_alpha, name_tag_pos)
 
-            # Draw dialogue bubble if exists
-            if character.dialogue_surface:
+            # Draw dialogue bubble with alpha
+            if character.dialogue_surface and character.dialogue_alpha > 0:
+                dialogue_with_alpha = character.dialogue_surface.copy()
+                dialogue_with_alpha.set_alpha(character.dialogue_alpha)
                 dialogue_pos = self.camera.world_to_screen(
                     character.rect.centerx
                     - character.dialogue_surface.get_width() // 2,
@@ -570,6 +650,6 @@ class AISystem:
                     - character.dialogue_surface.get_height()
                     - 10,
                 )
-                screen.blit(character.dialogue_surface, dialogue_pos)
+                screen.blit(dialogue_with_alpha, dialogue_pos)
 
         screen.blit(debug_surface, (0, 0))

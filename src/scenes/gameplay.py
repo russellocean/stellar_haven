@@ -104,6 +104,8 @@ class GameplayScene(Scene):
         self.character_sprites = pygame.sprite.Group(self.player)
         # Set camera reference for player debug visualization
         self.player.camera = self.camera
+        # Set player reference for AI system
+        self.ai_system.set_player(self.player)
 
     def _init_ui(self):
         # Initialize GameHUD with resource manager

@@ -33,14 +33,14 @@
       "name": "Bridge",
       "grid_size": [12, 8],
       "resource_consumption": {
-        "power": 0.3,
+        "power": 0.5,
         "oxygen": 0.3
       },
       "resource_generation": {},
       "build_costs": {
-        "power": 100
+        "power": 150
       },
-      "description": "Ship's command center with basic power generation",
+      "description": "Ship's command center - restricted access",
       "color_theme": {
         "floor": [200, 220, 255],
         "wall": [180, 200, 235]
@@ -136,6 +136,110 @@
           "max_count": 3,
           "size": [1, 2],
           "valid_positions": ["wall"]
+        }
+      }
+    },
+    "research_lab": {
+      "name": "Research Lab",
+      "grid_size": [10, 8],
+      "resource_consumption": {
+        "power": 1.0,
+        "oxygen": 0.4
+      },
+      "resource_generation": {},
+      "build_costs": {
+        "power": 120,
+        "oxygen": 40
+      },
+      "description": "Scientific research facility that consumes resources",
+      "color_theme": {
+        "floor": [230, 230, 255],
+        "wall": [210, 210, 235]
+      },
+      "decorations": {
+        "console": {
+          "required": true,
+          "min_count": 2,
+          "max_count": 3,
+          "size": [2, 1],
+          "valid_positions": ["wall"]
+        },
+        "biotank": {
+          "required": true,
+          "min_count": 1,
+          "max_count": 2,
+          "size": [4, 3],
+          "valid_positions": ["wall"],
+          "group_name": "biotank_blue"
+        }
+      }
+    },
+    "medical_bay": {
+      "name": "Medical Bay",
+      "grid_size": [12, 8],
+      "resource_consumption": {
+        "power": 0.7,
+        "oxygen": 0.5
+      },
+      "resource_generation": {},
+      "build_costs": {
+        "power": 100,
+        "oxygen": 50
+      },
+      "description": "Medical facility for crew health, requires significant resources",
+      "color_theme": {
+        "floor": [255, 240, 240],
+        "wall": [235, 220, 220]
+      },
+      "decorations": {
+        "cryochamber": {
+          "required": true,
+          "min_count": 2,
+          "max_count": 3,
+          "size": [2, 3],
+          "valid_positions": ["wall"],
+          "group_name": "cryochamber_closed"
+        },
+        "console": {
+          "required": true,
+          "min_count": 1,
+          "max_count": 2,
+          "size": [2, 1],
+          "valid_positions": ["wall"]
+        }
+      }
+    },
+    "cargo_bay": {
+      "name": "Cargo Bay",
+      "grid_size": [14, 10],
+      "resource_consumption": {
+        "power": 0.4,
+        "oxygen": 0.6
+      },
+      "resource_generation": {},
+      "build_costs": {
+        "power": 80,
+        "oxygen": 30
+      },
+      "description": "Storage facility that requires climate control",
+      "color_theme": {
+        "floor": [200, 200, 200],
+        "wall": [180, 180, 180]
+      },
+      "decorations": {
+        "crate_large": {
+          "required": true,
+          "min_count": 2,
+          "max_count": 4,
+          "size": [3, 2],
+          "valid_positions": ["floor"]
+        },
+        "crate_medium": {
+          "required": true,
+          "min_count": 3,
+          "max_count": 6,
+          "size": [2, 1],
+          "valid_positions": ["floor"]
         }
       }
     }

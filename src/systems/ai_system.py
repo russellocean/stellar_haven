@@ -394,8 +394,8 @@ class AISystem:
 
         # Define AI counts based on room type and size
         if room_type == "bridge":
-            # Bridge needs several officers
-            return min(4, max(2, room_area // 32))
+            # Bridge is restricted - no AI characters
+            return 0
         elif room_type == "engine_room":
             # Engine room needs a few engineers
             return min(3, max(1, room_area // 48))
@@ -405,6 +405,15 @@ class AISystem:
         elif room_type == "starting_quarters":
             # Quarters should have a few crew members
             return min(3, max(1, room_area // 48))
+        elif room_type == "research_lab":
+            # Research lab needs scientists
+            return min(3, max(1, room_area // 40))
+        elif room_type == "medical_bay":
+            # Medical bay needs medical staff
+            return min(3, max(1, room_area // 48))
+        elif room_type == "cargo_bay":
+            # Cargo bay needs workers
+            return min(2, max(1, room_area // 64))
         else:
             return 0  # No AIs for other room types
 

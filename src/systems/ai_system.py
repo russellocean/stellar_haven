@@ -4,6 +4,7 @@ from typing import List
 import pygame
 
 from grid.tile_type import TileType
+from systems.asset_manager import AssetManager
 
 
 class AICharacter:
@@ -24,6 +25,38 @@ class AICharacter:
         self.state_timer = 0
         self.IDLE_TIME = random.uniform(2.0, 4.0)  # Random idle duration
         self.WALK_TIME = random.uniform(1.5, 3.0)  # Random walk duration
+
+        # Animation properties (same as player)
+        self.asset_manager = AssetManager()
+        self.animation_frame = 0
+        self.animation_timer = 0
+        self.ANIMATION_SPEED = 0.1  # Seconds per frame
+        self.last_update = pygame.time.get_ticks()
+        self.current_animation = "idle"
+
+        # Load animations (same as player)
+        self.animations = {
+            "idle": [
+                self.asset_manager.get_image(f"characters/no-helm/Idle/idle{i}.png")
+                for i in range(1, 5)
+            ],
+            "run": [
+                self.asset_manager.get_image(f"characters/no-helm/run/run{i}.png")
+                for i in range(1, 11)
+            ],
+            "jump": [
+                self.asset_manager.get_image(
+                    f"characters/no-helm/jump-no-gun/jump-no-gun{i}.png"
+                )
+                for i in range(1, 7)
+            ],
+        }
+
+        # Initialize sprite
+        self.image = self.animations["idle"][0]
+        self.image_rect = self.image.get_rect()
+        self.sprite_offset_x = 0
+        self.sprite_offset_y = 0
 
 
 class AISystem:
@@ -124,6 +157,9 @@ class AISystem:
             # Check ground state
             self._check_ground_state(character)
 
+            # Update animation
+            self._update_character_animation(character, delta_time)
+
     def _check_ground_state(self, character: AICharacter):
         """Check if character is actually on ground"""
         if character.velocity.y < 0:
@@ -140,6 +176,58 @@ class AISystem:
         else:
             character.on_ground = False
 
+    def _update_character_animation(self, character: AICharacter, delta_time: float):
+        """Update the animation frame based on character state"""
+        # Calculate time since last update
+        now = pygame.time.get_ticks()
+        elapsed = (now - character.last_update) / 1000.0  # Convert to seconds
+        character.animation_timer += elapsed
+        character.last_update = now
+
+        # Determine animation state
+        if not character.on_ground:
+            character.current_animation = "jump"
+            # Set jump frame based on vertical velocity
+            if character.velocity.y < 0:  # Rising
+                character.animation_frame = 0  # Initial jump
+            else:  # Falling
+                character.animation_frame = 3  # Use frame 4 for falling
+        elif character.state == "walking":
+            character.current_animation = "run"
+            # Update frame if enough time has passed
+            if character.animation_timer >= character.ANIMATION_SPEED:
+                character.animation_frame = (character.animation_frame + 1) % len(
+                    character.animations["run"]
+                )
+                character.animation_timer = 0
+        else:
+            character.current_animation = "idle"
+            # Update frame if enough time has passed
+            if character.animation_timer >= character.ANIMATION_SPEED:
+                character.animation_frame = (character.animation_frame + 1) % len(
+                    character.animations["idle"]
+                )
+                character.animation_timer = 0
+
+        # Ensure animation frame is within bounds
+        max_frames = len(character.animations[character.current_animation]) - 1
+        character.animation_frame = min(character.animation_frame, max_frames)
+
+        # Update sprite image
+        current_frame = character.animations[character.current_animation][
+            character.animation_frame
+        ]
+        if not character.facing_right:
+            current_frame = pygame.transform.flip(current_frame, True, False)
+        character.image = current_frame
+
+        # Position the sprite relative to the collision rect
+        character.image_rect = character.image.get_rect()
+        character.image_rect.centerx = (
+            character.rect.centerx + character.sprite_offset_x
+        )
+        character.image_rect.bottom = character.rect.bottom + character.sprite_offset_y
+
     def draw(self, screen: pygame.Surface):
         if not self.camera:
             return
@@ -147,9 +235,15 @@ class AISystem:
         debug_surface = pygame.Surface(screen.get_size(), pygame.SRCALPHA)
 
         for character in self.characters:
-            screen_rect = self.camera.apply(character.rect)
-            # Draw character body in red with black outline
-            pygame.draw.rect(debug_surface, (255, 0, 0), screen_rect)
-            pygame.draw.rect(debug_surface, (0, 0, 0), screen_rect, 2)
+            # Convert world position to screen position for the sprite
+            screen_pos = self.camera.world_to_screen(
+                character.image_rect.x, character.image_rect.y
+            )
+            screen.blit(character.image, screen_pos)
+
+            # Optionally draw collision box for debugging
+            # screen_rect = self.camera.apply(character.rect)
+            # pygame.draw.rect(debug_surface, (255, 0, 0, 100), screen_rect)
+            # pygame.draw.rect(debug_surface, (0, 0, 0), screen_rect, 1)
 
         screen.blit(debug_surface, (0, 0))

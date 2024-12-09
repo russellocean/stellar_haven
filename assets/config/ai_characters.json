@@ -1,0 +1,84 @@
+{
+  "room_specific_roles": {
+    "starting_quarters": {
+      "titles": ["Cadet", "Crew Member", "Junior Officer"],
+      "name_prefix": "Quarters"
+    },
+    "bridge": {
+      "titles": [
+        "Navigator",
+        "Communications Officer",
+        "Tactical Officer",
+        "Bridge Officer"
+      ],
+      "name_prefix": "Bridge"
+    },
+    "engine_room": {
+      "titles": [
+        "Engineer",
+        "Mechanic",
+        "Systems Technician",
+        "Power Specialist"
+      ],
+      "name_prefix": "Engineering"
+    },
+    "life_support": {
+      "titles": [
+        "Life Support Specialist",
+        "Environmental Tech",
+        "Oxygen Systems Engineer"
+      ],
+      "name_prefix": "Life Support"
+    }
+  },
+  "first_names": [
+    "Alex",
+    "Sam",
+    "Jordan",
+    "Casey",
+    "Morgan",
+    "Taylor",
+    "Riley",
+    "Quinn",
+    "Avery",
+    "Blake",
+    "Charlie",
+    "Drew",
+    "Ellis",
+    "Frankie",
+    "Gray",
+    "Harper"
+  ],
+  "last_names": [
+    "Smith",
+    "Chen",
+    "Patel",
+    "Kim",
+    "Garcia",
+    "Singh",
+    "Cohen",
+    "Müller",
+    "Anderson",
+    "Brown",
+    "Davis",
+    "Wilson",
+    "Moore",
+    "Taylor",
+    "White",
+    "Lee"
+  ],
+  "name_tag_style": {
+    "font": "Arial",
+    "name_size": 16,
+    "title_size": 12,
+    "padding": 6,
+    "background_alpha": 200,
+    "text_color": [255, 255, 255],
+    "title_color": [180, 180, 180],
+    "background_color": [40, 40, 40],
+    "border_radius": 4,
+    "outline_color": [60, 60, 60],
+    "outline_thickness": 1,
+    "vertical_spacing": 2
+  }
+}

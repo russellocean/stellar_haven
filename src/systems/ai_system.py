@@ -1,3 +1,4 @@
+import json
 import random
 from typing import List
 
@@ -8,7 +9,7 @@ from systems.asset_manager import AssetManager
 
 
 class AICharacter:
-    def __init__(self, x: int, y: int, room_bounds):
+    def __init__(self, x: int, y: int, room_bounds, room_type: str):
         # Physics constants
         self.GRAVITY = 0.5
         self.WALK_SPEED = 1  # Very slow, casual walking speed
@@ -23,18 +24,47 @@ class AICharacter:
         # State management
         self.state = "idle"
         self.state_timer = 0
-        self.IDLE_TIME = random.uniform(2.0, 4.0)  # Random idle duration
-        self.WALK_TIME = random.uniform(1.5, 3.0)  # Random walk duration
+        self.IDLE_TIME = random.uniform(2.0, 4.0)
+        self.WALK_TIME = random.uniform(1.5, 3.0)
 
-        # Animation properties (same as player)
+        # Load AI character config
         self.asset_manager = AssetManager()
+        with open("assets/config/ai_characters.json", "r") as f:
+            self.ai_config = json.load(f)
+
+        # Generate character identity
+        self.room_type = room_type
+        self.generate_identity()
+
+        # Animation properties
         self.animation_frame = 0
         self.animation_timer = 0
-        self.ANIMATION_SPEED = 0.1  # Seconds per frame
+        self.ANIMATION_SPEED = 0.1
         self.last_update = pygame.time.get_ticks()
         self.current_animation = "idle"
 
-        # Load animations (same as player)
+        # Load animations
+        self.load_animations()
+
+        # Initialize sprite
+        self.image = self.animations["idle"][0]
+        self.image_rect = self.image.get_rect()
+        self.sprite_offset_x = 0
+        self.sprite_offset_y = 0
+
+        # Create name tag surface
+        self.create_name_tag()
+
+    def generate_identity(self):
+        """Generate a unique identity for the AI character"""
+        room_roles = self.ai_config["room_specific_roles"][self.room_type]
+        self.title = random.choice(room_roles["titles"])
+        self.first_name = random.choice(self.ai_config["first_names"])
+        self.last_name = random.choice(self.ai_config["last_names"])
+        self.full_name = f"{self.first_name} {self.last_name}"
+
+    def load_animations(self):
+        """Load animations"""
         self.animations = {
             "idle": [
                 self.asset_manager.get_image(
@@ -56,11 +86,69 @@ class AICharacter:
             ],
         }
 
-        # Initialize sprite
-        self.image = self.animations["idle"][0]
-        self.image_rect = self.image.get_rect()
-        self.sprite_offset_x = 0
-        self.sprite_offset_y = 0
+    def create_name_tag(self):
+        """Create the name tag surface"""
+        style = self.ai_config["name_tag_style"]
+
+        # Create fonts for name and title
+        try:
+            name_font = pygame.font.SysFont(style["font"], style["name_size"])
+            title_font = pygame.font.SysFont(style["font"], style["title_size"])
+        except:
+            name_font = pygame.font.Font(None, style["name_size"])
+            title_font = pygame.font.Font(None, style["title_size"])
+
+        # Create text surfaces with different colors for name and title
+        name_surface = name_font.render(self.full_name, True, style["text_color"])
+        title_surface = title_font.render(self.title, True, style["title_color"])
+
+        # Calculate background size
+        padding = style["padding"]
+        width = max(name_surface.get_width(), title_surface.get_width()) + padding * 2
+        height = (
+            name_surface.get_height()
+            + title_surface.get_height()
+            + padding * 2
+            + style["vertical_spacing"]
+        )
+
+        # Create background surface with alpha
+        self.name_tag = pygame.Surface((width, height), pygame.SRCALPHA)
+
+        # Draw background with outline
+        background_color = (*style["background_color"], style["background_alpha"])
+        outline_color = (*style["outline_color"], style["background_alpha"])
+
+        # Draw outline
+        pygame.draw.rect(
+            self.name_tag,
+            outline_color,
+            (0, 0, width, height),
+            border_radius=style["border_radius"],
+        )
+
+        # Draw inner background
+        pygame.draw.rect(
+            self.name_tag,
+            background_color,
+            (
+                style["outline_thickness"],
+                style["outline_thickness"],
+                width - 2 * style["outline_thickness"],
+                height - 2 * style["outline_thickness"],
+            ),
+            border_radius=style["border_radius"],
+        )
+
+        # Blit text onto background
+        name_x = (width - name_surface.get_width()) // 2
+        title_x = (width - title_surface.get_width()) // 2
+
+        self.name_tag.blit(name_surface, (name_x, padding))
+        self.name_tag.blit(
+            title_surface,
+            (title_x, padding + name_surface.get_height() + style["vertical_spacing"]),
+        )
 
 
 class AISystem:
@@ -87,13 +175,13 @@ class AISystem:
 
             # Spawn at room center
             center_x, center_y = room_manager.get_room_center(room)
-            self.spawn_character(center_x, center_y, room_bounds)
+            self.spawn_character(center_x, center_y, room_bounds, room.room_type)
 
     def set_camera(self, camera):
         self.camera = camera
 
-    def spawn_character(self, x: int, y: int, room_bounds):
-        character = AICharacter(x, y, room_bounds)
+    def spawn_character(self, x: int, y: int, room_bounds, room_type: str):
+        character = AICharacter(x, y, room_bounds, room_type)
         self.characters.append(character)
         return character
 
@@ -103,7 +191,6 @@ class AISystem:
             character.state_timer -= delta_time
             if character.state_timer <= 0:
                 if character.state == "idle":
-                    # Start walking in a random direction
                     character.state = "walking"
                     character.state_timer = character.WALK_TIME
                     character.facing_right = random.choice([True, False])
@@ -113,7 +200,6 @@ class AISystem:
                         else -character.WALK_SPEED
                     )
                 else:
-                    # Return to idle
                     character.state = "idle"
                     character.state_timer = character.IDLE_TIME
                     character.velocity.x = 0
@@ -145,7 +231,6 @@ class AISystem:
                 character.rect.centerx = new_pos.x
                 character.rect.bottom = new_pos.y
             else:
-                # If we hit something while moving horizontally
                 if abs(character.velocity.x) > 0:
                     character.facing_right = not character.facing_right
                     character.velocity.x = (
@@ -153,19 +238,14 @@ class AISystem:
                         if character.facing_right
                         else -character.WALK_SPEED
                     )
-                # If we hit something while falling
                 if character.velocity.y > 0:
                     character.velocity.y = 0
                     character.on_ground = True
 
-            # Check ground state
             self._check_ground_state(character)
-
-            # Update animation
             self._update_character_animation(character, delta_time)
 
     def _check_ground_state(self, character: AICharacter):
-        """Check if character is actually on ground"""
         if character.velocity.y < 0:
             character.on_ground = False
             return
@@ -181,24 +261,19 @@ class AISystem:
             character.on_ground = False
 
     def _update_character_animation(self, character: AICharacter, delta_time: float):
-        """Update the animation frame based on character state"""
-        # Calculate time since last update
         now = pygame.time.get_ticks()
-        elapsed = (now - character.last_update) / 1000.0  # Convert to seconds
+        elapsed = (now - character.last_update) / 1000.0
         character.animation_timer += elapsed
         character.last_update = now
 
-        # Determine animation state
         if not character.on_ground:
             character.current_animation = "jump"
-            # Set jump frame based on vertical velocity
-            if character.velocity.y < 0:  # Rising
-                character.animation_frame = 0  # Initial jump
-            else:  # Falling
-                character.animation_frame = 3  # Use frame 4 for falling
+            if character.velocity.y < 0:
+                character.animation_frame = 0
+            else:
+                character.animation_frame = 3
         elif character.state == "walking":
             character.current_animation = "run"
-            # Update frame if enough time has passed
             if character.animation_timer >= character.ANIMATION_SPEED:
                 character.animation_frame = (character.animation_frame + 1) % len(
                     character.animations["run"]
@@ -206,18 +281,15 @@ class AISystem:
                 character.animation_timer = 0
         else:
             character.current_animation = "idle"
-            # Update frame if enough time has passed
             if character.animation_timer >= character.ANIMATION_SPEED:
                 character.animation_frame = (character.animation_frame + 1) % len(
                     character.animations["idle"]
                 )
                 character.animation_timer = 0
 
-        # Ensure animation frame is within bounds
         max_frames = len(character.animations[character.current_animation]) - 1
         character.animation_frame = min(character.animation_frame, max_frames)
 
-        # Update sprite image
         current_frame = character.animations[character.current_animation][
             character.animation_frame
         ]
@@ -225,7 +297,6 @@ class AISystem:
             current_frame = pygame.transform.flip(current_frame, True, False)
         character.image = current_frame
 
-        # Position the sprite relative to the collision rect
         character.image_rect = character.image.get_rect()
         character.image_rect.centerx = (
             character.rect.centerx + character.sprite_offset_x
@@ -239,15 +310,17 @@ class AISystem:
         debug_surface = pygame.Surface(screen.get_size(), pygame.SRCALPHA)
 
         for character in self.characters:
-            # Convert world position to screen position for the sprite
+            # Draw character sprite
             screen_pos = self.camera.world_to_screen(
                 character.image_rect.x, character.image_rect.y
             )
             screen.blit(character.image, screen_pos)
 
-            # Optionally draw collision box for debugging
-            # screen_rect = self.camera.apply(character.rect)
-            # pygame.draw.rect(debug_surface, (255, 0, 0, 100), screen_rect)
-            # pygame.draw.rect(debug_surface, (0, 0, 0), screen_rect, 1)
+            # Draw name tag above character
+            name_tag_pos = self.camera.world_to_screen(
+                character.rect.centerx - character.name_tag.get_width() // 2,
+                character.rect.top - character.name_tag.get_height() - 5,
+            )
+            screen.blit(character.name_tag, name_tag_pos)
 
         screen.blit(debug_surface, (0, 0))

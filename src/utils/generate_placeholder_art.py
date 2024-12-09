@@ -38,6 +38,9 @@ def main():
     ensure_directory_exists("assets/rooms/decorations/bridge")
     ensure_directory_exists("assets/rooms/decorations/engine_room")
     ensure_directory_exists("assets/rooms/decorations/life_support")
+    ensure_directory_exists("assets/rooms/decorations/research_lab")
+    ensure_directory_exists("assets/rooms/decorations/medical_bay")
+    ensure_directory_exists("assets/rooms/decorations/cargo_bay")
     ensure_directory_exists("assets/characters")
     ensure_directory_exists("assets/images/ui/room_icons")
 
@@ -113,6 +116,50 @@ def main():
         image.save(f"assets/rooms/decorations/life_support/{filename}")
         print(f"Generated: decorations/life_support/{filename}")
 
+    # Generate research lab decorations
+    research_pieces = {
+        "console_left.png": ((TILE_SIZE, TILE_SIZE), (70, 70, 100), "CO"),
+        "console_right.png": ((TILE_SIZE, TILE_SIZE), (70, 70, 100), "NS"),
+        "biotank_1.png": ((TILE_SIZE, TILE_SIZE), (70, 100, 255), "B1"),
+        "biotank_2.png": ((TILE_SIZE, TILE_SIZE), (70, 100, 255), "B2"),
+        "biotank_3.png": ((TILE_SIZE, TILE_SIZE), (70, 100, 255), "B3"),
+        "biotank_4.png": ((TILE_SIZE, TILE_SIZE), (70, 100, 255), "B4"),
+    }
+
+    for filename, (size, color, text) in research_pieces.items():
+        image = create_tile(size, color, text)
+        image.save(f"assets/rooms/decorations/research_lab/{filename}")
+        print(f"Generated: decorations/research_lab/{filename}")
+
+    # Generate medical bay decorations
+    medical_pieces = {
+        "console_left.png": ((TILE_SIZE, TILE_SIZE), (70, 70, 100), "CO"),
+        "console_right.png": ((TILE_SIZE, TILE_SIZE), (70, 70, 100), "NS"),
+        "cryo_top.png": ((TILE_SIZE, TILE_SIZE), (100, 200, 255), "C1"),
+        "cryo_middle.png": ((TILE_SIZE, TILE_SIZE), (100, 200, 255), "C2"),
+        "cryo_bottom.png": ((TILE_SIZE, TILE_SIZE), (100, 200, 255), "C3"),
+    }
+
+    for filename, (size, color, text) in medical_pieces.items():
+        image = create_tile(size, color, text)
+        image.save(f"assets/rooms/decorations/medical_bay/{filename}")
+        print(f"Generated: decorations/medical_bay/{filename}")
+
+    # Generate cargo bay decorations
+    cargo_pieces = {
+        "crate_large_1.png": ((TILE_SIZE, TILE_SIZE), (120, 100, 80), "L1"),
+        "crate_large_2.png": ((TILE_SIZE, TILE_SIZE), (120, 100, 80), "L2"),
+        "crate_large_3.png": ((TILE_SIZE, TILE_SIZE), (120, 100, 80), "L3"),
+        "crate_large_4.png": ((TILE_SIZE, TILE_SIZE), (120, 100, 80), "L4"),
+        "crate_medium_1.png": ((TILE_SIZE, TILE_SIZE), (110, 90, 70), "M1"),
+        "crate_medium_2.png": ((TILE_SIZE, TILE_SIZE), (110, 90, 70), "M2"),
+    }
+
+    for filename, (size, color, text) in cargo_pieces.items():
+        image = create_tile(size, color, text)
+        image.save(f"assets/rooms/decorations/cargo_bay/{filename}")
+        print(f"Generated: decorations/cargo_bay/{filename}")
+
     # Generate player character
     player_states = {
         "idle.png": ((TILE_SIZE, TILE_SIZE), (0, 255, 0), "P"),
@@ -131,6 +178,9 @@ def main():
         "bridge.png": ((64, 64), (70, 70, 100), "BRG"),
         "engine_room.png": ((64, 64), (100, 70, 70), "ENG"),
         "life_support.png": ((64, 64), (70, 100, 70), "O2"),
+        "research_lab.png": ((64, 64), (70, 70, 255), "LAB"),
+        "medical_bay.png": ((64, 64), (255, 70, 70), "MED"),
+        "cargo_bay.png": ((64, 64), (120, 100, 80), "CRG"),
     }
 
     for filename, (size, color, text) in room_icons.items():

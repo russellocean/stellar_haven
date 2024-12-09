@@ -91,7 +91,7 @@
         "Lab equipment calibrated.",
         "Running experiments...",
         "Recording observations...",
-        "Scientific progress: {research_progress}%"
+        "Power consumption at {power_efficiency}%"
       ],
       "working": [
         "Processing new data...",
@@ -100,27 +100,12 @@
         "Testing hypotheses..."
       ]
     },
-    "hydroponics": {
-      "idle": [
-        "Monitoring plant growth...",
-        "Checking nutrient levels...",
-        "Harvest progress: {crop_progress}%",
-        "Water recycling optimal.",
-        "Light cycles maintained."
-      ],
-      "resource_low": [
-        "Plants need more nutrients.",
-        "Water recycling efficiency low.",
-        "Growth rates below optimal.",
-        "Light system needs maintenance."
-      ]
-    },
     "cargo_bay": {
       "idle": [
         "Inventory levels stable.",
         "Checking cargo manifests...",
-        "Storage capacity at {cargo_capacity}%",
-        "Supply levels normal.",
+        "Power systems at {power_efficiency}%",
+        "Oxygen levels at {oxygen_level}%",
         "Organizing shipments..."
       ],
       "working": [

@@ -37,16 +37,20 @@ class AICharacter:
         # Load animations (same as player)
         self.animations = {
             "idle": [
-                self.asset_manager.get_image(f"characters/no-helm/Idle/idle{i}.png")
+                self.asset_manager.get_image(
+                    f"characters/with-helm/idle/sprites/idle{i}.png"
+                )
                 for i in range(1, 5)
             ],
             "run": [
-                self.asset_manager.get_image(f"characters/no-helm/run/run{i}.png")
+                self.asset_manager.get_image(
+                    f"characters/with-helm/run/sprites/run{i}.png"
+                )
                 for i in range(1, 11)
             ],
             "jump": [
                 self.asset_manager.get_image(
-                    f"characters/no-helm/jump-no-gun/jump-no-gun{i}.png"
+                    f"characters/with-helm/jump-no-gun/sprites/jump-no-gun{i}.png"
                 )
                 for i in range(1, 7)
             ],

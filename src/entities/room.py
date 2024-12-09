@@ -65,6 +65,27 @@ class Room(Entity):
         # Don't process decorations immediately
         self.decorations_config = room_config.get("decorations", {})
 
+        # Initialize resource generation and consumption
+        self._init_resources()
+
+    def _init_resources(self):
+        """Initialize resource generation and consumption"""
+        room_config = self.grid.room_config["room_types"][self.room_type]
+
+        # Set up resource generation
+        self.resource_generators = {}
+        for resource, amount in room_config.get("resource_generation", {}).items():
+            self.resource_generators[resource] = amount
+
+        # Set up resource consumption
+        self.resource_consumers = {}
+        for resource, amount in room_config.get("resource_consumption", {}).items():
+            self.resource_consumers[resource] = amount
+
+        # Register with resource manager if available
+        if self.resource_manager:
+            self.resource_manager.register_room(self)
+
     def set_interior_positions(self, positions: List[Tuple[int, int]]):
         """Set valid interior positions for the room"""
         self.interior_positions = positions

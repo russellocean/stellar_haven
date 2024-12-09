@@ -16,6 +16,11 @@ class ResourceManager:
                 "warning": 0.25,  # 25%
                 "low": 0.35,  # 35%
             },
+            "credits": {
+                "critical": 0.1,  # 10%
+                "warning": 0.2,  # 20%
+                "low": 0.3,  # 30%
+            },
         }
 
     def _init_resources(self):
@@ -24,17 +29,20 @@ class ResourceManager:
         self.resources: Dict[str, float] = {
             "power": 100.0,
             "oxygen": 100.0,
+            "credits": 500.0,  # Starting credits
         }
 
         self.max_resources: Dict[str, float] = {
             "power": 100.0,
             "oxygen": 100.0,
+            "credits": 9999.0,  # High max value for credits
         }
 
         # Base consumption rates per second (when no rooms are helping)
         self.base_consumption_rates = {
             "power": 0.1,  # Base power drain
             "oxygen": 0.05,  # Base oxygen consumption
+            "credits": 0.0,  # Credits don't drain naturally
         }
 
         # Track resource states
@@ -46,6 +54,7 @@ class ResourceManager:
         self.debug = DebugSystem()
         self.debug.add_watch("Power", lambda: f"{self.resources['power']:.1f}")
         self.debug.add_watch("Oxygen", lambda: f"{self.resources['oxygen']:.1f}")
+        self.debug.add_watch("Credits", lambda: f"{self.resources['credits']:.0f}")
 
     def update(self, dt: float = 1.0):
         """Update resource levels based on rooms and consumption"""
@@ -95,11 +104,14 @@ class ResourceManager:
                 and resource in room.resource_consumers
             ):
                 net_change -= room.resource_consumers[resource]
-
         return net_change
 
     def _check_resource_status(self, resource: str):
         """Enhanced resource status checking with multiple thresholds"""
+        # Skip alerts for credits
+        if resource == "credits":
+            return
+
         current = self.resources[resource]
         maximum = self.max_resources[resource]
         percentage = current / maximum

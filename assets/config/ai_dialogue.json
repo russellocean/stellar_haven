@@ -1,0 +1,190 @@
+{
+  "room_specific_dialogue": {
+    "bridge": {
+      "idle": [
+        "Monitoring ship systems...",
+        "All readings nominal.",
+        "Course steady.",
+        "Navigation systems online.",
+        "Long-range scanners operational.",
+        "Communications channels clear.",
+        "Checking sensor arrays...",
+        "Ship status: Green"
+      ],
+      "resource_low_power": [
+        "Power levels dropping below optimal levels.",
+        "We should divert more power to essential systems.",
+        "Engineering, we need more power!",
+        "Power distribution needs attention.",
+        "Critical systems may be affected by power loss."
+      ],
+      "resource_low_oxygen": [
+        "Oxygen levels need attention.",
+        "Life support systems showing concerning readings.",
+        "We should check the oxygen recyclers.",
+        "Atmospheric pressure dropping.",
+        "Ventilation systems need maintenance."
+      ]
+    },
+    "engine_room": {
+      "idle": [
+        "Running routine diagnostics...",
+        "Engine efficiency at {power_efficiency}%",
+        "These power readings look interesting.",
+        "Checking coolant systems.",
+        "Reactor core stable.",
+        "Power output nominal.",
+        "Monitoring fuel consumption.",
+        "Heat levels within parameters."
+      ],
+      "resource_low_power": [
+        "Power output is below expectations.",
+        "We need to optimize these power converters.",
+        "The engines could use some maintenance.",
+        "Reactor efficiency dropping.",
+        "Power grid showing fluctuations."
+      ],
+      "working": [
+        "Adjusting power distribution...",
+        "Optimizing engine performance...",
+        "Recalibrating power grid...",
+        "Checking reactor containment...",
+        "Running efficiency diagnostics..."
+      ]
+    },
+    "life_support": {
+      "idle": [
+        "Monitoring oxygen recyclers...",
+        "Air quality within normal parameters.",
+        "Checking filtration systems.",
+        "O₂ levels at {oxygen_level}%",
+        "CO₂ scrubbers functioning normally.",
+        "Humidity levels optimal.",
+        "Temperature control stable."
+      ],
+      "resource_low_oxygen": [
+        "Oxygen recyclers need maintenance.",
+        "We should check the filtration systems.",
+        "Air quality needs improvement.",
+        "CO₂ levels rising.",
+        "Ventilation system efficiency dropping."
+      ]
+    },
+    "medical_bay": {
+      "idle": [
+        "Medical systems operational.",
+        "Running health diagnostics.",
+        "Inventory check complete.",
+        "Sickbay ready for emergencies.",
+        "Medical scanners calibrated."
+      ],
+      "working": [
+        "Analyzing medical data...",
+        "Updating crew health records...",
+        "Preparing medical supplies...",
+        "Running sterilization protocols..."
+      ]
+    },
+    "research_lab": {
+      "idle": [
+        "Analyzing research data...",
+        "Lab equipment calibrated.",
+        "Running experiments...",
+        "Recording observations...",
+        "Scientific progress: {research_progress}%"
+      ],
+      "working": [
+        "Processing new data...",
+        "Conducting experiments...",
+        "Documenting findings...",
+        "Testing hypotheses..."
+      ]
+    },
+    "hydroponics": {
+      "idle": [
+        "Monitoring plant growth...",
+        "Checking nutrient levels...",
+        "Harvest progress: {crop_progress}%",
+        "Water recycling optimal.",
+        "Light cycles maintained."
+      ],
+      "resource_low": [
+        "Plants need more nutrients.",
+        "Water recycling efficiency low.",
+        "Growth rates below optimal.",
+        "Light system needs maintenance."
+      ]
+    },
+    "cargo_bay": {
+      "idle": [
+        "Inventory levels stable.",
+        "Checking cargo manifests...",
+        "Storage capacity at {cargo_capacity}%",
+        "Supply levels normal.",
+        "Organizing shipments..."
+      ],
+      "working": [
+        "Loading supplies...",
+        "Updating inventory...",
+        "Managing storage space...",
+        "Processing shipments..."
+      ]
+    },
+    "starting_quarters": {
+      "idle": [
+        "Another peaceful day in space.",
+        "The ship's humming sounds different today.",
+        "I wonder what's happening on Earth.",
+        "Space is beautiful, isn't it?",
+        "The stars never get old.",
+        "Time for some rest.",
+        "Ship's feeling like home.",
+        "Checking personal messages..."
+      ],
+      "resource_low": [
+        "Is it just me or is the air getting thin?",
+        "The lights seem dimmer than usual.",
+        "Something doesn't feel right...",
+        "Environmental controls acting up?",
+        "Should report these conditions..."
+      ]
+    }
+  },
+  "global_dialogue": {
+    "greetings": [
+      "Hello, Captain!",
+      "Good to see you.",
+      "How's your shift going?",
+      "Welcome to my station.",
+      "Need anything, Captain?",
+      "Reporting for duty!",
+      "Everything under control here."
+    ],
+    "resource_critical": [
+      "This is getting dangerous!",
+      "We need immediate attention here!",
+      "Emergency protocols initiated!",
+      "Critical system failure imminent!",
+      "Requesting immediate assistance!",
+      "Alert status: Red!",
+      "Emergency procedures in effect!"
+    ]
+  },
+  "behavior": {
+    "dialogue_frequency": {
+      "idle": {
+        "min_time": 15.0,
+        "max_time": 30.0
+      },
+      "alert": {
+        "min_time": 5.0,
+        "max_time": 10.0
+      }
+    },
+    "work_efficiency": {
+      "base_rate": 1.0,
+      "happy_multiplier": 1.2,
+      "stressed_multiplier": 0.8
+    }
+  }
+}

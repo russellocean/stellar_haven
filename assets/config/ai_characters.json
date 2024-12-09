@@ -1,7 +1,13 @@
 {
   "room_specific_roles": {
     "starting_quarters": {
-      "titles": ["Cadet", "Crew Member", "Junior Officer"],
+      "titles": [
+        "Cadet",
+        "Crew Member",
+        "Junior Officer",
+        "Off-duty Pilot",
+        "Ship's Cook"
+      ],
       "name_prefix": "Quarters"
     },
     "bridge": {
@@ -9,7 +15,9 @@
         "Navigator",
         "Communications Officer",
         "Tactical Officer",
-        "Bridge Officer"
+        "Bridge Officer",
+        "Science Officer",
+        "Operations Manager"
       ],
       "name_prefix": "Bridge"
     },
@@ -18,7 +26,9 @@
         "Engineer",
         "Mechanic",
         "Systems Technician",
-        "Power Specialist"
+        "Power Specialist",
+        "Reactor Engineer",
+        "Maintenance Chief"
       ],
       "name_prefix": "Engineering"
     },
@@ -26,9 +36,51 @@
       "titles": [
         "Life Support Specialist",
         "Environmental Tech",
-        "Oxygen Systems Engineer"
+        "Oxygen Systems Engineer",
+        "Atmospheric Controller",
+        "Recycling Specialist"
       ],
       "name_prefix": "Life Support"
+    },
+    "medical_bay": {
+      "titles": [
+        "Ship's Doctor",
+        "Medical Officer",
+        "Nurse",
+        "Medical Technician",
+        "Psychologist"
+      ],
+      "name_prefix": "Medical"
+    },
+    "research_lab": {
+      "titles": [
+        "Research Scientist",
+        "Lab Technician",
+        "Xenobiologist",
+        "Data Analyst",
+        "Research Director"
+      ],
+      "name_prefix": "Science"
+    },
+    "hydroponics": {
+      "titles": [
+        "Botanist",
+        "Hydroponics Specialist",
+        "Agricultural Engineer",
+        "Food Systems Manager",
+        "Plant Scientist"
+      ],
+      "name_prefix": "Hydroponics"
+    },
+    "cargo_bay": {
+      "titles": [
+        "Cargo Manager",
+        "Supply Officer",
+        "Logistics Specialist",
+        "Inventory Controller",
+        "Loading Chief"
+      ],
+      "name_prefix": "Cargo"
     }
   },
   "first_names": [
@@ -47,7 +99,21 @@
     "Ellis",
     "Frankie",
     "Gray",
-    "Harper"
+    "Harper",
+    "Jamie",
+    "Kelly",
+    "Logan",
+    "Max",
+    "Nova",
+    "Parker",
+    "Robin",
+    "Sage",
+    "Skylar",
+    "Theo",
+    "Val",
+    "Winter",
+    "Yuri",
+    "Zephyr"
   ],
   "last_names": [
     "Smith",
@@ -65,7 +131,21 @@
     "Moore",
     "Taylor",
     "White",
-    "Lee"
+    "Lee",
+    "Novak",
+    "Kowalski",
+    "Rodriguez",
+    "Ivanov",
+    "Zhang",
+    "Nguyen",
+    "O'Brien",
+    "Silva",
+    "Sato",
+    "Kumar",
+    "Hassan",
+    "Popov",
+    "Jensen",
+    "Santos"
   ],
   "name_tag_style": {
     "font": "Arial",

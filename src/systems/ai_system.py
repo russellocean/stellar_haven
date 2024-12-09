@@ -6,13 +6,14 @@ import pygame
 
 from grid.tile_type import TileType
 from systems.asset_manager import AssetManager
+from systems.event_system import EventSystem, GameEvent
 
 
 class AICharacter:
     def __init__(self, x: int, y: int, room_bounds, room_type: str):
         # Physics constants
         self.GRAVITY = 0.5
-        self.WALK_SPEED = 1  # Very slow, casual walking speed
+        self.WALK_SPEED = 1
 
         # Initialize position and movement
         self.rect = pygame.Rect(x, y, 20, 30)
@@ -31,6 +32,8 @@ class AICharacter:
         self.asset_manager = AssetManager()
         with open("assets/config/ai_characters.json", "r") as f:
             self.ai_config = json.load(f)
+        with open("assets/config/ai_dialogue.json", "r") as f:
+            self.dialogue_config = json.load(f)
 
         # Generate character identity
         self.room_type = room_type
@@ -54,6 +57,20 @@ class AICharacter:
 
         # Create name tag surface
         self.create_name_tag()
+
+        # Dialogue system
+        self.dialogue_timer = 0
+        self.dialogue_display_timer = 0  # How long to show the dialogue
+        self.DIALOGUE_DISPLAY_TIME = 4.0  # Show dialogue for 4 seconds
+        self.current_dialogue = None
+        self.dialogue_surface = None
+        self.set_next_dialogue_time("idle")
+
+        # Work efficiency
+        self.efficiency = self.dialogue_config["behavior"]["work_efficiency"][
+            "base_rate"
+        ]
+        self.mood = "normal"  # Can be "happy", "normal", or "stressed"
 
     def generate_identity(self):
         """Generate a unique identity for the AI character"""
@@ -150,6 +167,116 @@ class AICharacter:
             (title_x, padding + name_surface.get_height() + style["vertical_spacing"]),
         )
 
+    def set_next_dialogue_time(self, state="idle"):
+        """Set the timer for the next dialogue based on state"""
+        freq = self.dialogue_config["behavior"]["dialogue_frequency"][
+            "alert" if state == "alert" else "idle"
+        ]
+        self.dialogue_timer = random.uniform(freq["min_time"], freq["max_time"])
+
+    def update_dialogue(self, dt: float, resource_manager):
+        """Update dialogue timer and generate new dialogue when needed"""
+        # Update display timer
+        if self.dialogue_display_timer > 0:
+            self.dialogue_display_timer -= dt
+            if self.dialogue_display_timer <= 0:
+                self.dialogue_surface = None
+                self.current_dialogue = None
+
+        # Update dialogue generation timer
+        if self.dialogue_timer > 0:
+            self.dialogue_timer -= dt
+            return
+
+        # Time to generate new dialogue
+        dialogue_options = []
+
+        # Check resource states for relevant dialogue
+        power_level = resource_manager.get_resource_percentage("power")
+        oxygen_level = resource_manager.get_resource_percentage("oxygen")
+
+        if (
+            power_level < 30
+            and "resource_low_power"
+            in self.dialogue_config["room_specific_dialogue"][self.room_type]
+        ):
+            dialogue_options.extend(
+                self.dialogue_config["room_specific_dialogue"][self.room_type][
+                    "resource_low_power"
+                ]
+            )
+            self.set_next_dialogue_time("alert")
+        elif (
+            oxygen_level < 30
+            and "resource_low_oxygen"
+            in self.dialogue_config["room_specific_dialogue"][self.room_type]
+        ):
+            dialogue_options.extend(
+                self.dialogue_config["room_specific_dialogue"][self.room_type][
+                    "resource_low_oxygen"
+                ]
+            )
+            self.set_next_dialogue_time("alert")
+        else:
+            # Use idle dialogue
+            dialogue_options.extend(
+                self.dialogue_config["room_specific_dialogue"][self.room_type]["idle"]
+            )
+            self.set_next_dialogue_time("idle")
+
+        if dialogue_options:
+            # Select and format dialogue
+            dialogue = random.choice(dialogue_options)
+            dialogue = dialogue.format(
+                power_efficiency=int(power_level), oxygen_level=int(oxygen_level)
+            )
+
+            # Create dialogue surface and set display timer
+            self.create_dialogue_surface(dialogue)
+            self.dialogue_display_timer = self.DIALOGUE_DISPLAY_TIME
+
+    def create_dialogue_surface(self, text: str):
+        """Create a surface for the dialogue bubble"""
+        font = pygame.font.Font(None, 20)
+        padding = 5
+
+        # Create text surface
+        text_surface = font.render(text, True, (255, 255, 255))
+
+        # Create bubble surface with padding
+        width = text_surface.get_width() + padding * 2
+        height = text_surface.get_height() + padding * 2
+
+        self.dialogue_surface = pygame.Surface((width, height), pygame.SRCALPHA)
+        pygame.draw.rect(
+            self.dialogue_surface,
+            (0, 0, 0, 180),
+            (0, 0, width, height),
+            border_radius=5,
+        )
+
+        # Add text
+        self.dialogue_surface.blit(text_surface, (padding, padding))
+        self.current_dialogue = text
+
+    def get_work_efficiency(self) -> float:
+        """Get the current work efficiency of the character"""
+        if self.mood == "happy":
+            return (
+                self.efficiency
+                * self.dialogue_config["behavior"]["work_efficiency"][
+                    "happy_multiplier"
+                ]
+            )
+        elif self.mood == "stressed":
+            return (
+                self.efficiency
+                * self.dialogue_config["behavior"]["work_efficiency"][
+                    "stressed_multiplier"
+                ]
+            )
+        return self.efficiency
+
 
 class AISystem:
     def __init__(self, room_manager, collision_system):
@@ -157,6 +284,7 @@ class AISystem:
         self.collision_system = collision_system
         self.characters: List[AICharacter] = []
         self.camera = None
+        self.event_system = EventSystem()
 
         # Load room config to determine AI counts
         with open("assets/config/rooms.json", "r") as f:
@@ -165,9 +293,43 @@ class AISystem:
         # Register for room creation events
         room_manager.on_room_added = self.handle_room_added
 
+        # Register for resource events
+        self.event_system.subscribe(GameEvent.RESOURCE_LOW, self._handle_resource_low)
+        self.event_system.subscribe(
+            GameEvent.RESOURCE_CRITICAL, self._handle_resource_critical
+        )
+        self.event_system.subscribe(
+            GameEvent.RESOURCE_RESTORED, self._handle_resource_restored
+        )
+
         # Spawn AIs in existing rooms
         for room_id, room in room_manager.rooms.items():
             self.populate_room(room)
+
+    def _handle_resource_low(self, event_data):
+        """Handle low resource event"""
+        resource = event_data.resource if hasattr(event_data, "resource") else None
+        if resource:
+            for character in self.characters:
+                if character.room_type in ["engine_room", "life_support", "bridge"]:
+                    character.mood = "stressed"
+                    character.set_next_dialogue_time("alert")
+
+    def _handle_resource_critical(self, event_data):
+        """Handle critical resource event"""
+        resource = event_data.resource if hasattr(event_data, "resource") else None
+        if resource:
+            for character in self.characters:
+                character.mood = "stressed"
+                character.set_next_dialogue_time("alert")
+
+    def _handle_resource_restored(self, event_data):
+        """Handle resource restored event"""
+        resource = event_data.resource if hasattr(event_data, "resource") else None
+        if resource:
+            for character in self.characters:
+                character.mood = "happy"
+                character.set_next_dialogue_time("idle")
 
     def handle_room_added(self, room):
         """Called when a new room is added to the ship"""
@@ -232,6 +394,9 @@ class AISystem:
         return character
 
     def update(self, delta_time: float):
+        """Update all AI characters"""
+        resource_manager = self.room_manager.resource_manager
+
         for character in self.characters:
             # Update state timer and handle state changes
             character.state_timer -= delta_time
@@ -250,7 +415,33 @@ class AISystem:
                     character.state_timer = character.IDLE_TIME
                     character.velocity.x = 0
 
-            # Apply gravity if not on ground
+            # Update dialogue
+            character.update_dialogue(delta_time, resource_manager)
+
+            # Apply character efficiency to room resources
+            if character.room_type in ["engine_room", "life_support"]:
+                # Find the room this character is in by type
+                matching_rooms = [
+                    room
+                    for room in self.room_manager.rooms.values()
+                    if room.room_type == character.room_type
+                ]
+                if matching_rooms and hasattr(matching_rooms[0], "resource_generators"):
+                    room = matching_rooms[0]
+                    efficiency = character.get_work_efficiency()
+                    for resource, base_rate in room.resource_generators.items():
+                        # Store original rate if not already stored
+                        if not hasattr(room, "_original_rates"):
+                            room._original_rates = {}
+                        if resource not in room._original_rates:
+                            room._original_rates[resource] = base_rate
+
+                        # Apply efficiency to original rate
+                        room.resource_generators[resource] = (
+                            room._original_rates[resource] * efficiency
+                        )
+
+            # Rest of the update logic...
             if not character.on_ground:
                 character.velocity.y += character.GRAVITY
 
@@ -368,5 +559,17 @@ class AISystem:
                 character.rect.top - character.name_tag.get_height() - 5,
             )
             screen.blit(character.name_tag, name_tag_pos)
+
+            # Draw dialogue bubble if exists
+            if character.dialogue_surface:
+                dialogue_pos = self.camera.world_to_screen(
+                    character.rect.centerx
+                    - character.dialogue_surface.get_width() // 2,
+                    character.rect.top
+                    - character.name_tag.get_height()
+                    - character.dialogue_surface.get_height()
+                    - 10,
+                )
+                screen.blit(character.dialogue_surface, dialogue_pos)
 
         screen.blit(debug_surface, (0, 0))

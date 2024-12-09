@@ -113,7 +113,13 @@ class BuildingSystem:
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             if self.valid_placement and self.ghost_position:
                 if self.selected_category == "rooms":
-                    return self._place_room()
+                    return self.try_build_room(
+                        self.selected_type,
+                        (
+                            self.ghost_position[0] * self.grid.cell_size,
+                            self.ghost_position[1] * self.grid.cell_size,
+                        ),
+                    )
                 else:
                     return self._place_item()
         return False
@@ -319,22 +325,35 @@ class BuildingSystem:
         """Attempt to build a room if resources are available"""
         # Get room costs from config
         room_config = self.room_manager.grid.room_config["room_types"][room_type]
-        resource_costs = room_config.get("build_costs", {})
+        credit_cost = room_config.get("build_costs", {}).get("credits", 0)
 
-        # Check if we have enough resources
-        for resource, cost in resource_costs.items():
-            if self.resource_manager.resources[resource] < cost:
-                self.debug.log(f"Not enough {resource} to build {room_type}")
-                return False
+        # Debug output
+        self.debug.log(f"Attempting to build {room_type} costing {credit_cost} credits")
+        self.debug.log(f"Current credits: {self.resource_manager.resources['credits']}")
 
-        # Deduct resources if we can build
+        # Check if we have enough credits
+        if self.resource_manager.resources["credits"] < credit_cost:
+            self.debug.log(f"Not enough credits to build {room_type}")
+            return False
+
+        # Try to add the room
         if self.room_manager.add_room(room_type, position[0], position[1]):
-            for resource, cost in resource_costs.items():
-                self.resource_manager.resources[resource] -= cost
-                self.resource_manager.event_system.emit(
-                    GameEvent.RESOURCE_UPDATED,
-                    resource=resource,
-                    amount=self.resource_manager.resources[resource],
-                )
+            # Deduct credits if successful
+            old_credits = self.resource_manager.resources["credits"]
+            self.resource_manager.resources["credits"] -= credit_cost
+
+            # Debug output
+            self.debug.log(
+                f"Built {room_type}. Credits: {old_credits} -> {self.resource_manager.resources['credits']}"
+            )
+
+            # Emit resource update event
+            self.resource_manager.event_system.emit(
+                GameEvent.RESOURCE_UPDATED,
+                resource="credits",
+                amount=self.resource_manager.resources["credits"],
+                previous=old_credits,
+                change=-credit_cost,
+            )
             return True
         return False

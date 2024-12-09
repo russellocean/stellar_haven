@@ -92,6 +92,29 @@ class ResourceBar:
 
     def draw(self, surface: pygame.Surface, current: float, maximum: float):
         """Draw the resource bar with all effects"""
+        # Special handling for credits - show as text only
+        if self.name.lower() == "credits":
+            text = f"Credits: {int(current)}"
+            text_surface = self.font.render(
+                text, True, (255, 215, 0)
+            )  # Gold color for credits
+            text_rect = text_surface.get_rect(
+                centery=self.y + self.height // 2, x=self.x + self.bar_x_offset + 5
+            )
+            surface.blit(text_surface, text_rect)
+
+            # Draw rate if enabled and non-zero
+            if self.show_rate and abs(self.current_rate) > 0.01:
+                rate_text = f"{self.current_rate:+.1f}/s"
+                rate_color = (0, 255, 0) if self.current_rate > 0 else (255, 100, 100)
+                rate_surface = self.rate_font.render(rate_text, True, rate_color)
+                rate_rect = rate_surface.get_rect(
+                    midright=(self.x + self.width - 5, self.y + self.height // 2)
+                )
+                surface.blit(rate_surface, rate_rect)
+            return
+
+        # Normal resource bar drawing for other resources
         # Calculate the target width based on current value
         self.target_width = (current / maximum) * (self.width - self.bar_x_offset)
 

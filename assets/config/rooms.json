@@ -7,7 +7,9 @@
         "power": 0.2,
         "oxygen": 0.2
       },
-      "resource_generation": {},
+      "resource_generation": {
+        "credits": 2.0
+      },
       "build_costs": {
         "power": 50
       },
@@ -38,7 +40,7 @@
       },
       "resource_generation": {},
       "build_costs": {
-        "power": 150
+        "credits": 300
       },
       "description": "Ship's command center - restricted access",
       "color_theme": {
@@ -72,8 +74,7 @@
         "power": 2.0
       },
       "build_costs": {
-        "power": 150,
-        "oxygen": 50
+        "credits": 250
       },
       "description": "Main power generator for the ship",
       "color_theme": {
@@ -114,8 +115,7 @@
         "oxygen": 1.5
       },
       "build_costs": {
-        "power": 100,
-        "oxygen": 25
+        "credits": 150
       },
       "description": "Generates oxygen for the ship",
       "color_theme": {
@@ -143,13 +143,14 @@
       "name": "Research Lab",
       "grid_size": [10, 8],
       "resource_consumption": {
-        "power": 1.0,
-        "oxygen": 0.4
+        "power": 1.2,
+        "oxygen": 0.6
       },
-      "resource_generation": {},
+      "resource_generation": {
+        "credits": 1.5
+      },
       "build_costs": {
-        "power": 120,
-        "oxygen": 40
+        "credits": 200
       },
       "description": "Scientific research facility that consumes resources",
       "color_theme": {
@@ -183,8 +184,7 @@
       },
       "resource_generation": {},
       "build_costs": {
-        "power": 100,
-        "oxygen": 50
+        "credits": 200
       },
       "description": "Medical facility for crew health, requires significant resources",
       "color_theme": {
@@ -218,8 +218,7 @@
       },
       "resource_generation": {},
       "build_costs": {
-        "power": 80,
-        "oxygen": 30
+        "credits": 100
       },
       "description": "Storage facility that requires climate control",
       "color_theme": {

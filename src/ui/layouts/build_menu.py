@@ -123,15 +123,23 @@ class BuildMenu(BaseLayout):
         """Generate resource information string for room"""
         info_parts = []
 
+        # Show build costs first
+        if "build_costs" in room_config:
+            costs = []
+            for resource, amount in room_config["build_costs"].items():
+                costs.append(f"{amount} {resource}")
+            info_parts.append(f"Cost: {', '.join(costs)}")
+
+        # Show generation/consumption
         if "resource_generation" in room_config:
             for resource, amount in room_config["resource_generation"].items():
-                info_parts.append(f"+{amount} {resource}")
+                info_parts.append(f"+{amount} {resource}/s")
 
         if "resource_consumption" in room_config:
             for resource, amount in room_config["resource_consumption"].items():
-                info_parts.append(f"-{amount} {resource}")
+                info_parts.append(f"-{amount} {resource}/s")
 
-        return " | ".join(info_parts)
+        return "\n".join(info_parts)  # Put each part on new line for better readability
 
     def select_build_item(self, category: str, item_type: str):
         """Handle build item selection"""

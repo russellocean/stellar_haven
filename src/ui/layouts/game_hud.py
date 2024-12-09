@@ -40,10 +40,9 @@ class GameHUD(BaseLayout):
                 width=self.BAR_WIDTH,
                 height=self.BAR_HEIGHT,
                 color=(255, 215, 0),  # Gold for power
-                # icon_path="assets/images/ui/power_icon.png",
                 icon_path="assets/images/ui/build_icon.png",
-                animation_speed=0.15,  # Faster animation for power fluctuations
-                show_rate=True,  # Show generation/consumption rate
+                animation_speed=0.15,
+                show_rate=True,
             ),
             # Oxygen bar with blue theme
             "oxygen": ResourceBar(
@@ -52,7 +51,17 @@ class GameHUD(BaseLayout):
                 width=self.BAR_WIDTH,
                 height=self.BAR_HEIGHT,
                 color=(64, 156, 255),  # Blue for oxygen
-                # icon_path="assets/images/ui/oxygen_icon.png",
+                icon_path="assets/images/ui/build_icon.png",
+                animation_speed=0.1,
+                show_rate=True,
+            ),
+            # Credits counter with gold theme
+            "credits": ResourceBar(
+                "credits",
+                (self.MARGIN, base_y - self.BAR_SPACING * 2),  # Position above oxygen
+                width=self.BAR_WIDTH,
+                height=self.BAR_HEIGHT,
+                color=(255, 215, 0),  # Gold for credits
                 icon_path="assets/images/ui/build_icon.png",
                 animation_speed=0.1,
                 show_rate=True,
@@ -143,6 +152,9 @@ class GameHUD(BaseLayout):
 
     def _check_resource_status(self, resource: str, amount: float):
         """Check resource levels with multiple thresholds"""
+        if resource == "credits":
+            return
+
         max_amount = self.resource_manager.max_resources[resource]
         percentage = amount / max_amount
 

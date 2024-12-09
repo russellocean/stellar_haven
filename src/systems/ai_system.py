@@ -158,24 +158,70 @@ class AISystem:
         self.characters: List[AICharacter] = []
         self.camera = None
 
-        # Spawn one AI in each room
+        # Load room config to determine AI counts
+        with open("assets/config/rooms.json", "r") as f:
+            self.room_config = json.load(f)
+
+        # Register for room creation events
+        room_manager.on_room_added = self.handle_room_added
+
+        # Spawn AIs in existing rooms
         for room_id, room in room_manager.rooms.items():
-            # Get room data from grid
-            room_data = room_manager.grid.rooms[room_id]
-            grid_pos = room_data["grid_pos"]
-            grid_size = room_data["grid_size"]
+            self.populate_room(room)
 
-            # Calculate room boundaries in world coordinates
-            left = grid_pos[0] * room_manager.grid.cell_size
-            right = (grid_pos[0] + grid_size[0]) * room_manager.grid.cell_size
+    def handle_room_added(self, room):
+        """Called when a new room is added to the ship"""
+        self.populate_room(room)
 
-            # Add margin to keep AI away from walls
-            margin = room_manager.grid.cell_size * 1.5
-            room_bounds = {"left": left + margin, "right": right - margin}
+    def populate_room(self, room):
+        """Populate a room with appropriate number of AIs"""
+        # Get room data from grid
+        room_data = self.room_manager.grid.rooms[room.room_id]
+        grid_pos = room_data["grid_pos"]
+        grid_size = room_data["grid_size"]
 
-            # Spawn at room center
-            center_x, center_y = room_manager.get_room_center(room)
-            self.spawn_character(center_x, center_y, room_bounds, room.room_type)
+        # Calculate room boundaries in world coordinates
+        left = grid_pos[0] * self.room_manager.grid.cell_size
+        right = (grid_pos[0] + grid_size[0]) * self.room_manager.grid.cell_size
+
+        # Add margin to keep AI away from walls
+        margin = self.room_manager.grid.cell_size * 1.5
+        room_bounds = {"left": left + margin, "right": right - margin}
+
+        # Determine number of AIs based on room type
+        num_ais = self._get_ai_count_for_room(room.room_type)
+
+        if num_ais > 0:
+            # Calculate spawn positions spread across the room
+            room_width = right - left - (2 * margin)
+            spacing = room_width / (num_ais + 1)
+
+            for i in range(num_ais):
+                spawn_x = left + margin + spacing * (i + 1)
+                spawn_y = self.room_manager.get_room_center(room)[1]
+                self.spawn_character(spawn_x, spawn_y, room_bounds, room.room_type)
+
+    def _get_ai_count_for_room(self, room_type: str) -> int:
+        """Determine how many AIs should be in each room type"""
+        room_config = self.room_config["room_types"][room_type]
+        grid_size = room_config["grid_size"]
+        room_area = grid_size[0] * grid_size[1]
+
+        # Define AI counts based on room type and size
+        if room_type == "bridge":
+            # Bridge needs several officers
+            return min(4, max(2, room_area // 32))
+        elif room_type == "engine_room":
+            # Engine room needs a few engineers
+            return min(3, max(1, room_area // 48))
+        elif room_type == "life_support":
+            # Life support needs 1-2 technicians
+            return min(2, max(1, room_area // 64))
+        elif room_type == "starting_quarters":
+            # Quarters should have a few crew members
+            return min(3, max(1, room_area // 48))
+        else:
+            return 0  # No AIs for other room types
 
     def set_camera(self, camera):
         self.camera = camera

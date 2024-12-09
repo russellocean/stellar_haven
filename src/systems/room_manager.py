@@ -22,6 +22,7 @@ class RoomManager:
         self.resource_manager = resource_manager
         self.starting_room = None  # Reference to starting room
         self.interaction_system = interaction_system
+        self.on_room_added = None  # Callback for when a room is added
 
         # Initialize debug system
         self.debug = DebugSystem()
@@ -94,6 +95,10 @@ class RoomManager:
             # Register room with resource manager
             if self.resource_manager:
                 self.resource_manager.register_room(room)
+
+            # Notify listeners about new room
+            if self.on_room_added:
+                self.on_room_added(room)
 
             return room
         return None

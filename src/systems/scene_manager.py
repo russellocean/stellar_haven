@@ -53,8 +53,17 @@ class SceneManager:
             self.debug.log(f"Scene {scene_type} not found!")
             return
 
+        # Call on_exit for previous scene if it exists
+        if self.current_scene and hasattr(self.current_scene, "on_exit"):
+            self.current_scene.on_exit()
+
         self.previous_scene = self.current_scene
         self.current_scene = self.scenes[scene_type]
+
+        # Call on_enter for new scene if it exists
+        if hasattr(self.current_scene, "on_enter"):
+            self.current_scene.on_enter()
+
         self.debug.log(f"Switched to scene: {scene_type}")
 
     async def transition_to(self, scene_type: SceneType):
@@ -77,9 +86,16 @@ class SceneManager:
             pygame.display.flip()
             await asyncio.sleep(0.01)
 
-        # Switch scenes
+        # Call on_exit for previous scene
+        if self.current_scene and hasattr(self.current_scene, "on_exit"):
+            self.current_scene.on_exit()
+
         self.previous_scene = self.current_scene
         self.current_scene = self.scenes[scene_type]
+
+        # Call on_enter for new scene
+        if hasattr(self.current_scene, "on_enter"):
+            self.current_scene.on_enter()
 
         # Fade in
         for alpha in range(255, 0, -5):

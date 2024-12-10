@@ -22,6 +22,16 @@ class ResourceManager:
                 "low": 0.3,  # 30%
             },
         }
+        self.is_active = False  # Add this flag
+
+    def activate(self):
+        """Start resource management"""
+        self.is_active = True
+        self._init_resources()  # Reset resources to initial values
+
+    def deactivate(self):
+        """Stop resource management"""
+        self.is_active = False
 
     def _init_resources(self):
         """Initialize resource systems"""
@@ -58,6 +68,9 @@ class ResourceManager:
 
     def update(self, dt: float = 1.0):
         """Update resource levels based on rooms and consumption"""
+        if not self.is_active:  # Only update when active
+            return
+
         for resource in self.resources:
             old_value = self.resources[resource]
 

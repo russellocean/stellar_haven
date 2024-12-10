@@ -21,6 +21,7 @@ from ui.layouts.game_hud import GameHUD
 class GameplayScene(Scene):
     def __init__(self, game):
         super().__init__(game)
+        print("Creating GameplayScene")
         self._init_managers()
         self._init_systems()
         self._init_entities()
@@ -31,7 +32,17 @@ class GameplayScene(Scene):
         # Initialize dialog system for tutorial
         self.dialog_system = DialogSystem()
         self.dialog_system.initialize(game.screen)
+
+    def on_enter(self):
+        """Called when scene becomes active"""
+        print("Entering GameplayScene")
+        self.resource_manager.activate()  # Start resource management
         self._start_tutorial_sequence()
+
+    def on_exit(self):
+        """Called when leaving scene"""
+        print("Exiting GameplayScene")
+        self.resource_manager.deactivate()  # Stop resource management
 
     def _init_managers(self):
         """Initialize all manager systems"""

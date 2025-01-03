@@ -84,7 +84,9 @@ By effectively managing resources and growing your colony, you'll transform a mo
 
 ## Gameplay Video
 
-A gameplay showcase video is included in the repository:
+[![Stellar Haven Gameplay](Stellar_Haven_Game_Thumbnail.png)](https://youtu.be/X2z_d7Q1_w0)
+
+> Click the thumbnail above to watch the gameplay video on YouTube
 
 ---
 
